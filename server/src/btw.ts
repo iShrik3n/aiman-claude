@@ -13,6 +13,12 @@ import { getSessionEntries } from "./messages";
 
 type BtwStatus = "pending" | "done" | "failed";
 
+export type BtwModel = {
+  providerID: string;
+  id: string;
+  variant?: string;
+};
+
 type BtwRow = {
   id: string;
   session_id: string;
@@ -24,6 +30,7 @@ type BtwRow = {
   created_at: number;
   prompted_at: number | null;
   completed_at: number | null;
+  model_json: string | null;
 };
 
 export type BtwItem = {
@@ -36,6 +43,8 @@ export type BtwItem = {
   error: string | null;
   createdAt: number;
   completedAt: number | null;
+  /** Model selected in the composer when the side question was asked. */
+  model: BtwModel | null;
 };
 
 const ANSWER_TIMEOUT_MS = 180_000;
@@ -60,6 +69,24 @@ function parseJson<T>(value: string | null | undefined, fallback: T): T {
   }
 }
 
+function normalizeModel(value: any): BtwModel | null {
+  const providerID = typeof value?.providerID === "string" ? value.providerID : "";
+  const id =
+    typeof value?.id === "string"
+      ? value.id
+      : typeof value?.modelID === "string"
+        ? value.modelID
+        : "";
+  if (!providerID || !id) return null;
+  return {
+    providerID,
+    id,
+    ...(typeof value?.variant === "string" && value.variant
+      ? { variant: value.variant }
+      : {}),
+  };
+}
+
 function item(row: BtwRow): BtwItem {
   return {
     id: row.id,
@@ -71,6 +98,7 @@ function item(row: BtwRow): BtwItem {
     error: row.error,
     createdAt: row.created_at,
     completedAt: row.completed_at,
+    model: parseJson<BtwModel | null>(row.model_json, null),
   };
 }
 
@@ -86,16 +114,21 @@ export function listBtw(sessionId: string): BtwItem[] {
   ).map(item);
 }
 
-export function askBtw(sessionId: string, question: string): BtwItem {
+export function askBtw(
+  sessionId: string,
+  question: string,
+  model?: BtwModel | null,
+): BtwItem {
   const text = question.trim();
   if (!text) throw new Error("question required");
   const id = "btw_" + crypto.randomUUID();
+  const normalized = normalizeModel(model);
   mgr
     .query(
-      `INSERT INTO btw_history(id, session_id, question, status, created_at)
-       VALUES (?, ?, ?, 'pending', ?)`,
+      `INSERT INTO btw_history(id, session_id, question, status, created_at, model_json)
+       VALUES (?, ?, ?, 'pending', ?, ?)`,
     )
-    .run(id, sessionId, text, Date.now());
+    .run(id, sessionId, text, Date.now(), normalized ? JSON.stringify(normalized) : null);
   kickBtw();
   return item(row(id)!);
 }
@@ -156,25 +189,23 @@ function contextFor(sessionId: string): string {
     .slice(-24_000);
 }
 
-function parentModel(sessionId: string): any | null {
+function parentModel(sessionId: string): BtwModel | null {
   if (!isV2()) return null;
   try {
     const row = ocRO.query("SELECT model FROM session_v2 WHERE id = ?").get(sessionId) as
       | { model: string | null }
       | undefined;
-    const model = parseJson<any>(row?.model, null);
-    if (!model?.providerID || !(model?.id ?? model?.modelID)) return null;
-    return {
-      providerID: String(model.providerID),
-      id: String(model.id ?? model.modelID),
-      ...(typeof model.variant === "string" && model.variant ? { variant: model.variant } : {}),
-    };
+    return normalizeModel(parseJson<any>(row?.model, null));
   } catch {
     return null;
   }
 }
 
-async function createSideSession(mainSessionId: string, question: string): Promise<string> {
+async function createSideSession(
+  mainSessionId: string,
+  question: string,
+  preferredModel?: BtwModel | null,
+): Promise<string> {
   const session = getSession(mainSessionId);
   if (!session) throw new Error("main session not found");
   const base = {
@@ -184,7 +215,9 @@ async function createSideSession(mainSessionId: string, question: string): Promi
     permissions: [{ action: "*", resource: "*", effect: "deny" }],
     metadata: { aiman: { btw: true, mainSessionID: mainSessionId } },
   };
-  const model = parentModel(mainSessionId);
+  // The composer's selected model wins. The parent's persisted model is only a
+  // fallback for requests made by older clients or after a restart.
+  const model = normalizeModel(preferredModel) ?? parentModel(mainSessionId);
   const attempts: any[] = [
     { ...base, agent: "general", ...(model ? { model } : {}) },
     { ...base, ...(model ? { model } : {}) },
@@ -202,12 +235,27 @@ async function createSideSession(mainSessionId: string, question: string): Promi
         },
         locationParams(session.directory),
       );
-      if (created?.id) return String(created.id);
+      if (!created?.id) continue;
+      const sideSessionId = String(created.id);
+      // Creating a session with an agent can reset its model in opencode.
+      // Apply the explicit composer model last, exactly like prompt_async.
+      if (model) {
+        await ocData(
+          `/api/session/${encodeURIComponent(sideSessionId)}/model`,
+          {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ model }),
+          },
+          locationParams(session.directory),
+        );
+      }
+      return sideSessionId;
     } catch (e) {
       lastError = e;
     }
   }
-  throw new Error(String((lastError as any)?.message ?? lastError ?? "could not create side session"));
+  throw new Error(errorText(lastError ?? "could not create side session"));
 }
 
 function promptText(context: string, question: string): string {
@@ -291,7 +339,12 @@ async function processOne(current: BtwRow): Promise<void> {
   let sideSessionId = current.side_session_id;
   try {
     if (!sideSessionId) {
-      sideSessionId = await createSideSession(current.session_id, current.question);
+      const preferredModel = parseJson<BtwModel | null>(current.model_json, null);
+      sideSessionId = await createSideSession(
+        current.session_id,
+        current.question,
+        preferredModel,
+      );
       mgr
         .query("UPDATE btw_history SET side_session_id = ? WHERE id = ?")
         .run(sideSessionId, current.id);

@@ -31,7 +31,11 @@ opencode is working.
 - **/btw side questions** — ask a quick question with `/btw <question>` or the
   session **btw** button. Aiman snapshots recent context into an isolated child
   session, leaves the main transcript untouched, and saves the answer in a
-  per-session BTW history for later review.
+  per-session BTW history for later review. The composer’s selected model and
+  effort variant are used and shown with each saved answer.
+- **Session model memory** — opening a session sets the composer selector to the
+  model most recently used by that session, so free opencode models and direct
+  API models are not confused.
 - **Deferred messages** — queue a request while the agent is working and Aiman
   delivers it only after the task is fully quiescent: idle, no pending
   questions/permissions, no running shells/tools and no busy subagents. A

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, type BtwItem } from "./api";
-import { toast } from "./store";
+import { toast, useStore } from "./store";
 import Icon from "./Icon";
 import { Markdown } from "./PartView";
 
@@ -26,6 +26,7 @@ export default function BtwPanel({
   request: { question: string; nonce: number } | null;
   onClose: () => void;
 }) {
+  const s = useStore();
   const [items, setItems] = useState<BtwItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [input, setInput] = useState("");
@@ -43,7 +44,10 @@ export default function BtwPanel({
     setAsking(true);
     setInput("");
     try {
-      const result = await api.btwAsk(sessionId, text);
+      const result = await api.btwAsk(sessionId, text, {
+        key: s.model,
+        variant: s.variant,
+      });
       setItems((prev) => [result.item, ...prev.filter((item) => item.id !== result.item.id)]);
       setSelectedId(result.item.id);
     } catch (e) {
@@ -190,6 +194,12 @@ export default function BtwPanel({
                   <span className="muted">{when(selected.createdAt)}</span>
                   {selected.completedAt && (
                     <span className="muted">· {when(selected.completedAt)}</span>
+                  )}
+                  {selected.model && (
+                    <span className="muted" title="Model used for this side question">
+                      · {selected.model.providerID}/{selected.model.id}
+                      {selected.model.variant ? ` · ${selected.model.variant}` : ""}
+                    </span>
                   )}
                 </div>
                 {selected.status === "pending" ? (

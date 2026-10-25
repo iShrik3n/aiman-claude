@@ -151,6 +151,34 @@ export default function Composer({
   const directory = session?.directory;
 
   const accent = useMemo(() => agentAccent(s.agent), [s.agent]);
+  // The model selector follows the session's last actually-used assistant
+  // model when the session opens. A session can have a different model from
+  // the global default (e.g. an opencode free model vs a direct API model).
+  const lastUsedModel = useMemo(() => {
+    const list = s.entries[sessionId] ?? [];
+    for (let i = list.length - 1; i >= 0; i--) {
+      const info = list[i]?.info;
+      if (info?.role === "assistant" && info.providerID && info.modelID) {
+        return {
+          key: `${info.providerID}/${info.modelID}`,
+          variant: info.variant ?? "",
+        };
+      }
+    }
+    return null;
+  }, [s.entries[sessionId]]);
+  const syncedLastModel = useRef("");
+  useEffect(() => {
+    if (!lastUsedModel) return;
+    const signature = `${sessionId}:${lastUsedModel.key}:${lastUsedModel.variant}`;
+    if (syncedLastModel.current === signature) return;
+    syncedLastModel.current = signature;
+    if (s.model !== lastUsedModel.key || s.variant !== lastUsedModel.variant) {
+      setModel(lastUsedModel.key);
+      setVariant(lastUsedModel.variant);
+    }
+  }, [sessionId, lastUsedModel, s.model, s.variant]);
+
   // opencode v2 exposes reasoning-effort variants per model; only show the
   // second selector (and send `variant`) when the active model has any.
   const activeModel = s.models.find((m) => m.key === s.model);
@@ -657,9 +685,17 @@ export default function Composer({
           className="input"
           value={s.model}
           onChange={(e) => setModel(e.target.value)}
-          title="Model (ctrl+↑ / ctrl+↓)"
+          title={
+            lastUsedModel
+              ? `Model — last used by this session: ${lastUsedModel.key}${
+                  lastUsedModel.variant ? ` · ${lastUsedModel.variant}` : ""
+                }`
+              : "Model (ctrl+↑ / ctrl+↓)"
+          }
         >
-          {s.models.length === 0 && <option value={s.model}>{s.model}</option>}
+          {!s.models.some((m) => m.key === s.model) && (
+            <option value={s.model}>{s.model}</option>
+          )}
           {s.models.map((m) => (
             <option key={m.key} value={m.key}>
               {m.label}

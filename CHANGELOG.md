@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Per-session model memory in the composer.** Opening a session now syncs the
+  model selector (and reasoning variant) to the last model actually used by
+  that session’s assistant messages. Sessions using an opencode free model no
+  longer appear as the global/direct-API model.
+- **`/btw` now uses the composer model.** The selected model and variant are
+  passed with the side question, stored with its history entry, and reapplied
+  after the side session’s `general` agent is selected. The history detail shows
+  the exact model used. Previously `/btw` read only the session’s persisted
+  model, which could differ from the model currently shown in the composer.
 - Compact desktop title bars now let the navigation slot fill the remaining
   width, so profile/live/user/logout sit flush against the window controls
   instead of floating left with a growing gap when maximized.

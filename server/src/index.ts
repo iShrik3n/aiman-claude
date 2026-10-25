@@ -958,7 +958,19 @@ async function handle(req: Request): Promise<Response> {
       const b = await readBody(req);
       const question = String(b.question ?? "").trim();
       if (!question) return json({ error: "question required" }, 400);
-      return json({ ok: true, item: askBtw(sessionId, question) }, 201);
+      const modelKey = typeof b.model === "string" ? b.model : "";
+      const [providerID, ...rest] = modelKey.split("/");
+      const model =
+        providerID && rest.length
+          ? {
+              providerID,
+              id: rest.join("/"),
+              ...(typeof b.variant === "string" && b.variant
+                ? { variant: b.variant }
+                : {}),
+            }
+          : undefined;
+      return json({ ok: true, item: askBtw(sessionId, question, model) }, 201);
     }
   }
 

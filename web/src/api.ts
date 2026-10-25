@@ -63,6 +63,12 @@ export type QueueResponse = {
   serverNow: number;
 };
 
+export type BtwModel = {
+  providerID: string;
+  id: string;
+  variant?: string;
+};
+
 export type BtwItem = {
   id: string;
   sessionId: string;
@@ -73,6 +79,7 @@ export type BtwItem = {
   error: string | null;
   createdAt: number;
   completedAt: number | null;
+  model: BtwModel | null;
 };
 
 export type ServiceStatus = {
@@ -442,11 +449,19 @@ export const api = {
     fetch(`/api/queue/${id}`, { method: "DELETE" }).then(j<{ ok: boolean }>),
   btwHistory: (sessionId: string) =>
     fetch(`/api/sessions/${sessionId}/btw`).then(j<{ items: BtwItem[] }>),
-  btwAsk: (sessionId: string, question: string) =>
+  btwAsk: (
+    sessionId: string,
+    question: string,
+    model?: { key: string; variant?: string },
+  ) =>
     fetch(`/api/sessions/${sessionId}/btw`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ question }),
+      body: JSON.stringify({
+        question,
+        ...(model?.key ? { model: model.key } : {}),
+        ...(model?.variant ? { variant: model.variant } : {}),
+      }),
     }).then(j<{ ok: boolean; item: BtwItem }>),
   btwDelete: (id: string) =>
     fetch(`/api/btw/${id}`, { method: "DELETE" }).then(j<{ ok: boolean }>),
