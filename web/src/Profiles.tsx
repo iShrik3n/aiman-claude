@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type Profile } from "./api";
+import Icon from "./Icon";
 import { activateProfile, loadProfiles, store, toast, useStore } from "./store";
 
 export default function Profiles() {
@@ -81,7 +82,7 @@ export default function Profiles() {
               <button className="btn ghost sm" onClick={() => rename(p)}>
                 rename
               </button>
-              {me.is_admin && (
+              {!!me.is_admin && (
                 <button className="btn danger sm" onClick={() => del(p)}>
                   delete
                 </button>
@@ -92,15 +93,15 @@ export default function Profiles() {
               {p.providers.map((pr) => (
                 <span className="badge" key={pr.providerID}>
                   {pr.providerID} · {pr.hint}{" "}
-                  {me.is_admin && (
+                  {!!me.is_admin && (
                     <a style={{ cursor: "pointer", marginLeft: 4 }} onClick={() => removeKey(p, pr.providerID)}>
-                      ×
+                      <Icon name="close" size={12} />
                     </a>
                   )}
                 </span>
               ))}
             </div>
-            {me.is_admin && (
+            {!!me.is_admin && (
               <div style={{ marginTop: 8 }}>
                 {addingFor === p.id ? (
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -135,7 +136,7 @@ export default function Profiles() {
         );
       })}
 
-      {me.is_admin && (
+      {!!me.is_admin && (
         <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
           <input
             className="input"
@@ -152,7 +153,7 @@ export default function Profiles() {
 
       <div style={{ marginTop: 24 }}>
         <button className="btn ghost" onClick={() => store.set({ view: "chat" })}>
-          ← Back
+          <Icon name="back" /> Back
         </button>
       </div>
     </div>

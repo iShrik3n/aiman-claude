@@ -7,6 +7,7 @@ vendor/pyxtermjs-venv/
 
 # build output (produced by `bun run build`, not committed)
 dist/
+desktop-dist/
 
 # runtime data — contains the manager database, credentials and backups
 data/

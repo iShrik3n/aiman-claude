@@ -1,7 +1,17 @@
 import { useEffect, useState } from "react";
 import { api, type ServiceStatus, type UpdateInfo } from "./api";
-import { setChatMode, setTheme, setThinkingOpen, store, toast, useStore } from "./store";
+import {
+  setChatMode,
+  setCompactToolbar,
+  setShellOutputOpen,
+  setTheme,
+  setThinkingOpen,
+  store,
+  toast,
+  useStore,
+} from "./store";
 import { THEMES } from "./themes";
+import Icon from "./Icon";
 
 export default function SettingsView() {
   const s = useStore();
@@ -142,6 +152,27 @@ export default function SettingsView() {
         ))}
       </div>
 
+      <label
+        className="small"
+        style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 16 }}
+      >
+        <input
+          type="checkbox"
+          checked={s.compactToolbar}
+          onChange={(e) => setCompactToolbar(e.target.checked)}
+        />
+        <span>
+          <b>Compact toolbar</b>
+          <span className="muted">
+            {" "}
+            — put Sessions, Search, Stats, Terminal, Settings, Users, Extensions,
+            Profiles and the live status inside the title bar. Pop-out session
+            windows drop the app toolbar and keep only the window controls in
+            their header.
+          </span>
+        </span>
+      </label>
+
       <h3 style={{ marginTop: 24 }}>Chat mode</h3>
       <p className="muted small">
         How sessions open. <b>Terminal chat</b> embeds the opencode TUI using
@@ -211,6 +242,21 @@ export default function SettingsView() {
         </span>
       </label>
 
+      <label
+        className="small"
+        style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 10 }}
+      >
+        <input
+          type="checkbox"
+          checked={s.shellOutputOpen}
+          onChange={(e) => setShellOutputOpen(e.target.checked)}
+        />
+        <span>
+          Show <b>shell output</b> in messages by default
+          <span className="muted"> — running and failed tools always expand</span>
+        </span>
+      </label>
+
       <h3 style={{ marginTop: 24 }}>Backend</h3>
       <table className="markdown" style={{ width: "100%" }}>
         <tbody>
@@ -263,7 +309,7 @@ export default function SettingsView() {
         <button className="btn sm" disabled={checking} onClick={() => checkUpdate(true)}>
           {checking ? "checking…" : "Check for updates"}
         </button>
-        {upd?.available && me?.is_admin && (
+        {upd?.available && !!me?.is_admin && (
           <button className="btn sm primary" disabled={applying} onClick={doUpdate}>
             {applying ? "updating…" : "Update now"}
           </button>
@@ -325,7 +371,7 @@ export default function SettingsView() {
 
       <div style={{ marginTop: 24 }}>
         <button className="btn ghost" onClick={() => store.set({ view: "chat" })}>
-          ← Back
+          <Icon name="back" /> Back
         </button>
       </div>
     </div>

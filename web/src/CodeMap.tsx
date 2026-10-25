@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, type TreeNode } from "./api";
+import Icon, { type IconName } from "./Icon";
 
 type Rect = { x: number; y: number; w: number; h: number };
 type Placed = { node: TreeNode; rect: Rect; depth: number; header: number };
@@ -129,20 +130,18 @@ const MAX_AUTO_BYTES = 200_000; // auto-load text files up to ~200k
 const MAX_AUTO_FILES = 2000; // safety cap on prefetched files
 const FETCH_CONCURRENCY = 6;
 
-function fileIcon(ext?: string): string {
-  if (!ext) return "📄";
-  if (IMG_EXT.has(ext)) return "🖼️";
-  if ([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"].includes(ext)) return "🟨";
-  if (ext === ".py") return "🐍";
-  if (ext === ".go") return "🐹";
-  if (ext === ".rs") return "🦀";
-  if (ext === ".json") return "🔧";
-  if ([".md", ".mdx"].includes(ext)) return "📝";
-  if ([".css", ".scss", ".less"].includes(ext)) return "🎨";
-  if ([".html", ".htm"].includes(ext)) return "🌐";
-  if ([".sh", ".bash", ".zsh"].includes(ext)) return "⌨️";
-  if ([".yml", ".yaml", ".toml", ".ini", ".env"].includes(ext)) return "⚙️";
-  return "📄";
+function fileIcon(ext?: string): IconName {
+  if (!ext) return "file";
+  if (IMG_EXT.has(ext)) return "image";
+  if ([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".py", ".go", ".rs"].includes(ext))
+    return "code";
+  if (ext === ".json") return "config";
+  if ([".md", ".mdx"].includes(ext)) return "markdown";
+  if ([".css", ".scss", ".less"].includes(ext)) return "style";
+  if ([".html", ".htm"].includes(ext)) return "web";
+  if ([".sh", ".bash", ".zsh"].includes(ext)) return "terminal";
+  if ([".yml", ".yaml", ".toml", ".ini", ".env"].includes(ext)) return "settings";
+  return "file";
 }
 
 function humanSize(n: number): string {
@@ -341,7 +340,7 @@ export default function CodeMap({ directories }: { directories: string[] }) {
       <div className="codemap">
         <div className="cm-toolbar">
           <button className="btn ghost sm" onClick={() => setEditor(null)}>
-            ← map
+            <Icon name="back" /> map
           </button>
           <span className="cm-path" title={editor.path}>
             {editor.path}
@@ -386,7 +385,7 @@ export default function CodeMap({ directories }: { directories: string[] }) {
           {view3d ? "2D" : "3D"}
         </button>
         <button className="btn ghost sm" onClick={load} title="Reload">
-          ⟳
+          <Icon name="refresh" />
         </button>
       </div>
 
@@ -442,7 +441,11 @@ export default function CodeMap({ directories }: { directories: string[] }) {
                 >
                   {showLabel && (
                     <div className="cm-label" style={{ fontSize }}>
-                      {!isDir && <span className="cm-icon">{fileIcon(node.ext)}</span>}
+                      {!isDir && (
+                        <span className="cm-icon">
+                          <Icon name={fileIcon(node.ext)} size={fontSize} />
+                        </span>
+                      )}
                       <span className="cm-name">{node.name}</span>
                       {sw > 120 && <span className="cm-size">{humanSize(node.size)}</span>}
                     </div>

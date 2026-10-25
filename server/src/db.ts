@@ -164,6 +164,8 @@ function ensureColumn(table: string, column: string, decl: string): void {
 ensureColumn("session_meta", "user_id", "TEXT");
 ensureColumn("session_meta", "profile_id", "TEXT");
 ensureColumn("user_prefs", "onboarded", "INTEGER NOT NULL DEFAULT 0");
+ensureColumn("folders", "parent_id", "TEXT");
+ensureColumn("session_meta", "auto_organized_at", "INTEGER");
 
 export function getSetting(key: string): string | null {
   const row = mgr.query("SELECT value FROM settings WHERE key = ?").get(key) as

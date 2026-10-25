@@ -7,10 +7,12 @@ import {
   logout,
   newSession,
   openMenu,
+  redoSession,
   setAgent,
   setModel,
   store,
   toast,
+  undoLastMessage,
   useStore,
 } from "./store";
 
@@ -118,11 +120,7 @@ export function LeaderMenu() {
       label: "Undo (revert last message)",
       run: async () => {
         closeMenu();
-        const id = activeId(); if (!id) return toast("no active session");
-        const entries = store.get().entries[id] ?? [];
-        const lastUser = [...entries].reverse().find((e) => e.info?.role === "user");
-        if (!lastUser) return toast("nothing to undo");
-        await api.revert(id, lastUser.info.id).then(() => toast("reverted")).catch((e) => toast(String(e)));
+        await undoLastMessage(activeId());
       },
     },
     {
@@ -130,8 +128,7 @@ export function LeaderMenu() {
       label: "Redo (restore reverted)",
       run: async () => {
         closeMenu();
-        const id = activeId(); if (!id) return toast("no active session");
-        await api.unrevert(id).then(() => toast("restored")).catch((e) => toast(String(e)));
+        await redoSession(activeId());
       },
     },
     {
@@ -154,6 +151,18 @@ export function LeaderMenu() {
         }
       },
     },
+    ...(store.get().auth.user?.is_admin
+      ? [
+          {
+            key: "e",
+            label: "Extensions (MCP & plugins)",
+            run: () => {
+              store.set({ view: "extensions" });
+              closeMenu();
+            },
+          },
+        ]
+      : []),
     { key: "?", label: "Help", run: () => openMenu("help") },
     {
       key: "q",
@@ -233,14 +242,27 @@ export function HelpOverlay() {
   );
 }
 
+/** True when the user has text selected, so Ctrl+X should cut instead of opening a menu. */
+function hasTextSelection(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    if (start != null && end != null && start !== end) return true;
+  }
+  const sel = typeof window !== "undefined" ? window.getSelection() : null;
+  return !!sel && !sel.isCollapsed && sel.toString().length > 0;
+}
+
 /** Global keyboard shortcuts + renders the active overlay. */
 export default function Overlays() {
   const s = useStore();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      // leader
+      // leader (unless the user selected text — Ctrl+X should cut it)
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "x") {
+        if (hasTextSelection(e.target)) return;
         e.preventDefault();
         openMenu(store.get().menu === "leader" ? null : "leader");
         return;

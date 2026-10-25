@@ -20,7 +20,8 @@ export type View =
   | "users"
   | "stats"
   | "profiles"
-  | "settings";
+  | "settings"
+  | "extensions";
 
 export type ChatMode = "web" | "terminal";
 
@@ -39,7 +40,16 @@ type Auth = {
   user: { id: string; username: string; is_admin: number } | null;
 };
 
-export type ModelOpt = { key: string; label: string; providerID: string; modelID: string };
+export type ModelOpt = {
+  key: string;
+  label: string;
+  providerID: string;
+  modelID: string;
+  /** Reasoning-effort variants supported by this model (empty for most). */
+  variants: string[];
+  /** Context window in tokens (0 when the provider does not expose one). */
+  context: number;
+};
 export type MenuKind = "leader" | "models" | "agents" | "help" | null;
 
 type State = {
@@ -62,6 +72,8 @@ type State = {
   models: ModelOpt[];
   agents: string[];
   model: string;
+  /** Selected reasoning-effort variant for `model` ("" = provider default). */
+  variant: string;
   agent: string;
   menu: MenuKind;
   profiles: Profile[];
@@ -71,7 +83,25 @@ type State = {
   onboarded: boolean | null;
   opencodeV2: boolean;
   thinkingOpen: boolean;
+  shellOutputOpen: boolean;
+  /** Merge the app toolbar into the desktop title bar. */
+  compactToolbar: boolean;
 };
+
+/** Per-model variant memory, e.g. { "deepseek/deepseek-flash": "high" }. */
+function readVariantMap(): Record<string, string> {
+  try {
+    const parsed = JSON.parse(localStorage.getItem("oc_model_variants") ?? "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+const initialModel =
+  (typeof localStorage !== "undefined" && localStorage.getItem("oc_model")) ||
+  "deepseek/deepseek-flash";
+const initialVariant = readVariantMap()[initialModel] ?? "";
 
 let state: State = {
   auth: { loading: true, authenticated: false, needsSetup: false, user: null },
@@ -92,7 +122,8 @@ let state: State = {
   toast: null,
   models: [],
   agents: [],
-  model: localStorage.getItem("oc_model") ?? "deepseek/deepseek-flash",
+  model: initialModel,
+  variant: initialVariant,
   agent: localStorage.getItem("oc_agent") ?? "build",
   menu: null,
   profiles: [],
@@ -104,6 +135,10 @@ let state: State = {
   onboarded: null,
   opencodeV2: false,
   thinkingOpen: (typeof localStorage !== "undefined" ? localStorage.getItem("oc_thinking_open") : "1") !== "0",
+  shellOutputOpen:
+    (typeof localStorage !== "undefined" ? localStorage.getItem("oc_shell_output_open") : "1") !== "0",
+  compactToolbar:
+    typeof localStorage !== "undefined" && localStorage.getItem("oc_compact_toolbar") === "1",
 };
 
 applyTheme(state.theme);
@@ -131,7 +166,18 @@ export function toast(msg: string) {
 
 export function setModel(key: string) {
   localStorage.setItem("oc_model", key);
-  set({ model: key });
+  set({ model: key, variant: readVariantMap()[key] ?? "" });
+}
+
+/** Pick the reasoning-effort variant for the current model ("" = default). */
+export function setVariant(variant: string) {
+  const map = readVariantMap();
+  if (variant) map[state.model] = variant;
+  else delete map[state.model];
+  try {
+    localStorage.setItem("oc_model_variants", JSON.stringify(map));
+  } catch {}
+  set({ variant });
 }
 
 export function setAgent(name: string) {
@@ -153,6 +199,22 @@ export function setThinkingOpen(open: boolean) {
     localStorage.setItem("oc_thinking_open", open ? "1" : "0");
   } catch {}
   set({ thinkingOpen: open });
+}
+
+/** Whether completed shell/bash tool cards start expanded. */
+export function setShellOutputOpen(open: boolean) {
+  try {
+    localStorage.setItem("oc_shell_output_open", open ? "1" : "0");
+  } catch {}
+  set({ shellOutputOpen: open });
+}
+
+/** Merge navigation into the desktop title bar (the standalone pop-out keeps it compact). */
+export function setCompactToolbar(compact: boolean) {
+  try {
+    localStorage.setItem("oc_compact_toolbar", compact ? "1" : "0");
+  } catch {}
+  set({ compactToolbar: compact });
 }
 
 /** Open a session in its own pop-out browser window. */
@@ -234,18 +296,29 @@ export async function loadModelsAgents(attempt = 0) {
     const [prov, ag] = await Promise.all([api.providers(), api.agents()]);
     const opts: ModelOpt[] = [];
     for (const p of prov.providers ?? [])
-      for (const m of Object.values(p.models ?? {}))
+      for (const m of Object.values(p.models ?? []))
         opts.push({
           key: `${p.id}/${m.id}`,
           label: `${p.name} · ${m.name}`,
           providerID: p.id,
           modelID: m.id,
+          variants: Array.isArray(m.variants)
+            ? m.variants.filter((v): v is string => typeof v === "string" && v.length > 0)
+            : [],
+          context: Number(m.context ?? m.limit?.context ?? 0) || 0,
         });
     const hidden = ["compaction", "summary", "title"];
     const primaries = (ag ?? [])
       .filter((a) => a.mode !== "subagent" && !hidden.includes(a.name))
       .map((a) => a.name);
     set({ models: opts, agents: primaries.length ? primaries : ["build"] });
+
+    // Drop a remembered variant that the (re)loaded model doesn't support or
+    // that no longer exists (e.g. after an opencode upgrade).
+    const active = opts.find((m) => m.key === state.model);
+    if (opts.length && state.variant && !(active?.variants ?? []).includes(state.variant)) {
+      set({ variant: "" });
+    }
 
     const incomplete = !primaries.length || !opts.length;
     if (incomplete && attempt < 12) {
@@ -268,7 +341,11 @@ function scheduleRefresh() {
   refreshTimer = setTimeout(() => refreshSessions().catch(() => {}), 800);
 }
 
-export function filterSessions(sessions: Session[], f: Filters): Session[] {
+export function filterSessions(
+  sessions: Session[],
+  f: Filters,
+  folders: Folder[] = state.folders,
+): Session[] {
   const q = f.q.toLowerCase().trim();
   let rows = sessions;
   if (q)
@@ -281,8 +358,25 @@ export function filterSessions(sessions: Session[], f: Filters): Session[] {
   if (f.archived !== "all")
     rows = rows.filter((s) => (f.archived === "1" ? s.timeArchived != null : s.timeArchived == null));
   if (f.directory) rows = rows.filter((s) => s.directory === f.directory);
-  if (f.folder)
-    rows = rows.filter((s) => (f.folder === "none" ? !s.folderId : s.folderId === f.folder));
+  if (f.folder) {
+    if (f.folder === "none") {
+      rows = rows.filter((s) => !s.folderId);
+    } else {
+      // A folder shows its own sessions plus everything in its subtree.
+      const ids = new Set<string>([f.folder]);
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const folder of folders) {
+          if (folder.parent_id && ids.has(folder.parent_id) && !ids.has(folder.id)) {
+            ids.add(folder.id);
+            changed = true;
+          }
+        }
+      }
+      rows = rows.filter((s) => !!s.folderId && ids.has(s.folderId));
+    }
+  }
   rows = rows.slice().sort((a, b) => {
     if (a.pinned !== b.pinned) return b.pinned - a.pinned;
     if (f.sort === "created") return b.timeCreated - a.timeCreated;
@@ -402,6 +496,7 @@ const VIEW_PATHS: Record<View, string> = {
   users: "/users",
   profiles: "/profiles",
   settings: "/settings",
+  extensions: "/extensions",
 };
 
 /** Canonical URL path for a given view + active session. */
@@ -429,7 +524,7 @@ export async function applyLocation() {
     return set({ view: "chat", activeSessionId: null });
   }
 
-  const views: View[] = ["search", "stats", "terminal", "users", "profiles", "settings"];
+  const views: View[] = ["search", "stats", "terminal", "users", "profiles", "settings", "extensions"];
   const view = views.find((v) => v === first);
   if (view) return set({ view });
   return set({ view: "chat" });
@@ -482,6 +577,44 @@ export async function reloadMessages(id: string) {
   } catch {}
 }
 
+/** Revert the last user turn. opencode stages the undo, so it can be redone. */
+export async function undoLastMessage(sessionId?: string | null) {
+  const id = sessionId ?? state.activeSessionId;
+  if (!id || id === "__new__") {
+    toast("no active session");
+    return;
+  }
+  const entries = state.entries[id] ?? [];
+  const lastUser = [...entries].reverse().find((e) => e.info?.role === "user");
+  if (!lastUser) {
+    toast("nothing to undo");
+    return;
+  }
+  try {
+    await api.revert(id, lastUser.info.id);
+    await reloadMessages(id);
+    toast("reverted");
+  } catch (e) {
+    toast(`Undo failed: ${e}`);
+  }
+}
+
+/** Clear the staged revert and bring the hidden turns back. */
+export async function redoSession(sessionId?: string | null) {
+  const id = sessionId ?? state.activeSessionId;
+  if (!id || id === "__new__") {
+    toast("no active session");
+    return;
+  }
+  try {
+    await api.unrevert(id);
+    await reloadMessages(id);
+    toast("restored");
+  } catch (e) {
+    toast(`Redo failed: ${e}`);
+  }
+}
+
 export async function createSession(directory: string, title?: string) {
   const s = await api.createSession(directory, title);
   await refreshSessions();
@@ -495,6 +628,8 @@ export async function sendPrompt(
   text: string,
   opts: {
     model?: { providerID: string; modelID: string };
+    /** Reasoning-effort variant for `model` (""/undefined = model default). */
+    variant?: string;
     agent?: string;
     files?: { url: string; filename: string; mime?: string }[];
   },
@@ -541,7 +676,9 @@ export async function sendPrompt(
   try {
     await api.promptAsync(sessionId, {
       parts,
-      model: opts.model,
+      model: opts.model
+        ? { ...opts.model, ...(opts.variant ? { variant: opts.variant } : {}) }
+        : undefined,
       agent: opts.agent,
     });
   } catch (e) {
@@ -586,9 +723,24 @@ export async function renameSession(id: string, title: string) {
   await refreshSessions();
 }
 
-export async function createFolder(name: string, color: string | null) {
-  await api.createFolder(name, color ?? undefined);
+export async function createFolder(
+  name: string,
+  color: string | null,
+  parentId: string | null = null,
+) {
+  await api.createFolder(name, color ?? undefined, parentId);
   await refreshMeta();
+}
+
+/** Ask opencode to build/refresh the folder tree and file unfiled sessions. */
+export async function autoOrganizeSessions(opts: {
+  model?: string;
+  variant?: string;
+  agent?: string;
+} = {}) {
+  const result = await api.autoOrganize(opts);
+  await Promise.all([refreshMeta(), refreshSessions()]);
+  return result;
 }
 
 export async function replyPermissionSafe(perm: Permission, reply: "once" | "always" | "reject") {

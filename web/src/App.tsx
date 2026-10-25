@@ -1,13 +1,5 @@
 import { useEffect } from "react";
-import {
-  activateProfile,
-  applyLocation,
-  bootstrapAuth,
-  logout,
-  pathFor,
-  store,
-  useStore,
-} from "./store";
+import { applyLocation, bootstrapAuth, pathFor, store, useStore } from "./store";
 import Sidebar from "./Sidebar";
 import SessionList from "./SessionList";
 import ChatView from "./ChatView";
@@ -17,6 +9,9 @@ import Users from "./Users";
 import StatsView from "./StatsView";
 import Profiles from "./Profiles";
 import SettingsView from "./SettingsView";
+import ExtensionsView from "./ExtensionsView";
+import DesktopTitlebar from "./DesktopTitlebar";
+import { AppTopbar, CompactTitlebarNav } from "./AppChrome";
 import Overlays from "./Overlays";
 import Login from "./Login";
 import Onboarding from "./Onboarding";
@@ -40,7 +35,7 @@ export default function App() {
   // Reflect the active session (or view) in the browser/window title.
   useEffect(() => {
     const sess = s.sessions.find((x) => x.id === s.activeSessionId);
-    document.title = sess?.title ? `${sess.title} · aiman` : "aiman · opencode sessions";
+    document.title = sess?.title ? `${sess.title} · AiMAN` : "AiMAN";
   }, [s.activeSessionId, s.sessions]);
 
   const popout =
@@ -66,7 +61,6 @@ export default function App() {
   if (s.onboarded === false) return <Onboarding />;
 
   const isAdmin = !!s.auth.user?.is_admin;
-  const setView = (view: any) => store.set({ view });
 
   const mainContent = (
     <div className="main">
@@ -75,16 +69,32 @@ export default function App() {
       {s.view === "stats" && <StatsView />}
       {s.view === "terminal" && <TerminalView />}
       {s.view === "users" && isAdmin && <Users />}
+      {s.view === "extensions" && isAdmin && <ExtensionsView />}
+      {s.view === "extensions" && !isAdmin && (
+        <div className="empty">Extensions are only available to administrators.</div>
+      )}
       {s.view === "profiles" && <Profiles />}
       {s.view === "settings" && <SettingsView />}
     </div>
   );
 
-  // Pop-out window: just the session, no chrome.
+  // XP.css / 98.css draw the complete window frame around `.window`.
+  const retroWindow = s.theme.startsWith("winxp") || s.theme.startsWith("win98");
+  const isDesktop = typeof window !== "undefined" && !!window.aimanDesktop;
+  // In a normal browser there is no custom titlebar to merge into, so compact
+  // mode falls back to the regular toolbar instead of hiding navigation.
+  const compact = s.compactToolbar && isDesktop;
+  const windowClass = retroWindow ? " window" : "";
+
+  // A pop-out is a single session: no sidebar, no view switcher, no app toolbar.
   if (popout) {
+    const popoutSession = s.sessions.find((x) => x.id === s.activeSessionId);
     return (
-      <div className="app" style={{ gridTemplateRows: "1fr" }}>
-        <div className="main">{s.activeSessionId ? <ChatView /> : <SessionList />}</div>
+      <div className={"app popout" + (compact ? " compact" : "") + windowClass}>
+        {!compact && <DesktopTitlebar title={popoutSession?.title || "session"} />}
+        <div className="main">
+          {s.activeSessionId ? <ChatView popout compact={compact} /> : <SessionList />}
+        </div>
         {s.toast && <div className="toast">{s.toast}</div>}
         <Overlays />
       </div>
@@ -92,71 +102,13 @@ export default function App() {
   }
 
   return (
-    <div className="app">
-      <div className="topbar">
-        <div className="brand">
-          open<span>code</span> · sessions
-        </div>
-        <div className="tabs">
-          {(["chat", "search", "stats", "terminal", "settings"] as const).map((v) => (
-            <button
-              key={v}
-              className={"tab" + (s.view === v ? " active" : "")}
-              onClick={() => setView(v)}
-            >
-              {v === "chat"
-                ? "Sessions"
-                : v === "search"
-                  ? "Search"
-                  : v === "stats"
-                    ? "Stats"
-                    : v === "terminal"
-                      ? "Terminal"
-                      : "Settings"}
-            </button>
-          ))}
-          {isAdmin && (
-            <button
-              className={"tab" + (s.view === "users" ? " active" : "")}
-              onClick={() => setView("users")}
-            >
-              Users
-            </button>
-          )}
-          <button
-            className={"tab" + (s.view === "profiles" ? " active" : "")}
-            onClick={() => setView("profiles")}
-          >
-            Profiles
-          </button>
-        </div>
-        <div className="spacer" />
-        {s.profiles.length > 0 && (
-          <select
-            className="input"
-            title="Switch config profile"
-            value={s.activeProfile ?? ""}
-            onChange={(e) => activateProfile(e.target.value)}
-          >
-            {!s.activeProfile && <option value="">profile…</option>}
-            {s.profiles.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        )}
-        <span className="small muted">
-          <span className={"dot " + (s.connected ? "up" : "down")} />{" "}
-          {s.connected ? "live" : "disconnected"}
-        </span>
-        <span className="small muted" style={{ marginLeft: 10 }}>
-          {s.auth.user?.username}
-        </span>
-        <button className="btn ghost sm" onClick={() => logout()}>
-          Log out
-        </button>
-      </div>
+    <div className={"app" + (compact ? " compact" : "") + windowClass}>
+      {compact ? (
+        <DesktopTitlebar compact nav={<CompactTitlebarNav />} />
+      ) : (
+        <DesktopTitlebar />
+      )}
+      {!compact && <AppTopbar />}
 
       <div className="layout">
         <Sidebar />

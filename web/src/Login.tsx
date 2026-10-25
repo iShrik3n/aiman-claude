@@ -31,7 +31,7 @@ export default function Login() {
     <div className="auth-wrap">
       <form className="auth-card" onSubmit={submit}>
         <div className="brand" style={{ fontSize: 20, marginBottom: 4 }}>
-          open<span>code</span> · sessions
+          Ai<span>MAN</span>
         </div>
         <p className="muted small" style={{ marginTop: 0 }}>
           {needsSetup

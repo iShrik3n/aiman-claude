@@ -31,7 +31,7 @@ const SYSTEMD_USER = join(homedir(), ".config", "systemd", "user", "aiman.servic
 
 function systemdUnit(): string {
   return `[Unit]
-Description=aiman - opencode sessions manager
+Description=AiMAN - opencode session manager
 After=network-online.target
 Wants=network-online.target
 

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, type TreeNode } from "./api";
 import { toast } from "./store";
+import Icon from "./Icon";
 
 function flatten(nodes: TreeNode[], out: TreeNode[] = []): TreeNode[] {
   for (const n of nodes) {
@@ -113,11 +114,11 @@ export default function FileBrowser({
     <div className="overlay" onClick={onClose}>
       <div className="overlay-box file-browser" onClick={(e) => e.stopPropagation()}>
         <div className="overlay-title fb-head">
-          <span>Files</span>
+          <span><Icon name="folder" /> Files</span>
           <span className="muted small">{directory}</span>
           <div className="spacer" />
           <label className="btn ghost sm" style={{ cursor: "pointer" }}>
-            upload
+            <Icon name="upload" /> upload
             <input
               type="file"
               multiple
@@ -126,10 +127,10 @@ export default function FileBrowser({
             />
           </label>
           <button className="btn ghost sm" onClick={load} title="Reload">
-            ⟳
+            <Icon name="refresh" />
           </button>
           <button className="btn sm" onClick={onClose}>
-            close
+            <Icon name="close" /> close
           </button>
         </div>
         <div className="fb-split">
@@ -147,7 +148,7 @@ export default function FileBrowser({
                 className={"fb-item" + (cur === f.path ? " active" : "")}
                 onClick={() => open(f)}
               >
-                <span className="fb-path">{f.path}</span>
+                <span className="fb-path"><Icon name="file" size={13} /> {f.path}</span>
                 <button
                   className="btn ghost sm"
                   title="Delete"
@@ -156,7 +157,7 @@ export default function FileBrowser({
                     del(f);
                   }}
                 >
-                  🗑
+                  <Icon name="trash" />
                 </button>
               </div>
             ))}
@@ -171,7 +172,7 @@ export default function FileBrowser({
                   </span>
                   <div className="spacer" />
                   <button className="btn sm primary" disabled={busy || !dirty} onClick={save}>
-                    Save
+                    <Icon name="save" /> Save
                   </button>
                 </div>
                 <textarea

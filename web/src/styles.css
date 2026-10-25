@@ -58,7 +58,35 @@ button, input, textarea, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
 a { color: var(--accent); }
 
+/* Semantic icons: crisp modern line icons normally, bitmap-era icons in the
+   Windows 98/XP themes (including their dark variants). */
+.ic {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: none; vertical-align: -0.125em; line-height: 1;
+}
+.ic > span { display: inline-flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+.ic svg { width: 100%; height: 100%; display: block; }
+/* `.ic > span` is more specific than `.ic-legacy`; use matching specificity so
+   the hidden layer really stays hidden outside the Windows skins. */
+.ic > .ic-legacy { display: none; }
+.ic-dim .ic-legacy { filter: grayscale(1); opacity: .55; }
+/* React95 bitmaps are drawn for light grey chrome. A faint light halo keeps
+   their dark outlines readable on the dark Windows skins. */
+html[data-theme$="-dark"] .ic-legacy {
+  filter: drop-shadow(0 0 .6px rgba(255, 255, 255, .8)) brightness(1.06);
+}
+html[data-theme$="-dark"] .ic-dim .ic-legacy {
+  filter: grayscale(1) opacity(.55) drop-shadow(0 0 .6px rgba(255, 255, 255, .8));
+}
+[data-theme^="win98"] .ic > .ic-modern,
+[data-theme^="winxp"] .ic > .ic-modern { display: none; }
+[data-theme^="win98"] .ic > .ic-legacy,
+[data-theme^="winxp"] .ic > .ic-legacy { display: inline-flex; }
+
 .app { display: grid; grid-template-rows: 46px 1fr; height: 100%; }
+/* A pop-out has no app toolbar. Desktop adds the themed caption row; compact
+   mode deliberately leaves only the chat header and its window buttons. */
+.app.popout { grid-template-rows: 1fr; }
 .topbar {
   display: flex; align-items: center; gap: 12px; padding: 0 14px;
   background: var(--bg-2); border-bottom: 1px solid var(--border);
@@ -67,6 +95,7 @@ a { color: var(--accent); }
 .brand span { color: var(--accent); }
 .tabs { display: flex; gap: 4px; margin-left: 8px; }
 .tab {
+  display: inline-flex; align-items: center; gap: 5px;
   background: transparent; border: 1px solid transparent; color: var(--muted);
   padding: 5px 12px; border-radius: var(--tab-radius);
 }
@@ -88,8 +117,56 @@ a { color: var(--accent); }
   font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
   color: var(--muted); padding: 10px 8px 4px;
 }
+.dir-section-title {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+}
+.dir-sort {
+  width: auto; max-width: 116px; min-width: 0;
+  padding: 2px 5px; font-size: 11px; line-height: 1.25;
+  letter-spacing: 0; text-transform: none;
+}
+.section-toggle {
+  display: inline-flex; align-items: center; gap: 5px;
+  min-width: 0; padding: 0; border: 0; background: transparent;
+  color: inherit; font: inherit; letter-spacing: inherit;
+  text-transform: inherit; cursor: pointer;
+}
+.section-toggle:hover { color: var(--text); }
+.folders-title { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.folder-organize {
+  padding: 1px 5px; font-size: 10px; letter-spacing: 0;
+  text-transform: none; white-space: nowrap;
+}
+.folder-row { padding-right: 2px; }
+.folder-name {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.folder-expand-spacer { width: 12px; flex: none; }
+.folder-action { padding: 1px 4px; flex: none; opacity: .55; }
+.folder-row:hover .folder-action { opacity: 1; }
+.folder-new {
+  display: flex; flex-direction: column; gap: 5px;
+  padding: 6px 8px 2px;
+}
+.folder-new .input { width: 100%; min-width: 0; font-size: 12px; padding: 4px 6px; }
+.folder-new-row { display: flex; gap: 6px; align-items: center; }
+.folder-new-row select {
+  flex: 1; min-width: 0; font-size: 11px; padding: 3px 5px;
+}
+.folder-new-row .btn { flex: none; }
+.sidebar-sessions-title { padding-top: 8px; }
+.sidebar-sessions { display: flex; flex-direction: column; gap: 2px; }
+.sidebar-session { padding: 5px 8px; gap: 8px; }
+.sidebar-session-title {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 12px;
+}
+.sidebar-session-meta {
+  flex: none; margin-left: auto; color: var(--muted); font-size: 10px;
+}
 
 .btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
   background: var(--bg-3); border: var(--btn-border); border-radius: var(--radius);
   padding: 6px 10px; color: var(--text);
 }
@@ -112,7 +189,10 @@ a { color: var(--accent); }
 .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
 
 .main { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-.session-list { overflow-y: auto; padding: 8px; }
+.session-list { overflow-y: auto; overflow-x: hidden; padding: 8px; }
+.session-row > div:first-child { min-width: 0; }
+.session-sub { min-width: 0; }
+.session-sub > span { min-width: 0; overflow-wrap: anywhere; }
 .session-row {
   display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;
   padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius);
@@ -132,6 +212,7 @@ a { color: var(--accent); }
 .sub-count { margin-left: 2px; }
 .sub-badge { font-size: 10px; }
 .session-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.session-title .ic { margin-right: 3px; }
 .session-sub { color: var(--muted); font-size: 12px; display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
 .row-actions { display: flex; gap: 4px; align-items: center; }
 
@@ -140,8 +221,22 @@ a { color: var(--accent); }
   display: flex; align-items: center; gap: 10px; padding: 10px 14px;
   border-bottom: 1px solid var(--border); background: var(--bg-2);
 }
+/* Compact pop-outs use the chat header as their caption: drag anywhere that is
+   not a control, and keep the window buttons at the far right. */
+.chat-head.popout-header { -webkit-app-region: drag; padding-right: 4px; }
+.chat-head.popout-header button,
+.chat-head.popout-header input,
+.chat-head.popout-header select,
+.chat-head.popout-header .header-window-controls { -webkit-app-region: no-drag; }
+.chat-head .drag-region { -webkit-app-region: drag; }
+.chat-head.popout-header .chat-title { -webkit-app-region: drag; }
+.chat-head.popout-header .badge { -webkit-app-region: no-drag; }
+.chat-head .header-window-controls { flex: none; margin-left: 6px; }
+.chat-head .header-window-controls.caption-btn { -webkit-app-region: no-drag; }
+.chat-head .win-controls { align-self: stretch; }
+.chat-head .win-btn { width: 38px; }
 .chat-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.chat-body { flex: 1; overflow-y: auto; padding: 18px 20px 8px; }
+.chat-body { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 18px 20px 8px; }
 .chat-inner { min-height: 100%; display: flex; flex-direction: column; }
 
 /* in-session finder */
@@ -196,6 +291,10 @@ mark.find-mark {
 .sub-role {
   font-size: 9px; text-transform: uppercase; letter-spacing: .08em;
   color: var(--muted); margin-bottom: 3px;
+}
+.sub-model {
+  margin-left: 6px; font-family: var(--mono); font-size: 10px;
+  color: var(--muted); text-transform: none; letter-spacing: 0;
 }
 .subagent-body .card { margin: 4px 0; }
 .subagent-body .markdown { line-height: 1.45; }
@@ -358,7 +457,27 @@ mark.find-mark {
   color: var(--agent-accent, inherit);
   font-weight: 600;
 }
+.composer .variant-select {
+  border-color: var(--agent-border, var(--border));
+  max-width: 132px;
+}
 .composer-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.context-usage {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--muted); white-space: nowrap;
+}
+.context-track {
+  width: 42px; height: 5px; flex: none; overflow: hidden;
+  background: var(--bg-3); border-radius: 999px; box-shadow: inset 0 0 0 1px var(--border);
+}
+.context-track > span {
+  display: block; height: 100%; width: 0;
+  background: var(--green); border-radius: inherit; transition: width .25s ease;
+}
+.context-usage.warn { color: var(--amber); }
+.context-usage.warn .context-track > span { background: var(--amber); }
+.context-usage.danger { color: var(--red); }
+.context-usage.danger .context-track > span { background: var(--red); }
 
 /* file / image attachments in the composer */
 .attachments { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; align-items: center; }
@@ -381,7 +500,10 @@ mark.find-mark {
 .attachment-x:hover { color: var(--red); }
 .attach-btn { font-size: 14px; }
 select.input, input.input {
-  background: var(--bg); border: var(--input-border); border-radius: var(--radius); padding: 5px 8px;
+  /* Keep this a colour longhand: the Windows skins supply the dropdown arrow
+     as a background-image. A shorthand here would reset background-repeat /
+     position and tile the arrow across the control on hover. */
+  background-color: var(--bg); border: var(--input-border); border-radius: var(--radius); padding: 5px 8px;
 }
 .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 10px; color: var(--muted); }
 
@@ -466,8 +588,15 @@ select.input, input.input {
 }
 
 /* ---- message head / fork ---- */
-.msg-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.msg-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
 .msg-head .msg-role { margin-bottom: 0; }
+/* Which model (and effort variant) produced this assistant message. */
+.msg-model {
+  font-family: var(--mono); font-size: 10.5px; color: var(--muted);
+  background: var(--bg-3); border: 1px solid var(--border);
+  border-radius: var(--pill-radius); padding: 1px 6px;
+  max-width: min(360px, 60vw); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .fork-btn { opacity: 0; font-size: 11px; padding: 1px 6px; transition: opacity 0.12s; }
 .msg:hover .fork-btn { opacity: 1; }
 
@@ -546,6 +675,1072 @@ select.input, input.input {
 .theme-name { font-weight: 600; display: flex; align-items: center; gap: 6px; }
 .theme-desc { color: var(--muted); font-size: 12px; margin-top: 2px; }
 
+/* ---- extensions (MCP + plugins) ---- */
+.extensions {
+  flex: 1; min-height: 0; overflow-y: auto; padding: 18px 20px 32px;
+}
+.ext-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ext-head h2 { font-size: 20px; }
+.ext-toolbar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-top: 12px; padding: 8px 10px;
+  background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.ext-field-inline { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.ext-field-inline .input { max-width: 340px; }
+.ext-config-path {
+  font-family: var(--mono); font-size: 11px; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  flex: 1 1 240px; min-width: 0;
+}
+.ext-subtabs { display: flex; gap: 4px; margin: 14px 0 4px; }
+.ext-subtabs .tab { display: inline-flex; align-items: center; gap: 6px; }
+.ext-subtabs .count { font-size: 11px; color: var(--muted); }
+.ext-section-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin: 12px 0;
+}
+.ext-section-head h3 { margin: 0 0 2px; }
+.ext-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 12px; align-items: stretch;
+}
+.ext-card {
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent); border-radius: var(--radius);
+  padding: 12px; min-width: 0;
+}
+.ext-card-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ext-name {
+  font-family: var(--mono); font-weight: 650; font-size: 13px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 100%;
+}
+.ext-meta {
+  font-family: var(--mono); font-size: 11.5px; color: var(--muted);
+  overflow-wrap: anywhere; line-height: 1.4;
+}
+.ext-error { color: var(--red); font-size: 12px; overflow-wrap: anywhere; }
+.ext-error-box {
+  border: 1px solid #5b2626; background: rgba(248, 113, 113, 0.08);
+  color: var(--red); border-radius: var(--radius); padding: 10px 12px;
+  margin: 12px 0; font-size: 13px;
+}
+.ext-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: auto; }
+.ext-actions .btn { flex: none; }
+.ext-empty {
+  color: var(--muted); text-align: center; padding: 40px 20px;
+  border: 1px dashed var(--border); border-radius: var(--radius); margin-top: 12px;
+}
+.ext-resources {
+  font-size: 12px; color: var(--text-2); background: var(--bg);
+  border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px;
+}
+.ext-resources summary { cursor: pointer; color: var(--muted); }
+.ext-resource { display: flex; flex-direction: column; gap: 1px; padding: 5px 0; border-top: 1px solid var(--border); }
+.ext-resource:first-of-type { border-top: none; }
+.ext-mono { font-family: var(--mono); font-size: 10.5px; color: var(--muted); overflow-wrap: anywhere; }
+.ext-chips { display: flex; gap: 4px; flex-wrap: wrap; }
+.ext-chip {
+  font-size: 10px; color: var(--muted); border: 1px solid var(--border);
+  border-radius: var(--pill-radius); padding: 0 6px; text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ext-modal { width: min(760px, 94vw); max-height: 86vh; overflow-y: auto; }
+.ext-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin-top: 12px; }
+.ext-form-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); min-width: 0; }
+.ext-form-grid label.full { grid-column: 1 / -1; }
+.ext-form-grid textarea.input { min-height: 74px; resize: vertical; font-family: var(--mono); font-size: 12px; }
+.ext-form-grid .input { width: 100%; }
+.ext-form-grid label.ext-check { flex-direction: row; align-items: center; gap: 8px; align-self: end; color: var(--text); }
+.ext-form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+@media (max-width: 720px) {
+  .ext-form-grid { grid-template-columns: 1fr; }
+  .ext-field-inline { flex: 1 1 100%; }
+  .ext-field-inline .input { max-width: none; width: 100%; }
+}
+
 /* Reconcile the loaded 98.css / XP.css global button styles with our chrome. */
-[data-theme="win98"] .btn, [data-theme="winxp"] .btn { box-shadow: none; }
-[data-theme="win98"] .btn.ghost, [data-theme="winxp"] .btn.ghost { border: none; }
+[data-theme^="win98"] .btn, [data-theme^="winxp"] .btn {
+  box-shadow: none; min-width: 0; min-height: 0;
+}
+[data-theme^="win98"] .btn.ghost, [data-theme^="winxp"] .btn.ghost { border: none; }
+
+/* 98.css / XP.css are light-only. The same skins are loaded for the dark
+   variants, then their global element rules are re-pointed at theme tokens. */
+html[data-theme$="-dark"] { color-scheme: dark; }
+html[data-theme$="-dark"] body {
+  background: var(--bg); color: var(--text);
+  font: var(--font-size)/1.5 var(--font);
+}
+html[data-theme$="-dark"] a,
+html[data-theme$="-dark"] a:visited { color: var(--accent); }
+html[data-theme$="-dark"] ::placeholder { color: var(--muted); opacity: 1; }
+html[data-theme$="-dark"] input.input {
+  background-color: var(--bg); color: var(--text);
+  border: var(--input-border); box-shadow: none;
+}
+html[data-theme$="-dark"] select.input {
+  /* Don't reset the library's background arrow sprite. */
+  background-color: var(--bg); color: var(--text);
+}
+html[data-theme$="-dark"] textarea,
+html[data-theme$="-dark"] textarea.input {
+  background: var(--bg); background-color: var(--bg); color: var(--text);
+  border: var(--input-border); box-shadow: none;
+}
+html[data-theme$="-dark"] input[type="checkbox"],
+html[data-theme$="-dark"] input[type="radio"] {
+  position: static; opacity: 1; width: auto; height: auto;
+  appearance: auto; -webkit-appearance: auto; margin: 0;
+}
+html[data-theme$="-dark"] select:focus {
+  background-color: var(--accent-2); color: var(--accent-fg);
+}
+html[data-theme$="-dark"] select:focus option {
+  background-color: var(--bg); color: var(--text);
+}
+html[data-theme$="-dark"] ::selection {
+  background: var(--mark-bg); color: var(--mark-fg);
+}
+
+/* -------------------------------------------------------------------------
+   Windows XP Midnight / Windows 98 Dark
+   These are deliberately *midnight* skins, not black skins: keep the classic
+   Luna / 98 chrome readable and colourful while dimming the room lights.
+   ------------------------------------------------------------------------- */
+
+html[data-theme="winxp-dark"] body {
+  background:
+    radial-gradient(1000px 560px at 76% -8%, rgba(142, 193, 255, .32), transparent 66%),
+    linear-gradient(155deg, #2d4967 0%, #20384f 52%, #2a465f 100%);
+}
+html[data-theme="winxp-dark"] .topbar {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .30), transparent 42%),
+    linear-gradient(180deg, #5484b1 0%, #31577f 48%, #244466 100%);
+  border-bottom-color: #9dc2e9;
+  box-shadow: inset 0 1px 0 rgba(239, 249, 255, .65), inset 0 -2px 0 rgba(0, 0, 0, .28),
+    0 2px 12px rgba(0, 0, 0, .22);
+}
+html[data-theme="winxp-dark"] .sidebar {
+  background: linear-gradient(180deg, #304e6e 0%, #253f58 58%, #223b53 100%);
+  border-right-color: #6f8dab;
+}
+html[data-theme="winxp-dark"] .chat-head,
+html[data-theme="winxp-dark"] .find-bar,
+html[data-theme="winxp-dark"] .running-bar {
+  background: linear-gradient(180deg, #3c638a 0%, #2c4e70 52%, #25445f 100%);
+  border-bottom-color: #6f8dab;
+  box-shadow: inset 0 1px 0 rgba(225, 243, 255, .30), inset 0 -1px 0 rgba(0, 0, 0, .25);
+}
+html[data-theme="winxp-dark"] .composer {
+  background:
+    linear-gradient(0deg, rgba(79, 143, 206, .16), transparent 58%),
+    linear-gradient(180deg, #2b4764 0%, #263f58 100%);
+  border-top-color: #4f8fce;
+}
+html[data-theme="winxp-dark"] .btn {
+  background: linear-gradient(180deg, #55789a 0%, #3b5d80 52%, #2e4d6c 100%);
+  box-shadow: inset 0 1px 0 rgba(238, 248, 255, .45), inset 0 -1px 0 rgba(0, 0, 0, .35);
+}
+html[data-theme="winxp-dark"] .btn.primary {
+  background: linear-gradient(180deg, #82c0fa 0%, #4f8fce 52%, #346cad 100%);
+  border-color: #8fc4f5;
+  color: #07182a;
+}
+html[data-theme="winxp-dark"] .btn.ghost { background: transparent; box-shadow: none; }
+html[data-theme="winxp-dark"] .session-row {
+  background: linear-gradient(180deg, #3b5b7b 0%, #304c68 55%, #2c465f 100%);
+  border-color: #597895;
+}
+html[data-theme="winxp-dark"] .session-row.active { border-color: var(--accent); }
+html[data-theme="winxp-dark"] .card-head,
+html[data-theme="winxp-dark"] .diff-stat {
+  background: linear-gradient(180deg, #42678e 0%, #315274 100%);
+  border-bottom-color: #617f9d;
+}
+html[data-theme="winxp-dark"] .card,
+html[data-theme="winxp-dark"] .stat-card,
+html[data-theme="winxp-dark"] .profile-card,
+html[data-theme="winxp-dark"] .ext-card,
+html[data-theme="winxp-dark"] .theme-card {
+  background: linear-gradient(180deg, #324f6c 0%, #2a465f 100%);
+  border-color: #617f9d;
+}
+
+html[data-theme="win98-dark"] body {
+  background:
+    radial-gradient(900px 500px at 50% -10%, rgba(196, 204, 214, .17), transparent 72%),
+    linear-gradient(160deg, #3d4044 0%, #34373b 54%, #2e3135 100%);
+}
+html[data-theme="win98-dark"] .topbar {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .25), transparent 45%),
+    linear-gradient(180deg, #8b9097 0%, #5b6067 48%, #3f444a 100%);
+  border-bottom: 2px solid #b4b9c0;
+  box-shadow: inset 0 1px 0 #d5d9de, inset 0 -2px 0 #24272a, 0 2px 10px rgba(0, 0, 0, .3);
+}
+html[data-theme="win98-dark"] .sidebar {
+  background: linear-gradient(180deg, #555a60 0%, #45494f 58%, #3d4147 100%);
+  border-right: 2px solid #8a9098;
+}
+html[data-theme="win98-dark"] .chat-head,
+html[data-theme="win98-dark"] .find-bar,
+html[data-theme="win98-dark"] .running-bar {
+  background: linear-gradient(180deg, #5d6269 0%, #4b5057 100%);
+  border-bottom-color: #8a9098;
+}
+html[data-theme="win98-dark"] .btn {
+  background: linear-gradient(180deg, #6b7077 0%, #54595f 55%, #464b51 100%);
+  box-shadow: inset 1px 1px 0 #a7adb4, inset -1px -1px 0 #292c30;
+}
+html[data-theme="win98-dark"] .btn.ghost { background: transparent; box-shadow: none; }
+html[data-theme="win98-dark"] .btn.primary {
+  background: linear-gradient(180deg, #8ab3e6 0%, #557fb5 55%, #3e6597 100%);
+  border-color: #b6d3f3;
+}
+html[data-theme="win98-dark"] .session-row {
+  background: linear-gradient(180deg, #5a6068 0%, #4b5158 100%);
+  border-color: #8f969e;
+}
+html[data-theme="win98-dark"] .card,
+html[data-theme="win98-dark"] .stat-card,
+html[data-theme="win98-dark"] .profile-card,
+html[data-theme="win98-dark"] .ext-card,
+html[data-theme="win98-dark"] .theme-card {
+  background: linear-gradient(180deg, #4a4f55 0%, #40454b 100%);
+  border-color: #8f969e;
+}
+html[data-theme="win98-dark"] .card-head,
+html[data-theme="win98-dark"] .diff-stat {
+  background: linear-gradient(180deg, #60666e 0%, #4b5158 100%);
+}
+
+/* 98.css hard-codes white table surfaces. In the midnight skins that produced
+   white-on-white tables (most visibly on the admin Users page), so re-point
+   the table, header and cell surfaces at the active theme tokens. */
+html[data-theme$="-dark"] table {
+  background-color: var(--bg-2);
+  color: var(--text);
+}
+html[data-theme$="-dark"] table > thead > tr > * {
+  background: var(--bg-3);
+  color: var(--text);
+  box-shadow: inset 1px 1px var(--border), inset -1px -1px rgba(0, 0, 0, .55);
+}
+html[data-theme$="-dark"] table > tbody > tr > * { color: var(--text); }
+
+/* -------------------------------------------------------------------------
+   Alien Skeuomorphic (late-90s Winamp / Y2K chrome)
+   Deep teal skin, acid-green LCD glass, amber power lights, silver bevels.
+   ------------------------------------------------------------------------- */
+
+html[data-theme="winamp"] body {
+  background:
+    radial-gradient(circle at 12% 6%, rgba(111, 255, 184, .20), transparent 36%),
+    radial-gradient(circle at 88% 92%, rgba(255, 143, 32, .18), transparent 38%),
+    radial-gradient(circle at 50% 45%, rgba(30, 133, 111, .35), transparent 62%),
+    linear-gradient(150deg, #0d504a 0%, #073a37 46%, #052c2b 100%);
+  background-attachment: fixed;
+}
+html[data-theme="winamp"] .app { background: transparent; }
+html[data-theme="winamp"] .topbar {
+  background:
+    radial-gradient(240px 90px at 86% 50%, rgba(255, 166, 64, .32), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, .28), transparent 40%),
+    linear-gradient(180deg, #307d69 0%, #175247 48%, #0a332e 100%);
+  border-bottom: 1px solid #86d6a9;
+  box-shadow: inset 0 1px 0 rgba(230, 255, 241, .60), inset 0 -3px 0 rgba(0, 0, 0, .45),
+    0 3px 16px rgba(0, 0, 0, .38);
+}
+html[data-theme="winamp"] .brand {
+  color: #d8ff9c;
+  font-family: "Trebuchet MS", Tahoma, sans-serif;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(168, 255, 92, .55), 0 1px 0 #021813;
+}
+html[data-theme="winamp"] .brand span {
+  color: #ffad42;
+  text-shadow: 0 0 12px rgba(255, 143, 32, .65), 0 1px 0 #1a0b00;
+}
+html[data-theme="winamp"] .tab {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .16), transparent 38%),
+    linear-gradient(180deg, #236654 0%, #10443b 60%, #0a302b 100%);
+  border: 1px solid #4f9a7a;
+  box-shadow: inset 0 1px 0 rgba(220, 255, 235, .24), inset 0 -2px 3px rgba(0, 0, 0, .45);
+  color: #a9e5bd;
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+html[data-theme="winamp"] .tab.active {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .55), transparent 35%),
+    linear-gradient(180deg, #e5ffb3 0%, #a8ff5c 45%, #6fce39 100%);
+  border-color: #e2ffb1;
+  color: #122006;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .5);
+  box-shadow: 0 0 16px rgba(168, 255, 92, .45), inset 0 1px 0 #f4ffe0,
+    inset 0 -2px 2px rgba(33, 86, 16, .40);
+}
+html[data-theme="winamp"] .sidebar {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, .10), transparent 18%, transparent 85%, rgba(0, 0, 0, .25)),
+    linear-gradient(180deg, #155b4d 0%, #0a3b34 52%, #08302b 100%);
+  border-right: 1px solid #4f9a7a;
+  box-shadow: inset -1px 0 0 rgba(220, 255, 235, .15), 4px 0 20px rgba(0, 0, 0, .18);
+}
+html[data-theme="winamp"] .sidebar-head {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .08), transparent);
+  border-bottom-color: #3c7c64;
+}
+html[data-theme="winamp"] .section-title {
+  color: #a8ff5c;
+  font-family: var(--mono);
+  letter-spacing: .12em;
+  text-shadow: 0 0 8px rgba(168, 255, 92, .35);
+}
+html[data-theme="winamp"] .nav-item:hover {
+  background: linear-gradient(180deg, rgba(168, 255, 92, .08), rgba(168, 255, 92, .03));
+}
+html[data-theme="winamp"] .nav-item.active {
+  background: linear-gradient(180deg, rgba(168, 255, 92, .18), rgba(168, 255, 92, .06));
+  border-color: #6fbd83;
+  box-shadow: inset 0 1px 0 rgba(220, 255, 235, .22), 0 0 12px rgba(168, 255, 92, .12);
+}
+html[data-theme="winamp"] .session-row {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .10), transparent 30%),
+    linear-gradient(180deg, #155b4d 0%, #0c4138 55%, #0a352f 100%);
+  border: 1px solid #3e836a;
+  box-shadow: inset 0 1px 0 rgba(220, 255, 235, .18), inset 0 -2px 2px rgba(0, 0, 0, .35);
+}
+html[data-theme="winamp"] .session-row:hover {
+  border-color: #a8ff5c;
+  box-shadow: inset 0 1px 0 rgba(220, 255, 235, .20), 0 0 14px rgba(168, 255, 92, .14);
+}
+html[data-theme="winamp"] .session-row.active {
+  background: linear-gradient(180deg, #1b6a58 0%, #0f4a40 100%);
+  border-color: #a8ff5c;
+}
+html[data-theme="winamp"] .session-row.sub {
+  background: rgba(0, 0, 0, .14);
+  border-color: #2f6b57;
+  border-style: solid;
+}
+html[data-theme="winamp"] .chat-head,
+html[data-theme="winamp"] .find-bar,
+html[data-theme="winamp"] .running-bar {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .10), transparent 40%),
+    linear-gradient(180deg, #1a624f 0%, #0d3f36 100%);
+  border-bottom-color: #4f9a7a;
+  box-shadow: inset 0 1px 0 rgba(220, 255, 235, .18), inset 0 -1px 0 rgba(0, 0, 0, .40);
+}
+html[data-theme="winamp"] .chat-body {
+  background:
+    radial-gradient(900px 520px at 50% 0, rgba(168, 255, 92, .05), transparent 65%),
+    linear-gradient(180deg, rgba(0, 0, 0, .04), rgba(0, 0, 0, .18));
+}
+html[data-theme="winamp"] .composer {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .10), transparent 22%),
+    linear-gradient(180deg, #155a4d 0%, #0a3b34 55%, #082e29 100%);
+  border-top: 3px solid #a8ff5c;
+  box-shadow: inset 0 1px 0 rgba(220, 255, 235, .20), inset 0 8px 22px rgba(0, 0, 0, .25);
+}
+html[data-theme="winamp"] input.input,
+html[data-theme="winamp"] select.input,
+html[data-theme="winamp"] .composer textarea,
+html[data-theme="winamp"] .ext-form-grid textarea.input,
+html[data-theme="winamp"] .cm-editor {
+  background:
+    repeating-linear-gradient(0deg, rgba(168, 255, 92, .028) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #021a17 0%, #062b25 55%, #031f1b 100%);
+  border: 2px solid #4b8e6f;
+  color: #caffdc;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, .75), 0 1px 0 rgba(205, 255, 222, .22);
+}
+html[data-theme="winamp"] input.input:focus,
+html[data-theme="winamp"] select.input:focus,
+html[data-theme="winamp"] .composer textarea:focus {
+  border-color: #a8ff5c;
+  box-shadow: 0 0 0 2px rgba(168, 255, 92, .18), inset 0 2px 8px rgba(0, 0, 0, .70);
+}
+html[data-theme="winamp"] ::placeholder { color: #69b88a; }
+html[data-theme="winamp"] .btn {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .34), transparent 38%),
+    linear-gradient(180deg, #3f8a73 0%, #1d5d4d 52%, #0b352f 100%);
+  border: 1px solid #7ec59b;
+  border-radius: 10px;
+  color: #e6fff0;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .55);
+  box-shadow: inset 0 1px 0 rgba(235, 255, 243, .55), inset 0 -2px 3px rgba(0, 0, 0, .50),
+    0 2px 5px rgba(0, 0, 0, .35);
+}
+html[data-theme="winamp"] .btn:hover {
+  border-color: #d4ff9e;
+  color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(235, 255, 243, .60), inset 0 -2px 3px rgba(0, 0, 0, .45),
+    0 0 14px rgba(168, 255, 92, .35);
+}
+html[data-theme="winamp"] .btn.primary {
+  background:
+    radial-gradient(circle at 30% 15%, rgba(255, 255, 255, .75), transparent 35%),
+    linear-gradient(180deg, #ffc062 0%, #f08a1a 50%, #b95607 100%);
+  border-color: #ffd18a;
+  color: #2a1000;
+  text-shadow: 0 1px 0 rgba(255, 236, 190, .50);
+  box-shadow: inset 0 1px 0 #ffe9bf, inset 0 -3px 4px rgba(90, 30, 0, .40),
+    0 0 18px rgba(255, 143, 32, .35);
+}
+html[data-theme="winamp"] .btn.ghost {
+  background: transparent;
+  box-shadow: none;
+  text-shadow: none;
+}
+html[data-theme="winamp"] .btn.ghost:hover {
+  background: rgba(168, 255, 92, .10);
+  box-shadow: inset 0 0 0 1px rgba(168, 255, 92, .30);
+}
+html[data-theme="winamp"] .card,
+html[data-theme="winamp"] .stat-card,
+html[data-theme="winamp"] .profile-card,
+html[data-theme="winamp"] .hit,
+html[data-theme="winamp"] .theme-card,
+html[data-theme="winamp"] .ext-card,
+html[data-theme="winamp"] .bars {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .08), transparent 30%),
+    linear-gradient(180deg, #0d4a41 0%, #082f2b 60%, #062823 100%);
+  border: 1px solid #3f8069;
+  box-shadow: inset 0 1px 0 rgba(220, 255, 235, .14), inset 0 -2px 2px rgba(0, 0, 0, .35),
+    0 4px 14px rgba(0, 0, 0, .22);
+}
+html[data-theme="winamp"] .card-head,
+html[data-theme="winamp"] .diff-stat {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .16), transparent 35%),
+    linear-gradient(180deg, #1c6754 0%, #0d4037 100%);
+  border-bottom: 1px solid #3f8069;
+  color: #c9ffdd;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .45);
+}
+html[data-theme="winamp"] .card-body pre,
+html[data-theme="winamp"] .markdown pre,
+html[data-theme="winamp"] .markdown code {
+  background: #021b18;
+  border-color: #2f6b57;
+  color: #b8f5cf;
+}
+html[data-theme="winamp"] .msg.user .bubble {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255, 255, 255, .55), transparent 35%),
+    linear-gradient(180deg, #ffb14d 0%, #ef8c15 65%, #c96806 100%);
+  border: 2px solid #ffd18a;
+  color: #2b1300;
+  box-shadow: inset 0 1px 0 #ffeccd, inset 0 -3px 4px rgba(110, 40, 0, .35),
+    0 0 18px rgba(255, 143, 32, .18);
+}
+html[data-theme="winamp"] .msg.user .bubble a { color: #4a1c00; }
+html[data-theme="winamp"] .badge {
+  background: rgba(0, 0, 0, .14);
+  border-color: #4f9a7a;
+  color: #bdf2d1;
+}
+html[data-theme="winamp"] .question,
+html[data-theme="winamp"] .permission {
+  box-shadow: inset 0 1px 0 rgba(220, 255, 235, .14), 0 6px 18px rgba(0, 0, 0, .20);
+}
+html[data-theme="winamp"] .q-option {
+  background: rgba(0, 0, 0, .12);
+  border-color: #3f8069;
+}
+html[data-theme="winamp"] .q-option.active {
+  background: rgba(168, 255, 92, .13);
+  border-color: #a8ff5c;
+}
+html[data-theme="winamp"] .overlay-box,
+html[data-theme="winamp"] .palette {
+  background:
+    radial-gradient(circle at 15% 0, rgba(168, 255, 92, .18), transparent 42%),
+    linear-gradient(180deg, #1a5b4c 0%, #0a382f 65%, #072e28 100%);
+  border: 2px solid #6dbb8b;
+  border-radius: 16px;
+  box-shadow: 0 0 0 1px #021614, 0 24px 60px rgba(0, 0, 0, .65),
+    inset 0 1px 0 rgba(225, 255, 238, .30);
+}
+html[data-theme="winamp"] .overlay-title {
+  color: #c8ff8a;
+  font-family: var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(168, 255, 92, .30);
+}
+html[data-theme="winamp"] .overlay-item.active,
+html[data-theme="winamp"] .overlay-item:hover,
+html[data-theme="winamp"] .palette-item.active,
+html[data-theme="winamp"] .palette-item:hover {
+  background: rgba(168, 255, 92, .13);
+}
+html[data-theme="winamp"] .toast {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .16), transparent 35%),
+    linear-gradient(180deg, #1c6754 0%, #0d4037 100%);
+  border: 1px solid #6dbb8b;
+  box-shadow: 0 0 0 1px #021614, 0 14px 34px rgba(0, 0, 0, .55);
+}
+html[data-theme="winamp"] .kbd {
+  background: linear-gradient(180deg, #0a3b34, #062b25);
+  border-color: #4f9a7a;
+  color: #d8ff9c;
+  box-shadow: inset 0 1px 0 rgba(220, 255, 235, .18);
+}
+html[data-theme="winamp"] ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #5da985, #2f6b57);
+  border-radius: 999px;
+  border: 1px solid #021614;
+}
+html[data-theme="winamp"] ::selection {
+  background: #a8ff5c;
+  color: #0a1806;
+}
+
+/* Native select popups ignore the gradient painted on the closed control.
+   Without explicit option colours, Windows/Chromium falls back to a white
+   menu with the skin's pale green text. */
+html[data-theme="winamp"] select.input { color-scheme: dark; }
+html[data-theme="winamp"] select.input option,
+html[data-theme="winamp"] select.input optgroup {
+  background-color: #021a17;
+  color: #caffdc;
+}
+html[data-theme="winamp"] select.input option:hover {
+  background-color: #2f7d63;
+  color: #ffffff;
+}
+html[data-theme="winamp"] select.input option:checked {
+  background-color: #a8ff5c;
+  color: #0a1806;
+}
+html[data-theme="winamp"] select.input:hover {
+  border-color: #d4ff9e;
+  color: #f0ffe2;
+  box-shadow: 0 0 0 2px rgba(168, 255, 92, .14), inset 0 2px 8px rgba(0, 0, 0, .70);
+}
+
+/* Alien interaction polish: every control gets a visible LCD/bevel reaction,
+   not just the primary buttons. */
+html[data-theme="winamp"] .btn,
+html[data-theme="winamp"] .tab,
+html[data-theme="winamp"] .theme-card,
+html[data-theme="winamp"] .mode-card,
+html[data-theme="winamp"] .hit,
+html[data-theme="winamp"] .fb-item,
+html[data-theme="winamp"] .q-option,
+html[data-theme="winamp"] .card-head,
+html[data-theme="winamp"] .overlay-item,
+html[data-theme="winamp"] .palette-item,
+html[data-theme="winamp"] .session-row,
+html[data-theme="winamp"] .nav-item,
+html[data-theme="winamp"] select.input {
+  transition: background .14s ease, border-color .14s ease, color .14s ease,
+    box-shadow .14s ease, transform .14s ease, filter .14s ease;
+}
+html[data-theme="winamp"] .btn:not(:disabled):hover {
+  border-color: #e2ffb1;
+  color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(235, 255, 243, .60), inset 0 -2px 3px rgba(0, 0, 0, .45),
+    0 0 18px rgba(168, 255, 92, .42);
+  transform: translateY(-1px);
+}
+html[data-theme="winamp"] .btn:not(:disabled):active {
+  transform: translateY(1px);
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, .55), 0 0 8px rgba(168, 255, 92, .18);
+}
+html[data-theme="winamp"] .btn.primary:not(:disabled):hover {
+  border-color: #ffe0a3;
+  color: #2a1000;
+  filter: brightness(1.08) saturate(1.08);
+}
+html[data-theme="winamp"] .btn.ghost:hover {
+  color: #f4ffe7;
+  background: rgba(168, 255, 92, .16);
+  box-shadow: inset 0 0 0 1px rgba(168, 255, 92, .42), 0 0 14px rgba(168, 255, 92, .16);
+}
+html[data-theme="winamp"] .btn.danger:not(:disabled):hover {
+  border-color: #ffb09b;
+  color: #fff5ef;
+  background: linear-gradient(180deg, #a94d3e 0%, #7e2d25 55%, #531814 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 236, 229, .38), 0 0 16px rgba(255, 100, 100, .30);
+}
+html[data-theme="winamp"] .tab:hover:not(.active) {
+  border-color: #7ec59b;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .22), transparent 38%),
+    linear-gradient(180deg, #2c735e 0%, #155246 60%, #0d3d34 100%);
+  color: #efffe4;
+  box-shadow: inset 0 1px 0 rgba(220, 255, 235, .30), 0 0 14px rgba(168, 255, 92, .18);
+}
+html[data-theme="winamp"] .tab.active:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 0 24px rgba(168, 255, 92, .58), inset 0 1px 0 #f4ffe0,
+    inset 0 -2px 2px rgba(33, 86, 16, .40);
+}
+html[data-theme="winamp"] .theme-card:hover,
+html[data-theme="winamp"] .mode-card:hover {
+  border-color: #a8ff5c;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .10), transparent 34%),
+    linear-gradient(180deg, #12594d 0%, #0a3a32 65%, #072f2a 100%);
+  box-shadow: inset 0 1px 0 rgba(225, 255, 238, .20), 0 0 18px rgba(168, 255, 92, .20);
+  transform: translateY(-1px);
+}
+html[data-theme="winamp"] .hit:hover,
+html[data-theme="winamp"] .fb-item:hover,
+html[data-theme="winamp"] .q-option:hover {
+  border-color: #a8ff5c;
+  background: rgba(168, 255, 92, .12);
+  box-shadow: inset 0 0 0 1px rgba(168, 255, 92, .18), 0 0 12px rgba(168, 255, 92, .12);
+}
+html[data-theme="winamp"] .fb-item:hover,
+html[data-theme="winamp"] .card-head:hover {
+  color: #f4ffe7;
+}
+html[data-theme="winamp"] .card-head:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .18), transparent 35%),
+    linear-gradient(180deg, #267b63 0%, #125044 100%);
+  box-shadow: inset 0 0 0 1px rgba(168, 255, 92, .24), 0 0 12px rgba(168, 255, 92, .12);
+}
+html[data-theme="winamp"] .overlay-item,
+html[data-theme="winamp"] .palette-item {
+  border: 1px solid transparent;
+}
+html[data-theme="winamp"] .overlay-item:hover,
+html[data-theme="winamp"] .overlay-item.active,
+html[data-theme="winamp"] .palette-item:hover,
+html[data-theme="winamp"] .palette-item.active {
+  color: #f4ffe7;
+  border-color: rgba(168, 255, 92, .55);
+  background: linear-gradient(90deg, rgba(168, 255, 92, .24), rgba(168, 255, 92, .06));
+  box-shadow: inset 0 1px 0 rgba(225, 255, 238, .18), 0 0 14px rgba(168, 255, 92, .16);
+}
+html[data-theme="winamp"] .nav-item:hover,
+html[data-theme="winamp"] .session-expand:hover {
+  color: #efffe4;
+}
+html[data-theme="winamp"] .markdown tbody tr:hover {
+  background: rgba(168, 255, 92, .08);
+}
+
+/* -------------------------------------------------------------------------
+   Frameless desktop shell (Electron)
+   A dedicated title strip above the toolbar: it gives every skin room for its
+   own window chrome and keeps the already-busy tab bar from being squeezed.
+   ------------------------------------------------------------------------- */
+
+.desktop-titlebar { display: none; }
+html[data-desktop="1"] .app {
+  /* XP.css / 98.css title bars size themselves from their own metrics. Let the
+     caption row use that intrinsic height instead of hard-coding a pixel row. */
+  grid-template-rows: auto 46px 1fr;
+}
+html[data-desktop="1"] .app.compact { grid-template-rows: auto 1fr; }
+html[data-desktop="1"] .app.popout:not(.compact) { grid-template-rows: auto 1fr; }
+html[data-desktop="1"] .app.popout.compact { grid-template-rows: 1fr; }
+html[data-desktop="1"] .app:not(.window) { box-shadow: inset 0 0 0 1px var(--border); }
+html[data-desktop="1"] .desktop-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  height: 34px;
+  padding: 0 0 0 12px;
+  overflow: hidden;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-app-region: drag;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+}
+html[data-desktop="1"] .desktop-titlebar.compact { height: 44px; }
+html[data-desktop="1"] .desktop-titlebar.compact .dtb-sub { display: none; }
+html[data-desktop="1"] .desktop-titlebar.session-titlebar .dtb-name {
+  max-width: min(52vw, 720px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.titlebar-nav-slot {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-app-region: no-drag;
+}
+.titlebar-nav {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+.titlebar-nav .tabs {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-left: 0;
+  overflow: hidden;
+}
+.titlebar-nav .tab {
+  flex: none;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.titlebar-nav .compact-profile {
+  width: 112px;
+  min-width: 0;
+  height: 24px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.titlebar-nav .live-status,
+.titlebar-nav .titlebar-logout { flex: none; white-space: nowrap; }
+.titlebar-nav .titlebar-logout { padding: 3px 7px; }
+.titlebar-nav .user-name {
+  flex: none;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.titlebar-nav .spacer { min-width: 8px; }
+.titlebar-nav select,
+.titlebar-nav button { -webkit-app-region: no-drag; }
+
+@media (max-width: 1450px) {
+  .titlebar-nav .tab { padding: 3px 6px; }
+  .titlebar-nav .user-name { display: none; }
+}
+@media (max-width: 1220px) {
+  .titlebar-nav .tab .tab-label,
+  .titlebar-nav .titlebar-logout .tab-label,
+  .titlebar-nav .live-label { display: none; }
+  .titlebar-nav .compact-profile { width: 96px; }
+}
+html[data-desktop="1"] .retro-titlebar.compact {
+  height: 38px;
+  align-items: center;
+}
+html[data-theme^="winxp"][data-desktop="1"] .retro-titlebar.title-bar.compact {
+  box-sizing: border-box;
+  height: 40px;
+}
+html[data-desktop="1"] .retro-titlebar.compact .title-bar-text {
+  flex: 0 1 auto;
+  max-width: 34%;
+}
+/* The library caption is white-on-blue (or white-on-charcoal in dark 98).
+   Keep compact tabs legible instead of inheriting the page's muted ink. */
+html[data-theme^="winxp"][data-desktop="1"] .retro-titlebar.compact .tab,
+html[data-theme^="win98"][data-desktop="1"] .retro-titlebar.compact .tab {
+  color: #ffffff;
+  background: transparent;
+  border-color: transparent;
+}
+html[data-theme^="winxp"][data-desktop="1"] .retro-titlebar.compact .tab:hover,
+html[data-theme^="win98"][data-desktop="1"] .retro-titlebar.compact .tab:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, .14);
+  border-color: rgba(255, 255, 255, .45);
+}
+html[data-theme^="winxp"][data-desktop="1"] .retro-titlebar.compact .tab.active,
+html[data-theme^="win98"][data-desktop="1"] .retro-titlebar.compact .tab.active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, .22);
+  border-color: rgba(255, 255, 255, .65);
+}
+html[data-theme^="winxp"][data-desktop="1"] .retro-titlebar.compact .live-status,
+html[data-theme^="win98"][data-desktop="1"] .retro-titlebar.compact .live-status,
+html[data-theme^="winxp"][data-desktop="1"] .retro-titlebar.compact .user-name,
+html[data-theme^="win98"][data-desktop="1"] .retro-titlebar.compact .user-name {
+  color: #ffffff;
+}
+html[data-theme^="winxp"][data-desktop="1"] .retro-titlebar.compact .titlebar-logout,
+html[data-theme^="win98"][data-desktop="1"] .retro-titlebar.compact .titlebar-logout {
+  color: #ffffff;
+}
+html[data-theme^="winxp"][data-desktop="1"] .retro-titlebar.compact .titlebar-logout:hover,
+html[data-theme^="win98"][data-desktop="1"] .retro-titlebar.compact .titlebar-logout:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, .14);
+}
+html[data-theme="winxp"][data-desktop="1"] .retro-titlebar.compact .compact-profile,
+html[data-theme="win98"][data-desktop="1"] .retro-titlebar.compact .compact-profile {
+  color: #000000;
+}
+.dtb-orb {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 65%, transparent);
+}
+.dtb-name {
+  flex: none;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.dtb-sub {
+  flex: none;
+  font-size: 11px;
+  color: var(--muted);
+}
+html[data-desktop="1"] .topbar .btn { white-space: nowrap; }
+.desktop-titlebar .win-controls {
+  display: flex;
+  align-self: stretch;
+  margin-left: auto;
+  -webkit-app-region: no-drag;
+}
+.win-btn {
+  width: 44px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--border);
+  border-radius: 0;
+  /* Keep this a longhand: the XP/98 skins supply their caption glyphs as
+     background images from xp.css / 98.css. */
+  background-color: transparent;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+  -webkit-app-region: no-drag;
+}
+.win-btn:hover { background: var(--bg-3); color: var(--text); }
+/* The legacy caption images live in the theme stylesheet. Don't let the
+   modern red close hover paint over them. */
+html:not([data-theme^="winxp"]):not([data-theme^="win98"]) .win-btn.close:hover {
+  background: #c42b1c; border-color: #c42b1c; color: #fff;
+}
+
+/* XP.css / 98.css own the complete caption bar. We only add the desktop drag
+   region, the app icon, and readable pixel glyphs for the 98 midnight skin. */
+html[data-desktop="1"] .retro-titlebar {
+  /* Leave width auto so the grid stretches the bar to the track. A 100% width
+     plus xp.css's content-box height would add its padding/border on top and
+     push the close button off the right edge. */
+  width: auto;
+  min-width: 0;
+  user-select: none;
+  -webkit-app-region: drag;
+}
+/* Use the libraries' own window frame (XP.css: inset Luna blue frame; 98.css:
+   inset raised silver bevel). The extra side padding exposes that frame around
+   our edge-to-edge app layout. */
+html[data-theme^="winxp"] .app.window,
+html[data-theme^="win98"] .app.window {
+  background: var(--bg);
+  font-size: var(--font-size);
+}
+html[data-theme^="winxp"] .app.window {
+  padding: 0 3px 3px;
+  border-radius: 8px 8px 0 0;
+}
+html[data-theme^="win98"] .app.window { padding: 3px; }
+/* With no titlebar, leave the XP frame's top edge visible above the chat header. */
+html[data-theme^="winxp"] .app.popout.compact.window { padding-top: 3px; }
+.topbar .user-name { margin-left: 10px; }
+/* xp.css specifies a 21px content box. Our global border-box reset would flatten
+   Luna's border/padding away; restore the library's intended 29px bar. */
+html[data-theme^="winxp"][data-desktop="1"] .retro-titlebar.title-bar {
+  box-sizing: content-box;
+  height: 21px;
+}
+html[data-desktop="1"] .retro-titlebar .title-bar-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.retro-app-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border: 1px solid #003399;
+  background: linear-gradient(180deg, #0a58d0 0 4px, #ffffff 4px 100%);
+  box-shadow: inset 0 0 0 1px #ffffff, 0 0 0 1px rgba(0, 0, 0, .18);
+  image-rendering: pixelated;
+}
+html[data-desktop="1"] .retro-titlebar .caption-btn {
+  -webkit-app-region: no-drag;
+}
+html[data-desktop="1"] .retro-titlebar .caption-btn .ic,
+html[data-desktop="1"] .header-window-controls .caption-btn .ic { display: none; }
+
+/* 98.css uses black caption bitmaps. Keep them on the light skin, and swap in
+   the themed pixel glyphs when the title bar is dark. */
+html[data-theme="win98-dark"][data-desktop="1"] .retro-titlebar .title-bar-controls button[aria-label],
+html[data-theme="win98-dark"][data-desktop="1"] .header-window-controls button[aria-label] {
+  background-image: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  min-width: 16px;
+  height: 14px;
+  min-height: 14px;
+  margin-left: 2px;
+  padding: 0;
+  background-color: var(--bg-2);
+  color: var(--text);
+  box-shadow: inset -1px -1px #24272a, inset 1px 1px #b8bec6,
+    inset -2px -2px #6b7077, inset 2px 2px #858b93;
+}
+html[data-theme="win98-dark"][data-desktop="1"] .retro-titlebar .caption-btn .ic,
+html[data-theme="win98-dark"][data-desktop="1"] .header-window-controls .caption-btn .ic {
+  display: inline-flex;
+}
+
+/* Alien: a chrome strip with an acid LCD and an amber close light. */
+html[data-theme="winamp"][data-desktop="1"] .desktop-titlebar {
+  height: 38px;
+  gap: 9px;
+  padding-left: 10px;
+  background:
+    radial-gradient(280px 50px at 78% 50%, rgba(255, 166, 64, .16), transparent 72%),
+    linear-gradient(180deg, rgba(255, 255, 255, .18), transparent 42%),
+    linear-gradient(180deg, #2a6f5d 0%, #114a40 52%, #0a332e 100%);
+  border-bottom: 1px solid #6bbd8d;
+  box-shadow: inset 0 1px 0 rgba(228, 255, 240, .40), inset 0 -2px 0 rgba(0, 0, 0, .42);
+}
+html[data-theme="winamp"][data-desktop="1"] .dtb-orb {
+  width: 17px;
+  height: 17px;
+  background:
+    radial-gradient(circle at 35% 30%, #f4ffe0 0 9%, transparent 34%),
+    radial-gradient(circle, #d4ff7a 0 38%, #6fce39 62%, #2f7e16 100%);
+  box-shadow: 0 0 12px rgba(168, 255, 92, .55), inset 0 0 0 1px #021813;
+}
+html[data-theme="winamp"][data-desktop="1"] .dtb-name {
+  color: #d8ff9c;
+  font-family: var(--mono);
+  letter-spacing: .16em;
+  text-shadow: 0 0 10px rgba(168, 255, 92, .45), 0 1px 0 #021813;
+}
+html[data-theme="winamp"][data-desktop="1"] .dtb-sub {
+  color: #9adfb4;
+  font-family: var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+html[data-theme="winamp"][data-desktop="1"] .win-controls {
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+}
+html[data-theme="winamp"][data-desktop="1"] .win-btn {
+  width: 30px;
+  height: 27px;
+  border: 1px solid #7ec59b;
+  border-radius: 9px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .30), transparent 40%),
+    linear-gradient(180deg, #3f8a73 0%, #1d5d4d 55%, #0b352f 100%);
+  color: #d8ff9c;
+  box-shadow: inset 0 1px 0 rgba(235, 255, 243, .55), inset 0 -2px 3px rgba(0, 0, 0, .50),
+    0 0 10px rgba(168, 255, 92, .12);
+}
+html[data-theme="winamp"][data-desktop="1"] .win-btn:hover {
+  border-color: #d4ff9e;
+  color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(235, 255, 243, .60), 0 0 14px rgba(168, 255, 92, .35);
+}
+html[data-theme="winamp"][data-desktop="1"] .win-btn.close {
+  border-color: #ffd18a;
+  background:
+    radial-gradient(circle at 35% 20%, rgba(255, 255, 255, .65), transparent 38%),
+    linear-gradient(180deg, #ffc062 0%, #ef8a1a 55%, #b95607 100%);
+  color: #2a1000;
+}
+html[data-theme="winamp"][data-desktop="1"] .win-btn.close:hover {
+  background:
+    radial-gradient(circle at 35% 20%, rgba(255, 255, 255, .70), transparent 38%),
+    linear-gradient(180deg, #ffd07d 0%, #ff9d2d 55%, #d56a0b 100%);
+  box-shadow: 0 0 18px rgba(255, 143, 32, .45);
+}
+
+/* The legacy skins draw selects with a lot of chrome; give the two important
+   dropdowns enough room that "Unfiled" and "Last updated" are not clipped. */
+html[data-theme^="winxp"] .chat-head select.input,
+html[data-theme^="win98"] .chat-head select.input { min-width: 132px; }
+html[data-theme^="winxp"] .row-actions select.input,
+html[data-theme^="win98"] .row-actions select.input { min-width: 88px; }
+html[data-theme^="winxp"] .topbar select.input,
+html[data-theme^="win98"] .topbar select.input { min-width: 108px; }
+/* XP.css / 98.css already draw the complete dropdown, including the arrow.
+   Keep the library's 21px metric and, crucially, its no-repeat arrow sprite.
+   Only re-point the surface/text colours for the midnight variants. */
+html[data-theme^="winxp"] select.input,
+html[data-theme^="win98"] select.input {
+  border: 0;
+  border-radius: 0;
+  height: 21px;
+  padding: 3px 32px 3px 4px;
+  background-color: #ffffff;
+  color: #111111;
+  line-height: 15px;
+}
+html[data-theme^="winxp"] select.input {
+  box-shadow: none;
+  font-size: 11px;
+}
+html[data-theme^="win98"] select.input {
+  box-shadow: inset -1px -1px #fff, inset 1px 1px #808080,
+    inset -2px -2px #dfdfdf, inset 2px 2px #0a0a0a;
+}
+html[data-theme="winxp-dark"] select.input,
+html[data-theme="win98-dark"] select.input {
+  background-color: var(--bg);
+  color: var(--text);
+}
+html[data-theme^="winxp"] select.input:focus,
+html[data-theme^="win98"] select.input:focus {
+  background-color: #2267cb;
+  color: #ffffff;
+}
+html[data-theme="winxp-dark"] select.input:focus,
+html[data-theme="win98-dark"] select.input:focus {
+  background-color: var(--accent-2);
+  color: var(--accent-fg);
+}
+
+/* XP Midnight keeps the Luna chrome but needs readable tab labels. */
+html[data-theme="winxp-dark"] .tab {
+  color: #e8f2ff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .35);
+}
+html[data-theme="winxp-dark"] .tab.active {
+  background: linear-gradient(180deg, #5486b6 0%, #355f88 100%);
+  border-color: #8fb7e4;
+  color: #ffffff;
+}

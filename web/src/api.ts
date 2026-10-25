@@ -58,6 +58,80 @@ export type TreeNode = {
   children?: TreeNode[];
 };
 
+// ---- opencode extensions (MCP servers + plugins) ----
+
+export type ExtensionConfigDoc = {
+  path: string;
+  label: string;
+  mcpCount: number;
+  pluginCount: number;
+};
+
+export type McpServer = {
+  name: string;
+  status: { status: "connected" | "pending" | "disabled" | "failed" | "needs_auth" | "not_loaded" | string; error?: string };
+  integrationID?: string;
+  /** Raw opencode config for this server (null for runtime-only servers). */
+  config: any | null;
+  configPath: string | null;
+  enabled: boolean;
+  type: "local" | "remote" | "unknown";
+};
+
+export type McpResource = {
+  server: string;
+  name: string;
+  uri: string;
+  description?: string;
+  mimeType?: string;
+};
+
+export type McpResourceTemplate = {
+  server: string;
+  name: string;
+  uriTemplate: string;
+  description?: string;
+  mimeType?: string;
+};
+
+export type McpResources = {
+  resources: McpResource[];
+  templates: McpResourceTemplate[];
+};
+
+export type PluginInfo = {
+  id?: string;
+  source: {
+    type: "builtin" | "package" | "local" | "sdk" | string;
+    target?: string;
+    version?: string;
+    outdated?: boolean;
+    updating?: boolean;
+    path?: string;
+  };
+  features?: Record<string, boolean>;
+  state?: { status: "active" | "failed" | string; error?: string; ref?: string };
+};
+
+export type ConfiguredPlugin = {
+  target: string;
+  array: "plugins" | "plugin";
+  configPath: string;
+  entry: any;
+};
+
+export type ExtensionsData = {
+  v2: boolean;
+  directory: string | null;
+  configs: ExtensionConfigDoc[];
+  configPath: string | null;
+  mcp: McpServer[];
+  mcpResources: McpResources;
+  plugins: PluginInfo[];
+  configuredPlugins: ConfiguredPlugin[];
+  error?: string;
+};
+
 export type Stats = {
   totals: Usage & { sessions: number; archived: number; userMessages: number };
   models: ModelUsage[];
@@ -77,6 +151,7 @@ export type Folder = {
   color: string | null;
   position: number;
   created_at: number;
+  parent_id: string | null;
 };
 
 export type Meta = { folders: Folder[]; directories: string[] };
@@ -236,11 +311,24 @@ export const api = {
   sessions: (params: Record<string, string> = {}) =>
     fetch("/api/sessions?" + new URLSearchParams(params).toString()).then(j<Session[]>),
   folders: () => fetch("/api/folders").then(j<Folder[]>),
-  createFolder: (name: string, color?: string) =>
+  autoOrganize: (body: { model?: string; variant?: string; agent?: string }) =>
+    fetch("/api/folders/auto-organize", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(
+      j<{
+        sessionId: string | null;
+        assigned: number;
+        foldersCreated: number;
+        rules: number;
+      }>,
+    ),
+  createFolder: (name: string, color?: string, parentId?: string | null) =>
     fetch("/api/folders", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name, color }),
+      body: JSON.stringify({ name, color, parentId }),
     }).then(j<Folder>),
   updateFolder: (id: string, patch: any) =>
     fetch(`/api/folders/${id}`, {
@@ -301,7 +389,20 @@ export const api = {
         providers: {
           id: string;
           name: string;
-          models: Record<string, { id: string; name: string; reasoning?: boolean; tool_call?: boolean }>;
+          models: Record<
+            string,
+            {
+              id: string;
+              name: string;
+              reasoning?: boolean;
+              tool_call?: boolean;
+              /** Reasoning-effort levels exposed by opencode v2 (high, max, …). */
+              variants?: string[];
+              /** Normalised context window (v2) or opencode's `limit` object (v1). */
+              context?: number;
+              limit?: { context?: number; output?: number };
+            }
+          >;
         }[];
       }>,
     ),
@@ -313,7 +414,7 @@ export const api = {
     ),
   commandRun: (
     sessionId: string,
-    body: { command: string; arguments?: string; agent?: string; model?: string },
+    body: { command: string; arguments?: string; agent?: string; model?: string; variant?: string },
   ) =>
     fetch(`/oc/session/${sessionId}/command`, {
       method: "POST",
@@ -480,4 +581,69 @@ export const api = {
       body: JSON.stringify(body),
     }).then(j),
   deletePty: (id: string) => fetch(`/oc/pty/${id}`, { method: "DELETE" }).then(j),
+
+  // ---- extensions (opencode v2 MCP servers + plugins) ----
+  extensions: (directory?: string | null, config?: string | null) => {
+    const q = new URLSearchParams();
+    if (directory) q.set("directory", directory);
+    if (config) q.set("config", config);
+    return fetch("/api/extensions?" + q.toString()).then(async (r) => {
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(body.error ?? `${r.status} ${r.statusText}`);
+      return body as ExtensionsData;
+    });
+  },
+  saveMcp: (body: {
+    name: string;
+    config: any;
+    directory?: string | null;
+    configPath?: string | null;
+  }) =>
+    fetch("/api/extensions/mcp", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(j<{ ok: boolean; paths: string[]; runtimeError?: string }>),
+  deleteMcp: (name: string, directory?: string | null) => {
+    const q = new URLSearchParams();
+    if (directory) q.set("directory", directory);
+    return fetch(`/api/extensions/mcp/${encodeURIComponent(name)}?${q.toString()}`, {
+      method: "DELETE",
+    }).then(j<{ ok: boolean; paths: string[]; runtimeError?: string }>);
+  },
+  mcpAction: (name: string, action: "connect" | "disconnect", directory?: string | null) =>
+    fetch(`/api/extensions/mcp/${encodeURIComponent(name)}/${action}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ directory }),
+    }).then(j),
+  addPlugin: (body: {
+    target: string;
+    options?: string;
+    directory?: string | null;
+    configPath?: string | null;
+  }) =>
+    fetch("/api/extensions/plugins", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(j<{ ok: boolean; path: string; updated?: boolean }>),
+  removePlugin: (target: string, directory?: string | null) =>
+    fetch("/api/extensions/plugins/remove", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ target, directory }),
+    }).then(j<{ ok: boolean; paths: string[]; removed: boolean }>),
+  checkPlugins: (directory?: string | null, target?: string | null) =>
+    fetch("/api/extensions/plugins/check", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ directory, target }),
+    }).then(j<{ ok: boolean; plugins: PluginInfo[] }>),
+  updatePlugins: (targets: string[], directory?: string | null) =>
+    fetch("/api/extensions/plugins/update", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ targets, directory }),
+    }).then(j<{ ok: boolean }>),
 };

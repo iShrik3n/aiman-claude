@@ -13,6 +13,7 @@ import type { Session } from "./api";
 import { fmtCost, fmtTokens } from "./StatsView";
 import CodeMap from "./CodeMap";
 import ErrorBoundary from "./ErrorBoundary";
+import Icon from "./Icon";
 
 function timeAgo(ms: number) {
   const d = Date.now() - ms;
@@ -34,7 +35,7 @@ export default function SessionList() {
   // beneath their parent. When searching, keep the matched session's ancestors
   // so a hit inside a subagent is still reachable.
   const rows = useMemo(() => {
-    const base = filterSessions(s.sessions, s.filters);
+    const base = filterSessions(s.sessions, s.filters, s.folders);
     if (!s.filters.q) return base;
     const byId = new Map(s.sessions.map((x) => [x.id, x]));
     const keep = new Set(base.map((x) => x.id));
@@ -60,6 +61,26 @@ export default function SessionList() {
     for (const list of map.values()) list.sort((a, b) => b.timeUpdated - a.timeUpdated);
     return map;
   }, [rows]);
+
+  const folderOptions = useMemo(() => {
+    const children = new Map<string | null, typeof s.folders>();
+    for (const folder of s.folders) {
+      const list = children.get(folder.parent_id) ?? [];
+      list.push(folder);
+      children.set(folder.parent_id, list);
+    }
+    for (const list of children.values())
+      list.sort((a, b) => a.position - b.position || a.name.localeCompare(b.name));
+    const out: { folder: (typeof s.folders)[number]; depth: number }[] = [];
+    const walk = (parent: string | null, depth: number) => {
+      for (const folder of children.get(parent) ?? []) {
+        out.push({ folder, depth });
+        walk(folder.id, depth + 1);
+      }
+    };
+    walk(null, 0);
+    return out;
+  }, [s.folders]);
 
   const roots = useMemo(() => rows.filter((r) => !r.parentId), [rows]);
   const childCount = rows.length - roots.length;
@@ -104,7 +125,7 @@ export default function SessionList() {
             title="Open in new window"
             onClick={() => openSessionWindow(sess.id)}
           >
-            ⇗
+            <Icon name="external" />
           </button>
         </div>
       );
@@ -118,9 +139,10 @@ export default function SessionList() {
           title="Folder"
         >
           <option value="">Unfiled</option>
-          {s.folders.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.name}
+          {folderOptions.map(({ folder, depth }) => (
+            <option key={folder.id} value={folder.id}>
+              {"— ".repeat(depth)}
+              {folder.name}
             </option>
           ))}
         </select>
@@ -129,10 +151,14 @@ export default function SessionList() {
           title="Open in new window"
           onClick={() => openSessionWindow(sess.id)}
         >
-          ⇗
+          <Icon name="external" />
         </button>
-        <button className="btn ghost sm" title="Pin" onClick={() => togglePin(sess)}>
-          {sess.pinned ? "★" : "☆"}
+        <button
+          className="btn ghost sm"
+          title={sess.pinned ? "Unpin session" : "Pin session"}
+          onClick={() => togglePin(sess)}
+        >
+          <Icon name={sess.pinned ? "pin" : "pinOff"} />
         </button>
         {sess.timeArchived != null ? (
           <button className="btn sm" onClick={() => archiveSession(sess.id, false)}>
@@ -144,7 +170,7 @@ export default function SessionList() {
             title="Archive"
             onClick={() => archiveSession(sess.id, true)}
           >
-            🗄
+            <Icon name="archive" />
           </button>
         )}
       </div>
@@ -179,14 +205,14 @@ export default function SessionList() {
                     toggleExpanded(sess.id);
                   }}
                 >
-                  {open ? "▾" : "▸"}
+                  <Icon name={open ? "chevronDown" : "chevronRight"} size={13} />
                 </button>
               ) : (
                 <span className="session-expand-spacer" />
               )}
               <div className="session-title">
-                {depth > 0 ? "↳ " : ""}
-                {sess.pinned ? "★ " : ""}
+                {depth > 0 && <Icon name="corner" size={12} />}
+                {!!sess.pinned && <Icon name="pin" size={12} />}
                 {sess.title || "(untitled)"}
               </div>
               {depth > 0 && <span className="badge sub-badge">agent</span>}

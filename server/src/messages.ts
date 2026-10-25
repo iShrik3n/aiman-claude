@@ -153,6 +153,7 @@ function convertV2(row: any): V1Entry | null {
         agentID: data.agent,
         modelID: data.model?.id,
         providerID: data.model?.providerID,
+        variant: data.model?.variant,
         ...(data.cost != null ? { cost: data.cost } : {}),
         ...(data.tokens ? { tokens: data.tokens } : {}),
         ...(data.error ? { error: legacyError(data.error) } : {}),
@@ -165,12 +166,38 @@ function convertV2(row: any): V1Entry | null {
   return null;
 }
 
+/**
+ * opencode stages an undo in the session's `revert` column instead of deleting
+ * the transcript. Reading the DB directly bypasses that filter, so apply it here
+ * as well: hide the target message and everything after it.
+ */
+function revertMessageId(sessionId: string): string | null {
+  const table = isV2() ? "session_v2" : "session";
+  try {
+    const row = ocRO
+      .query(`SELECT revert FROM ${table} WHERE id = ?`)
+      .get(sessionId) as { revert: string | null } | undefined;
+    if (!row?.revert) return null;
+    const parsed = parse(row.revert);
+    if (typeof parsed === "string") return parsed;
+    return typeof parsed?.messageID === "string" ? parsed.messageID : null;
+  } catch {
+    return null;
+  }
+}
+
 /** v1 databases: read the old `message` + `part` tables directly. */
 function getV1Entries(sessionId: string): V1Entry[] {
-  const messages = ocRO
+  let messages = ocRO
     .query("SELECT id, time_created, data FROM message WHERE session_id = ? ORDER BY time_created ASC")
     .all(sessionId) as { id: string; time_created: number; data: string }[];
   if (!messages.length) return [];
+
+  const revertID = revertMessageId(sessionId);
+  if (revertID) {
+    const at = messages.findIndex((m) => m.id === revertID);
+    if (at >= 0) messages = messages.slice(0, at);
+  }
 
   const parts = ocRO
     .query(
@@ -205,14 +232,20 @@ function getV1Entries(sessionId: string): V1Entry[] {
 export function getSessionEntries(sessionId: string): V1Entry[] {
   if (!isV2()) return getV1Entries(sessionId);
 
-  const rows = ocRO
+  let rows = ocRO
     .query(
-      `SELECT rowid, id, session_id, type, time_created, data
+      `SELECT rowid, id, session_id, type, seq, time_created, data
          FROM session_message
         WHERE session_id = ?
         ORDER BY seq ASC, rowid ASC`,
     )
     .all(sessionId) as any[];
+
+  const revertID = revertMessageId(sessionId);
+  if (revertID) {
+    const target = rows.find((row) => row.id === revertID);
+    if (target) rows = rows.filter((row) => row.seq < target.seq);
+  }
 
   const out: V1Entry[] = [];
   for (const row of rows) {

@@ -3,6 +3,7 @@ import { marked } from "marked";
 import DOMPurify from "dompurify";
 import type { Part } from "./api";
 import DiffView, { synthWriteDiff } from "./DiffView";
+import Icon from "./Icon";
 import { fmtFull, fmtTime } from "./time";
 
 function md(text: string) {
@@ -74,7 +75,7 @@ function Collapse({
   return (
     <div className={"card " + className}>
       <div className="card-head" onClick={() => setOpen((o) => !o)}>
-        <span>{open ? "▾" : "▸"}</span>
+        <Icon name={open ? "chevronDown" : "chevronRight"} size={14} />
         {head}
       </div>
       {open && <div className="card-body">{children}</div>}
@@ -86,11 +87,13 @@ export default function PartView({
   part,
   query,
   thinkingOpen = true,
+  shellOutputOpen = true,
   messageTime,
 }: {
   part: Part;
   query?: string;
   thinkingOpen?: boolean;
+  shellOutputOpen?: boolean;
   messageTime?: number;
 }) {
   const when = part.time?.created ?? part.state?.time?.start ?? messageTime;
@@ -164,10 +167,13 @@ export default function PartView({
       }
 
       const input = st.input ? JSON.stringify(st.input, null, 2) : "";
+      const isShell = part.tool === "bash" || part.tool === "shell";
+      const showShell = isShell && shellOutputOpen;
       return (
         <Collapse
+          key={`${part.id}:${showShell ? "open" : "closed"}`}
           className="tool"
-          defaultOpen={status === "running" || status === "error"}
+          defaultOpen={status === "running" || status === "error" || showShell}
           head={
             <>
               <span className="name">{part.tool}</span>
@@ -200,7 +206,7 @@ export default function PartView({
       return (
         <div className="small">
           <a href={part.url} target="_blank" rel="noreferrer">
-            📎 {part.filename ?? part.url}
+            <Icon name="attach" size={14} /> {part.filename ?? part.url}
           </a>
         </div>
       );

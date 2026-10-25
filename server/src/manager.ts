@@ -21,6 +21,7 @@ export type SessionMeta = {
   pinned: number;
   user_id: string | null;
   profile_id: string | null;
+  auto_organized_at?: number | null;
 };
 
 export type Folder = {
@@ -29,6 +30,7 @@ export type Folder = {
   color: string | null;
   position: number;
   created_at: number;
+  parent_id: string | null;
 };
 
 /**
@@ -76,21 +78,30 @@ export function listFolders(): Folder[] {
     .all() as Folder[];
 }
 
-export function createFolder(name: string, color: string | null): Folder {
+export function createFolder(
+  name: string,
+  color: string | null,
+  parentId: string | null = null,
+): Folder {
   const id = "fld_" + crypto.randomUUID();
   const now = Date.now();
   const pos = ((mgr.query("SELECT MAX(position) AS p FROM folders").get() as any)?.p ?? 0) + 1;
   mgr
     .query(
-      "INSERT INTO folders(id, name, color, position, created_at) VALUES(?,?,?,?,?)",
+      "INSERT INTO folders(id, name, color, position, created_at, parent_id) VALUES(?,?,?,?,?,?)",
     )
-    .run(id, name, color, pos, now);
-  return { id, name, color, position: pos, created_at: now };
+    .run(id, name, color, pos, now, parentId);
+  return { id, name, color, position: pos, created_at: now, parent_id: parentId };
 }
 
 export function updateFolder(
   id: string,
-  patch: { name?: string; color?: string | null; position?: number },
+  patch: {
+    name?: string;
+    color?: string | null;
+    position?: number;
+    parent_id?: string | null;
+  },
 ): boolean {
   const sets: string[] = [];
   const vals: any[] = [];
@@ -106,15 +117,59 @@ export function updateFolder(
     sets.push("position = ?");
     vals.push(patch.position);
   }
+  if (patch.parent_id !== undefined) {
+    sets.push("parent_id = ?");
+    vals.push(patch.parent_id);
+  }
   if (!sets.length) return false;
   vals.push(id);
   mgr.query(`UPDATE folders SET ${sets.join(", ")} WHERE id = ?`).run(...vals);
   return true;
 }
 
+/** Delete a folder and all of its descendants; their sessions become unfiled. */
 export function deleteFolder(id: string): void {
-  mgr.query("UPDATE session_meta SET folder_id = NULL WHERE folder_id = ?").run(id);
-  mgr.query("DELETE FROM folders WHERE id = ?").run(id);
+  const all = mgr.query("SELECT id, parent_id FROM folders").all() as {
+    id: string;
+    parent_id: string | null;
+  }[];
+  const ids = new Set<string>([id]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const folder of all) {
+      if (folder.parent_id && ids.has(folder.parent_id) && !ids.has(folder.id)) {
+        ids.add(folder.id);
+        changed = true;
+      }
+    }
+  }
+  const list = [...ids];
+  const placeholders = list.map(() => "?").join(",");
+  mgr
+    .query(`UPDATE session_meta SET folder_id = NULL WHERE folder_id IN (${placeholders})`)
+    .run(...list);
+  mgr.query(`DELETE FROM folders WHERE id IN (${placeholders})`).run(...list);
+}
+
+/** All folder ids in a subtree, including the root id. */
+export function folderSubtreeIds(id: string): Set<string> {
+  const all = mgr.query("SELECT id, parent_id FROM folders").all() as {
+    id: string;
+    parent_id: string | null;
+  }[];
+  const ids = new Set<string>([id]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const folder of all) {
+      if (folder.parent_id && ids.has(folder.parent_id) && !ids.has(folder.id)) {
+        ids.add(folder.id);
+        changed = true;
+      }
+    }
+  }
+  return ids;
 }
 
 export function setSessionFolder(sessionId: string, folderId: string | null): void {
@@ -124,6 +179,15 @@ export function setSessionFolder(sessionId: string, folderId: string | null): vo
        ON CONFLICT(session_id) DO UPDATE SET folder_id = excluded.folder_id`,
     )
     .run(sessionId, folderId);
+}
+
+export function markSessionAutoOrganized(sessionId: string): void {
+  mgr
+    .query(
+      `INSERT INTO session_meta(session_id, auto_organized_at) VALUES(?, ?)
+       ON CONFLICT(session_id) DO UPDATE SET auto_organized_at = excluded.auto_organized_at`,
+    )
+    .run(sessionId, Date.now());
 }
 
 export function setSessionPinned(sessionId: string, pinned: boolean): void {

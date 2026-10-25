@@ -14,6 +14,8 @@ import Composer from "./Composer";
 import PartView from "./PartView";
 import ErrorBoundary from "./ErrorBoundary";
 import FileBrowser from "./FileBrowser";
+import Icon from "./Icon";
+import { WindowControls } from "./DesktopTitlebar";
 
 const TerminalPane = lazy(() => import("./TerminalPane"));
 import {
@@ -85,7 +87,13 @@ import {
   useStore,
 } from "./store";
 
-export default function ChatView() {
+export default function ChatView({
+  popout = false,
+  compact = false,
+}: {
+  popout?: boolean;
+  compact?: boolean;
+} = {}) {
   const s = useStore();
   const id = s.activeSessionId!;
 
@@ -132,6 +140,7 @@ export default function ChatView() {
   const findSet = useMemo(() => new Set(findMatches), [findMatches]);
 
   const thinkingOpen = s.thinkingOpen;
+  const shellOutputOpen = s.shellOutputOpen;
 
   // Tools/shell commands that are still executing, surfaced under the header.
   const runningTools = useMemo(() => {
@@ -221,6 +230,13 @@ export default function ChatView() {
     return subMeta(child.id).busy;
   });
   const live = busy || subLive || (status == null && looksStreaming);
+  // Auto-follow is only for an in-flight turn. Once the turn is complete, late
+  // layout work (markdown, images, tool cards) must not yank the viewport back
+  // to the bottom while the user is reading.
+  const liveRef = useRef(live);
+  useEffect(() => {
+    liveRef.current = live;
+  }, [live]);
 
   /** Open/close the "stop running?" confirmation (ref keeps double-Esc reliable). */
   function setStopPrompt(open: boolean) {
@@ -337,12 +353,23 @@ export default function ChatView() {
   const [windowStart, setWindowStart] = useState(0);
   const initedFor = useRef<string | null>(null);
   const stickToBottom = useRef(true);
+  // Set when the user deliberately leaves the bottom. While true, merely being
+  // within the "near bottom" band does not silently re-enable auto-follow.
+  const userPaused = useRef(false);
   const innerRef = useRef<HTMLDivElement>(null);
   const lastScrollTop = useRef(0);
-  const ignoreScrollUntil = useRef(0);
+
+  const pauseFollow = () => {
+    stickToBottom.current = false;
+    userPaused.current = true;
+  };
+
+  const resumeFollow = () => {
+    stickToBottom.current = true;
+    userPaused.current = false;
+  };
 
   const scrollToBottom = () => {
-    ignoreScrollUntil.current = Date.now() + 300;
     const snap = () => {
       const el = bodyRef.current;
       if (el) el.scrollTop = el.scrollHeight;
@@ -362,16 +389,16 @@ export default function ChatView() {
   useLayoutEffect(() => {
     if (!entries.length || initedFor.current === id) return;
     initedFor.current = id;
-    stickToBottom.current = true;
+    resumeFollow();
     lastScrollTop.current = 0;
-    ignoreScrollUntil.current = Date.now() + 600;
     setWindowStart(Math.max(0, entries.length - VISIBLE));
     scrollToBottom();
   }, [id, entries.length]);
 
-  // Follow new messages only while the user is at the bottom.
+  // Follow new messages only while the turn is live and the user is at the
+  // bottom. A finished conversation should stay exactly where it is.
   useEffect(() => {
-    if (!entries.length || !stickToBottom.current) return;
+    if (!entries.length || !stickToBottom.current || !liveRef.current) return;
     setWindowStart(Math.max(0, entries.length - VISIBLE));
     scrollToBottom();
   }, [entries.length]);
@@ -392,10 +419,12 @@ export default function ChatView() {
     [entries],
   );
 
-  // Streaming grows the last message without changing the entry count.
+  // Streaming grows the last message without changing the entry count. Only
+  // follow while the turn is actually live; when it finishes, leave the scroll
+  // position alone even if the final markdown/tool layout changes height.
   useEffect(() => {
-    if (stickToBottom.current) scrollToBottom();
-  }, [lastLen]);
+    if (live && stickToBottom.current) scrollToBottom();
+  }, [lastLen, live]);
 
   // Pin to the bottom whenever the rendered content changes height (images,
   // code blocks, markdown) while the user is following the stream.
@@ -404,8 +433,7 @@ export default function ChatView() {
     const el = bodyRef.current;
     if (!inner || !el) return;
     const ro = new ResizeObserver(() => {
-      if (!stickToBottom.current) return;
-      ignoreScrollUntil.current = Date.now() + 150;
+      if (!stickToBottom.current || !liveRef.current) return;
       el.scrollTop = el.scrollHeight;
     });
     ro.observe(inner);
@@ -415,7 +443,7 @@ export default function ChatView() {
   const newestHidden = Math.max(0, entries.length - (windowStart + VISIBLE));
 
   const jumpToLatest = () => {
-    stickToBottom.current = true;
+    resumeFollow();
     setWindowStart(Math.max(0, entries.length - VISIBLE));
     scrollToBottom();
   };
@@ -442,42 +470,52 @@ export default function ChatView() {
   if (s.chatMode === "terminal" && !s.opencodeV2) {
     return (
       <div className="chat">
-        <div className="chat-head">
-          <button
-            className="btn ghost sm"
-            onClick={() => store.set({ activeSessionId: null })}
-            title="Back to list"
-          >
-            ←
-          </button>
+        <div className={"chat-head" + (popout && compact ? " popout-header" : "")}>
+          {!popout && (
+            <button
+              className="btn ghost sm"
+              onClick={() => store.set({ activeSessionId: null })}
+              title="Back to list"
+            >
+              <Icon name="back" />
+            </button>
+          )}
           <div className="chat-title">{session?.title || "(untitled)"}</div>
           <span className="badge">{session?.directory}</span>
-          <div className="spacer" />
-          <button
-            className="btn ghost sm"
-            onClick={() => openSessionWindow(id)}
-            title="Open in new window"
-          >
-            ⇗
-          </button>
+          <div className={"spacer" + (popout && compact ? " drag-region" : "")} />
+          {!popout && (
+            <button
+              className="btn ghost sm"
+              onClick={() => openSessionWindow(id)}
+              title="Open in new window"
+            >
+              <Icon name="external" />
+            </button>
+          )}
           <button className="btn ghost sm" onClick={() => setShowFiles(true)} title="Files">
-            files
+            <Icon name="folder" /> files
           </button>
           <button className="btn ghost sm" onClick={() => setShowStats(true)} title="Session statistics">
-            stats
+            <Icon name="stats" /> stats
           </button>
           <button className="btn ghost sm" onClick={loadDiff} title="Show changed files">
-            diff
+            <Icon name="code" /> diff
           </button>
-          <button className="btn ghost sm" onClick={() => togglePin(session!)}>
-            {session?.pinned ? "★" : "☆"}
+          <button
+            className="btn ghost sm"
+            onClick={() => togglePin(session!)}
+            title={session?.pinned ? "Unpin session" : "Pin session"}
+          >
+            <Icon name={session?.pinned ? "pin" : "pinOff"} />
           </button>
           <button
             className="btn ghost sm"
             onClick={() => archiveSession(id, session?.timeArchived == null)}
+            title={session?.timeArchived == null ? "Archive session" : "Unarchive session"}
           >
-            {session?.timeArchived == null ? "🗄 archive" : "unarchive"}
+            <Icon name="archive" /> {session?.timeArchived == null ? "archive" : "unarchive"}
           </button>
+          {popout && compact && <WindowControls />}
         </div>
         {diff && (
           <div style={{ padding: "6px 20px", borderBottom: "1px solid var(--border)" }}>
@@ -534,10 +572,12 @@ export default function ChatView() {
 
   return (
     <div className="chat">
-      <div className="chat-head">
-        <button className="btn ghost sm" onClick={() => store.set({ activeSessionId: null })} title="Back to list">
-          ←
-        </button>
+      <div className={"chat-head" + (popout && compact ? " popout-header" : "")}>
+        {!popout && (
+          <button className="btn ghost sm" onClick={() => store.set({ activeSessionId: null })} title="Back to list">
+            <Icon name="back" />
+          </button>
+        )}
         {editing ? (
           <input
             className="rename-input"
@@ -553,7 +593,13 @@ export default function ChatView() {
             }}
           />
         ) : (
-          <div className="chat-title" onClick={() => setEditing(true)} title="Click to rename">
+          <div
+            className="chat-title"
+            onClick={() => {
+              if (!popout) setEditing(true);
+            }}
+            title={popout ? "Drag to move" : "Click to rename"}
+          >
             {session?.title || "(untitled)"}
           </div>
         )}
@@ -568,28 +614,30 @@ export default function ChatView() {
             {status?.type === "retry" ? `retry ${status.attempt}` : "working"}
           </span>
         )}
-        <div className="spacer" />
-        <button
-          className="btn ghost sm"
-          onClick={() => openSessionWindow(id)}
-          title="Open in new window"
-        >
-          ⇗
-        </button>
+        <div className={"spacer" + (popout && compact ? " drag-region" : "")} />
+        {!popout && (
+          <button
+            className="btn ghost sm"
+            onClick={() => openSessionWindow(id)}
+            title="Open in new window"
+          >
+            <Icon name="external" />
+          </button>
+        )}
         {live && (
           <button
             className="btn danger sm"
             onClick={() => setStopPrompt(true)}
             title="Stop the running turn (Esc)"
           >
-            ■ stop
+            <Icon name="stop" /> stop
           </button>
         )}
         <button className="btn ghost sm" onClick={() => setShowFiles(true)} title="Files">
-          files
+          <Icon name="folder" /> files
         </button>
         <button className="btn ghost sm" onClick={() => setShowStats(true)} title="Session statistics">
-          stats
+          <Icon name="stats" /> stats
         </button>
         <button
           className={"btn ghost sm" + (findOpen ? " active" : "")}
@@ -599,20 +647,26 @@ export default function ChatView() {
           }}
           title="Find in this session (Ctrl+F)"
         >
-          find
+          <Icon name="search" /> find
         </button>
         <button className="btn ghost sm" onClick={loadDiff} title="Show changed files">
-          diff
+          <Icon name="code" /> diff
         </button>
-        <button className="btn ghost sm" onClick={() => togglePin(session!)}>
-          {session?.pinned ? "★" : "☆"}
+        <button
+          className="btn ghost sm"
+          onClick={() => togglePin(session!)}
+          title={session?.pinned ? "Unpin session" : "Pin session"}
+        >
+          <Icon name={session?.pinned ? "pin" : "pinOff"} />
         </button>
         <button
           className="btn ghost sm"
           onClick={() => archiveSession(id, session?.timeArchived == null)}
+          title={session?.timeArchived == null ? "Archive session" : "Unarchive session"}
         >
-          {session?.timeArchived == null ? "🗄 archive" : "unarchive"}
+          <Icon name="archive" /> {session?.timeArchived == null ? "archive" : "unarchive"}
         </button>
+        {popout && compact && <WindowControls />}
       </div>
 
       {runningTools.length > 0 && (
@@ -630,7 +684,7 @@ export default function ChatView() {
           <div className="spacer" />
           <span className="small muted">Esc to stop</span>
           <button className="btn danger sm" onClick={() => setStopPrompt(true)}>
-            ■ Stop
+            <Icon name="stop" /> Stop
           </button>
         </div>
       )}
@@ -662,7 +716,7 @@ export default function ChatView() {
             disabled={!findMatches.length}
             title="Previous match (Shift+Enter)"
           >
-            ↑
+            <Icon name="up" />
           </button>
           <button
             className="btn ghost sm"
@@ -670,7 +724,7 @@ export default function ChatView() {
             disabled={!findMatches.length}
             title="Next match (Enter)"
           >
-            ↓
+            <Icon name="down" />
           </button>
           <button
             className="btn ghost sm"
@@ -680,7 +734,7 @@ export default function ChatView() {
             }}
             title="Close finder (Esc)"
           >
-            ×
+            <Icon name="close" />
           </button>
         </div>
       )}
@@ -707,7 +761,18 @@ export default function ChatView() {
             <div className="small" style={{ marginTop: diff ? 6 : 0 }}>
               {todos.map((t) => (
                 <div key={t.id}>
-                  {t.status === "completed" ? "✓" : t.status === "in_progress" ? "◐" : t.status === "cancelled" ? "✕" : "○"}{" "}
+                  <Icon
+                    name={
+                      t.status === "completed"
+                        ? "check"
+                        : t.status === "in_progress"
+                          ? "half"
+                          : t.status === "cancelled"
+                            ? "cross"
+                            : "circle"
+                    }
+                    size={13}
+                  />{" "}
                   {t.content}
                 </div>
               ))}
@@ -721,32 +786,44 @@ export default function ChatView() {
         ref={bodyRef}
         onWheel={(e) => {
           // Explicit upward wheel = reading history; stop following at once.
-          if (e.deltaY < 0) stickToBottom.current = false;
+          if (e.deltaY < 0) pauseFollow();
         }}
         onScroll={() => {
           const el = bodyRef.current;
           if (!el) return;
           const top = el.scrollTop;
-          const nearBottom = el.scrollHeight - top - el.clientHeight < 120;
+          const remaining = el.scrollHeight - top - el.clientHeight;
+          const nearBottom = remaining < 120;
+          const atBottom = remaining < 8;
 
-          // Only an upward movement counts as the user leaving the bottom.
-          // Layout/auto-scroll changes are ignored during the snap window.
-          if (Date.now() > ignoreScrollUntil.current && top < lastScrollTop.current - 2) {
-            stickToBottom.current = false;
-          }
+          // Any upward movement means the user is reading history. Do this
+          // immediately (not after an ignore window) so streaming output cannot
+          // keep pulling the viewport back down.
+          if (top < lastScrollTop.current - 2) pauseFollow();
           lastScrollTop.current = top;
 
-          if (nearBottom) {
-            const wasSticking = stickToBottom.current;
-            stickToBottom.current = true;
-            if (!wasSticking) {
-              if (entries.length > windowStart + VISIBLE) {
-                setWindowStart(Math.max(0, entries.length - VISIBLE));
-              }
-              scrollToBottom();
-            }
-          }
           if (top < 120 && windowStart > 0) loadEarlier();
+
+          if (!nearBottom) {
+            stickToBottom.current = false;
+            return;
+          }
+
+          if (userPaused.current) {
+            // Only a deliberate scroll all the way back down (or the "latest"
+            // button) re-enables following.
+            if (atBottom) resumeFollow();
+            return;
+          }
+
+          const wasSticking = stickToBottom.current;
+          stickToBottom.current = true;
+          if (!wasSticking && liveRef.current) {
+            if (entries.length > windowStart + VISIBLE) {
+              setWindowStart(Math.max(0, entries.length - VISIBLE));
+            }
+            scrollToBottom();
+          }
         }}
       >
         <div className="chat-inner" ref={innerRef}>
@@ -754,7 +831,7 @@ export default function ChatView() {
         {windowStart > 0 && (
           <div style={{ textAlign: "center", marginBottom: 12 }}>
             <button className="btn ghost sm" onClick={loadEarlier}>
-              ↑ Load earlier messages ({windowStart} hidden)
+              <Icon name="up" /> Load earlier messages ({windowStart} hidden)
             </button>
           </div>
         )}
@@ -770,6 +847,7 @@ export default function ChatView() {
               hit={hit}
               active={hit && index === findMatches[findPos]}
               thinkingOpen={thinkingOpen}
+              shellOutputOpen={shellOutputOpen}
             />
           );
         })}
@@ -805,7 +883,7 @@ export default function ChatView() {
 
       {newestHidden > 0 && (
         <button className="jump-latest" onClick={jumpToLatest}>
-          ↓ {newestHidden} new message{newestHidden === 1 ? "" : "s"}
+          <Icon name="down" /> {newestHidden} new message{newestHidden === 1 ? "" : "s"}
         </button>
       )}
 
@@ -821,6 +899,7 @@ export default function ChatView() {
                 busy={meta.busy}
                 activity={meta.activity}
                 entries={s.entries[child.id] ?? []}
+                shellOutputOpen={shellOutputOpen}
                 mode={mode}
                 onMode={(m) => setSubModes((prev) => ({ ...prev, [child.id]: m }))}
                 onClose={() =>
@@ -880,6 +959,7 @@ function SubagentPanel({
   busy,
   activity,
   entries,
+  shellOutputOpen,
   mode,
   onMode,
   onClose,
@@ -888,6 +968,7 @@ function SubagentPanel({
   busy: boolean;
   activity: string;
   entries: MessageEntry[];
+  shellOutputOpen: boolean;
   mode: "min" | "normal" | "max";
   onMode: (mode: "min" | "normal" | "max") => void;
   onClose: () => void;
@@ -926,21 +1007,21 @@ function SubagentPanel({
         <div className="spacer" />
         {mode !== "max" && (
           <button onClick={(e) => (stop(e), onMode("max"))} title="Maximize">
-            ▢
+            <Icon name="windowMax" />
           </button>
         )}
         {mode !== "normal" && (
           <button onClick={(e) => (stop(e), onMode("normal"))} title="Restore">
-            ❐
+            <Icon name="windowRestore" />
           </button>
         )}
         {mode !== "min" && (
           <button onClick={(e) => (stop(e), onMode("min"))} title="Minimize">
-            —
+            <Icon name="windowMin" />
           </button>
         )}
         <button onClick={(e) => (stop(e), onClose())} title="Close">
-          ×
+          <Icon name="windowClose" />
         </button>
       </div>
       {mode !== "min" && (
@@ -960,6 +1041,18 @@ function SubagentPanel({
                 {entry.info?.role === "user"
                   ? "prompt"
                   : (entry.info?.agentID ?? "assistant")}
+                {entry.info?.role !== "user" && entry.info?.modelID && (
+                  <span
+                    className="sub-model"
+                    title={
+                      [entry.info.providerID, entry.info.modelID].filter(Boolean).join("/") +
+                      (entry.info.variant ? ` · variant: ${entry.info.variant}` : "")
+                    }
+                  >
+                    {entry.info.modelID}
+                    {entry.info.variant ? ` · ${entry.info.variant}` : ""}
+                  </span>
+                )}
               </div>
               {entry.parts.map((part) =>
                 part.type === "text" || part.type === "reasoning" || part.type === "tool" ? (
@@ -967,6 +1060,7 @@ function SubagentPanel({
                     key={part.id}
                     part={part}
                     thinkingOpen={false}
+                    shellOutputOpen={shellOutputOpen}
                     messageTime={entry.info?.time?.created}
                   />
                 ) : null,
@@ -1034,7 +1128,18 @@ function QuestionPrompt({ req }: { req: QuestionRequest }) {
                   onClick={() => toggle(i, opt.label, !!q.multiple)}
                 >
                   <span className="q-mark">
-                    {q.multiple ? (active ? "☑" : "☐") : active ? "◉" : "○"}
+                    <Icon
+                      name={
+                        q.multiple
+                          ? active
+                            ? "checked"
+                            : "unchecked"
+                          : active
+                            ? "radioOn"
+                            : "radioOff"
+                      }
+                      size={15}
+                    />
                   </span>
                   <div>
                     <div className="q-label">{opt.label}</div>
@@ -1092,6 +1197,7 @@ const MessageRow = memo(function MessageRow({
   hit,
   active,
   thinkingOpen,
+  shellOutputOpen,
 }: {
   entry: MessageEntry;
   index: number;
@@ -1099,6 +1205,7 @@ const MessageRow = memo(function MessageRow({
   hit?: boolean;
   active?: boolean;
   thinkingOpen?: boolean;
+  shellOutputOpen?: boolean;
 }) {
   const role = entry.info?.role ?? "assistant";
   const agentName = entry.info?.agentID ?? entry.info?.agent ?? "build";
@@ -1125,6 +1232,18 @@ const MessageRow = memo(function MessageRow({
               ? `opencode · ${agentName}`
               : role}
         </div>
+        {role === "assistant" && entry.info?.modelID && (
+          <span
+            className="msg-model"
+            title={
+              [entry.info.providerID, entry.info.modelID].filter(Boolean).join("/") +
+              (entry.info.variant ? ` · variant: ${entry.info.variant}` : "")
+            }
+          >
+            via {entry.info.modelID}
+            {entry.info.variant ? ` · ${entry.info.variant}` : ""}
+          </span>
+        )}
         {entry.info?.time?.created ? (
           <span
             className="msg-time"
@@ -1153,7 +1272,7 @@ const MessageRow = memo(function MessageRow({
             .map((p) =>
               p.type === "file" ? (
                 <span className="user-file" key={p.id} title={p.url}>
-                  📎 {p.filename ?? p.url ?? "file"}
+                  <Icon name="attach" size={14} /> {p.filename ?? p.url ?? "file"}
                 </span>
               ) : (
                 <div key={p.id}>
@@ -1169,6 +1288,7 @@ const MessageRow = memo(function MessageRow({
             part={p}
             query={query}
             thinkingOpen={thinkingOpen}
+            shellOutputOpen={shellOutputOpen}
             messageTime={entry.info?.time?.created}
           />
         ))
@@ -1296,7 +1416,7 @@ function NewSession() {
     <div className="chat">
       <div className="chat-head">
         <button className="btn ghost sm" onClick={() => store.set({ activeSessionId: null })}>
-          ←
+          <Icon name="back" />
         </button>
         <div className="chat-title">New session</div>
       </div>

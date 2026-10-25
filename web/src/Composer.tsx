@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { api, type Usage } from "./api";
 import { BUILTINS, runBuiltin } from "./commands";
-import { abortSession, sendPrompt, setAgent, setModel, toast, useStore } from "./store";
+import { abortSession, sendPrompt, setAgent, setModel, setVariant, toast, useStore } from "./store";
 import { agentAccent } from "./agents";
+import Icon from "./Icon";
 import { fmtCost, fmtTokens } from "./StatsView";
 
 type Cmd = { name: string; description: string; custom?: boolean; args?: boolean };
@@ -15,6 +16,21 @@ type Attachment = {
   uri: string;
   preview?: string;
 };
+
+const VARIANT_LABELS: Record<string, string> = {
+  none: "None",
+  minimal: "Minimal",
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  xhigh: "Extra high",
+  max: "Max",
+  thinking: "Thinking",
+};
+
+function variantLabel(id: string): string {
+  return VARIANT_LABELS[id.toLowerCase()] ?? id.charAt(0).toUpperCase() + id.slice(1);
+}
 
 /** Convert an absolute path to a file:// URI that opencode can read. */
 function fileUri(path: string): string {
@@ -89,6 +105,11 @@ export default function Composer({ sessionId }: { sessionId: string }) {
   const directory = session?.directory;
 
   const accent = useMemo(() => agentAccent(s.agent), [s.agent]);
+  // opencode v2 exposes reasoning-effort variants per model; only show the
+  // second selector (and send `variant`) when the active model has any.
+  const activeModel = s.models.find((m) => m.key === s.model);
+  const variants = activeModel?.variants ?? [];
+  const variant = variants.includes(s.variant) ? s.variant : "";
   const accentStyle = {
     "--agent-accent": accent.accent,
     "--agent-soft": accent.soft,
@@ -175,6 +196,36 @@ export default function Composer({ sessionId }: { sessionId: string }) {
   const busy = status && status.type !== "idle";
   const usage: Usage | null | undefined = s.sessions.find((x) => x.id === sessionId)?.usage;
 
+  // opencode's context indicator uses the latest assistant message (not the
+  // cumulative session total): input + output + reasoning + cache read/write.
+  const contextUsage = useMemo(() => {
+    const entries = s.entries[sessionId] ?? [];
+    let info: any = null;
+    for (let i = entries.length - 1; i >= 0; i--) {
+      const candidate = entries[i]?.info;
+      if (candidate?.role === "assistant" && candidate.tokens) {
+        info = candidate;
+        break;
+      }
+    }
+    if (!info) return null;
+    const tokens = info.tokens;
+    const cache = tokens.cache ?? {};
+    const used =
+      Number(tokens.input ?? 0) +
+      Number(tokens.output ?? 0) +
+      Number(tokens.reasoning ?? 0) +
+      Number(cache.read ?? 0) +
+      Number(cache.write ?? 0);
+    const model =
+      s.models.find(
+        (m) => m.providerID === info.providerID && m.modelID === info.modelID,
+      ) ?? s.models.find((m) => m.key === s.model);
+    const limit = model?.context ?? 0;
+    if (!used || !limit) return null;
+    return { used, limit, pct: Math.round((used / limit) * 100) };
+  }, [s.entries[sessionId], s.models, s.model]);
+
   async function send() {
     const value = text.trim();
     if ((!value && !attachments.length) || sending) return;
@@ -195,6 +246,7 @@ export default function Composer({ sessionId }: { sessionId: string }) {
             arguments: args,
             agent: s.agent,
             model: s.model,
+            variant: variant || undefined,
           });
         } catch (e) {
           toast(`Command failed: ${e}`);
@@ -210,6 +262,7 @@ export default function Composer({ sessionId }: { sessionId: string }) {
       const m = s.models.find((x) => x.key === s.model);
       await sendPrompt(sessionId, value, {
         model: m ? { providerID: m.providerID, modelID: m.modelID } : undefined,
+        variant: variant || undefined,
         agent: s.agent || undefined,
         files: attachments.map((a) => ({ url: a.uri, filename: a.name, mime: a.mime })),
       });
@@ -285,7 +338,7 @@ export default function Composer({ sessionId }: { sessionId: string }) {
               {a.preview ? (
                 <img src={a.preview} alt="" />
               ) : (
-                <span className="attachment-icon">📎</span>
+                <span className="attachment-icon"><Icon name="attach" size={16} /></span>
               )}
               <span className="attachment-name">{a.name}</span>
               <button
@@ -294,7 +347,7 @@ export default function Composer({ sessionId }: { sessionId: string }) {
                 onClick={() => removeAttachment(a.id)}
                 title="Remove attachment"
               >
-                ×
+                <Icon name="close" size={13} />
               </button>
             </div>
           ))}
@@ -363,7 +416,7 @@ export default function Composer({ sessionId }: { sessionId: string }) {
           onClick={() => fileInputRef.current?.click()}
           title="Attach files"
         >
-          📎
+          <Icon name="attach" />
         </button>
         <input
           ref={fileInputRef}
@@ -388,6 +441,21 @@ export default function Composer({ sessionId }: { sessionId: string }) {
             </option>
           ))}
         </select>
+        {variants.length > 0 && (
+          <select
+            className="input variant-select"
+            value={variant}
+            onChange={(e) => setVariant(e.target.value)}
+            title="Reasoning effort / performance level for this model"
+          >
+            <option value="">Default</option>
+            {variants.map((v) => (
+              <option key={v} value={v}>
+                {variantLabel(v)}
+              </option>
+            ))}
+          </select>
+        )}
         <select
           className="input agent-select"
           value={s.agent}
@@ -400,6 +468,20 @@ export default function Composer({ sessionId }: { sessionId: string }) {
             </option>
           ))}
         </select>
+        {contextUsage && (
+          <span
+            className={
+              "context-usage" +
+              (contextUsage.pct >= 90 ? " danger" : contextUsage.pct >= 70 ? " warn" : "")
+            }
+            title={`Context used: ${fmtTokens(contextUsage.used)} / ${fmtTokens(contextUsage.limit)} tokens (${contextUsage.pct}%)`}
+          >
+            <span className="context-track">
+              <span style={{ width: `${Math.min(100, contextUsage.pct)}%` }} />
+            </span>
+            <span>{contextUsage.pct}% ctx</span>
+          </span>
+        )}
         {usage && usage.total > 0 && (
           <span className="muted small" title="session tokens · cost">
             {fmtTokens(usage.total)} tok · {fmtCost(usage.cost)}
@@ -408,11 +490,11 @@ export default function Composer({ sessionId }: { sessionId: string }) {
         <div className="spacer" />
         {busy && (
           <button className="btn danger" onClick={() => abortSession(sessionId)}>
-            ■ Stop
+            <Icon name="stop" /> Stop
           </button>
         )}
         <button className="btn primary" disabled={!canSend} onClick={send}>
-          {sending ? "Sending…" : "Send"}
+          <Icon name={sending ? "refresh" : "send"} /> {sending ? "Sending…" : "Send"}
         </button>
       </div>
     </div>

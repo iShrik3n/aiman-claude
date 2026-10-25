@@ -31,7 +31,7 @@ const valueOf = (name, fallback) => {
 };
 
 if (has("-h", "--help")) {
-  console.log(`aiman — opencode sessions manager
+  console.log(`AiMAN — opencode session manager
 
 Usage: aiman [options]
 

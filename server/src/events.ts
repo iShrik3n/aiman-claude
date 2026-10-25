@@ -96,6 +96,7 @@ const assistantInfo = (d: any, evt: any): any => ({
   agentID: d.agent,
   modelID: d.model?.id,
   providerID: d.model?.providerID,
+  variant: d.model?.variant,
 });
 
 export function translateEvent(evt: any): V1Event[] {

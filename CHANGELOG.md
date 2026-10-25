@@ -5,6 +5,111 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **AiMAN branding.** The visible product name is now **AiMAN**. The old
+  `opencode · sessions` wordmark is gone from the app, login, onboarding,
+  browser title and desktop loading/error screens. Internal package, binary,
+  environment-variable and database names remain `aiman` for compatibility.
+
+### Added
+- **Reasoning-effort selector.** Models that expose opencode v2 variants get a
+  second dropdown next to the model picker (`Default`, `None`, `Minimal`, `Low`,
+  `Medium`, `High`, `Extra high`, `Max`). The choice is remembered per model and
+  sent as `model.variant`; switching back to *Default* clears it.
+- **Per-message model attribution.** Every assistant message — including
+  messages in subagent panels — shows the model and effort variant that produced
+  it, so mixed-model sessions are no longer ambiguous.
+- **Extension manager (admin).** A new top-bar **Extensions** view manages
+  opencode v2 MCP servers and plugins: add/edit/remove local and remote MCP
+  servers, connect/disconnect them, browse their resources and templates, and
+  add/remove/check/update plugins. Writes go to the selected opencode config
+  document (global or project) and opencode hot-reloads it; a `.aiman.bak`
+  rollback copy is kept next to the config file.
+- **Selection-aware Ctrl+X.** Pressing Ctrl+X with selected text in the composer
+  now cuts the selection instead of opening the command menu; the menu still
+  opens when nothing is selected.
+- **Shell output shown by default.** Completed `bash`/`shell` tool cards now open
+  automatically; a new **Settings → Show shell output** switch turns this off
+  (running and failed tools always stay expanded).
+- **Semantic icon set.** Replaced emoji and text glyphs throughout the UI with
+  [Iconoir](https://iconoir.com/) line icons. The Windows XP / 98 themes swap in
+  matching bitmap-era icons from `@react95/icons`.
+- **Dark Windows themes.** Added **Windows XP Dark** and **Windows 98 Dark**,
+  with dark tokens for chrome, chat, terminal, code map and overlays while
+  keeping each skin's bevels, fonts and classic icons.
+- **Desktop shell.** A frameless Electron window with a theme-aware titlebar,
+  native window controls, remembered bounds, automatic server startup, and an
+  installer target (`bun run desktop:build`).
+- **Alien Skeuomorphic theme.** The former *Skeuomorphic* skin is now a
+  chrome-and-LCD alien theme using the saved `winamp` theme id.
+- **Compact toolbar (Settings → Compact toolbar).** In the desktop shell the
+  Sessions, Search, Stats, Terminal, Settings, Users, Extensions, Profiles and
+  live indicators move into the themed title bar, removing the separate app
+  toolbar. Pop-out session windows drop the app toolbar entirely and put only
+  the minimize/maximize/close controls in their header.
+- **Context-window meter.** The composer status bar shows the percentage of the
+  active model's context window used, based on the latest assistant turn
+  (`input + output + reasoning + cache read/write`) and the provider's
+  `limit.context`. It turns amber at 70% and red at 90%.
+- **Sortable, collapsible directories.** The sidebar directory list can be
+  ordered by latest session, session count, or alphabetically. Collapsing it
+  reveals a scrollable list of the current sessions in the sidebar; expanding
+  it restores the directory list. Both the sort and collapsed state persist.
+- **Nested session folders.** Aiman folders are now a tree: create subfolders
+  from any folder, navigate with indented rows, collapse branches, and filter a
+  folder inclusively across its subtree. Deleting a folder deletes its
+  descendants while keeping the sessions.
+- **One-click AI organizer.** The admin **Auto-organize** button asks opencode
+  to build a folder tree from session titles, working directories, existing
+  folders and short conversation snippets, then applies the plan to all unfiled
+  sessions. The internal organizer session is archived, not deleted.
+- **Automatic filing at message ten.** New sessions created after the organizer
+  baseline are filed when they reach ten user messages. A matching directory
+  rule files them immediately; otherwise opencode organizes that one session.
+  Child sessions inherit their parent's folder.
+
+### Fixed
+- The command-menu shortcut no longer swallows Ctrl+X while editing a text
+  selection in the chat composer or any other input.
+- **`/compact` on opencode v2.** The manager now sends the required JSON body to
+  `/api/session/:id/compact`; previously the proxied request had no body and
+  opencode rejected it with `Expected object`.
+- **XP/98 window chrome.** The desktop titlebars now use the real XP.css /
+  98.css `.title-bar` components, and the app is wrapped in the libraries'
+  `.window` frame so the Luna/98 borders are present on every edge. The close
+  button is inset correctly instead of being clipped.
+- **XP titlebar overflow.** The XP caption used `width: 100%` with the library's
+  content-box height, adding 10px of padding/border to the viewport and causing
+  a horizontal scrollbar. The grid now stretches the titlebar to the track.
+- **XP/98 dropdown arrows.** Keeping the select's arrow as a longhand background
+  image preserves the library's `no-repeat` placement; hover no longer tiles the
+  arrow across the whole control.
+- **Win98-dark users table** and profile/sort selects now use dark surfaces with
+  readable text instead of white-on-white controls.
+- **Alien controls.** Dropdowns, buttons, tabs, menus and list rows now have
+  visible hover/active states, and native option popups use readable dark
+  teal/acid-green colours.
+- **"0" before session names.** The session row rendered the numeric `pinned`
+  flag with `pinned && <Icon/>`; React prints `0` when the flag is false. The
+  check is now boolean, so unpinned sessions no longer start with a stray zero.
+- **Session pop-outs.** Pop-out windows are frameless again and use the same
+  themed title bar/window frame as the main app. They hide the redundant
+  *Open in new window* and *Back to list* controls. The Electron server probe
+  now recognises the authenticated 401 response, so it can attach to a running
+  aiman instead of refusing to start.
+- **Stray horizontal scrollbars.** Session and chat panes only scroll
+  vertically now; long paths wrap instead of widening the pane.
+- **Chat no longer snaps back after a turn finishes.** Auto-follow is now
+  limited to the live turn; final markdown, images, tool cards and other late
+  layout changes no longer yank a finished conversation back to the bottom.
+- **`/undo` and `/redo`.** opencode v2's revert is staged, not committed, so
+  redo remains possible and the transcript is never deleted. The manager filters
+  the staged boundary when reading v2 messages, and both commands reload the
+  visible entries immediately: undo hides the last user turn and its response,
+  redo brings them back. The command-menu Undo/Redo actions use the same path.
+
 ## [1.8.0] - 2026-10-25
 
 ### Added

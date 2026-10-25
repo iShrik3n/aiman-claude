@@ -100,13 +100,18 @@ function filesFromParts(parts: any[]): { uri: string; name?: string }[] {
 }
 
 async function setSessionModel(sessionId: string, model: any) {
-  if (!model?.providerID || !model?.modelID) return;
+  const id = model?.modelID ?? model?.id;
+  if (!model?.providerID || !id) return;
+  // v2's Model.Ref is { providerID, id, variant? }. Omitting `variant` selects
+  // the model default, so "Default" clears a previously chosen effort level.
+  const ref: any = { providerID: model.providerID, id };
+  if (typeof model.variant === "string" && model.variant) ref.variant = model.variant;
   await ocData(
     `/api/session/${encodeURIComponent(sessionId)}/model`,
     {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ model: { providerID: model.providerID, id: model.modelID } }),
+      body: JSON.stringify({ model: ref }),
     },
     queryFor(sessionId),
   ).catch((e) => console.warn("[oc] could not switch model:", String(e?.message ?? e)));
@@ -226,11 +231,22 @@ export async function handleOcV2(req: Request, url: URL): Promise<Response> {
         const list = byProvider.get(prov.id) ?? [];
         const map: Record<string, any> = {};
         for (const model of list) {
+          // v2 ships reasoning-effort variants (none/minimal/low/…/max) on the
+          // model itself. Preserve them: they drive the second selector and
+          // must be sent as `model.variant` when the model is switched.
+          const variants = Array.isArray(model.variants)
+            ? model.variants
+                .map((v: any) => (typeof v === "string" ? v : v?.id))
+                .filter((v: any): v is string => typeof v === "string" && v.length > 0)
+            : [];
           map[model.id] = {
             id: model.id,
             name: model.name ?? model.id,
             reasoning: Boolean(model.capabilities?.reasoning),
             tool_call: model.capabilities?.tools !== false,
+            variants,
+            context: Number(model.limit?.context ?? 0) || 0,
+            ...(model.limit ? { limit: model.limit } : {}),
           };
         }
         return { id: prov.id, name: prov.name ?? prov.id, models: map };
@@ -264,7 +280,11 @@ export async function handleOcV2(req: Request, url: URL): Promise<Response> {
       // combined "provider/model" key.
       if (b.model && typeof b.model === "string" && b.model.includes("/")) {
         const [providerID, ...rest] = b.model.split("/");
-        await setSessionModel(sessionId, { providerID, modelID: rest.join("/") });
+        await setSessionModel(sessionId, {
+          providerID,
+          modelID: rest.join("/"),
+          variant: b.variant,
+        });
       }
       await setSessionAgent(sessionId, b.agent);
       await ocData(
@@ -310,7 +330,9 @@ export async function handleOcV2(req: Request, url: URL): Promise<Response> {
     if (m && method === "POST") {
       const sessionId = m[1]!;
       const b = await readBody(req);
-      const q = queryFor(sessionId);
+      // Stage only. `/revert/commit` permanently deletes the transcript, which
+      // makes redo impossible. opencode's own undo is reversible until it is
+      // committed (e.g. by sending a new prompt), so keep it staged here.
       await ocData(
         `/api/session/${encodeURIComponent(sessionId)}/revert/stage`,
         {
@@ -318,9 +340,8 @@ export async function handleOcV2(req: Request, url: URL): Promise<Response> {
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ messageID: b.messageID }),
         },
-        q,
+        queryFor(sessionId),
       );
-      await ocData(`/api/session/${encodeURIComponent(sessionId)}/revert/commit`, { method: "POST" }, q);
       return json(true);
     }
 
@@ -336,9 +357,16 @@ export async function handleOcV2(req: Request, url: URL): Promise<Response> {
 
     m = p.match(/^\/session\/([^/]+)\/summarize$/);
     if (m && method === "POST") {
+      const b = await readBody(req);
+      // v2 requires a JSON body even though both fields are optional; an empty
+      // request is rejected with "Expected object".
       await ocData(
         `/api/session/${encodeURIComponent(m[1]!)}/compact`,
-        { method: "POST" },
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(b ?? {}),
+        },
         queryFor(m[1]!),
       );
       return json(true);

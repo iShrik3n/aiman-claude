@@ -1,8 +1,8 @@
-# aiman
+# AiMAN
 
 A self-hosted web UI and session manager for [opencode](https://opencode.ai).
 
-`aiman` turns your opencode session history into a searchable, organisable
+`AiMAN` turns your opencode session history into a searchable, organisable
 workspace: browse conversations, sort them into folders, pin the important ones,
 full-text search every message, track token/cost usage, manage users and switch
 provider API keys — all from the browser, with a live event stream while
@@ -26,17 +26,44 @@ opencode is working.
   embedded in the browser, attached to that session (streaming, tools and slash
   commands in one view). Switch to the classic structured chat in **Settings**.
 - **Web chat** — streamed messages, tool output, todos, permission prompts and
-  interactive question prompts.
+  interactive question prompts. Models with reasoning-effort variants get a
+  second selector (none/minimal/…/max), and each assistant message is labelled
+  with the model and effort level that produced it. Shell/tool output opens by
+  default; turn that off in **Settings** if you prefer compact messages.
+- **Undo / redo** — stage or clear opencode's reversible revert boundary; the
+  last turn disappears from the transcript and comes back on redo.
+- **Context meter** — the composer status bar shows how much of the active
+  model's context window the latest turn used, with warning colours near the
+  limit.
+- **Semantic icon set** — the whole app uses line icons, switching to authentic
+  bitmap-era icons in the Windows themes (no emoji as UI chrome).
 - **Native terminal** — the embedded terminal runs on opencode's own PTY API and
   xterm.js; no Python or external terminal server, works on Linux, macOS and
   Windows.
 - **Users** — first-run admin setup, add/promote/disable/delete users.
+- **Extensions (admin)** — manage opencode MCP servers (local or remote) and
+  plugins from the top bar: add, edit, remove, connect/disconnect, browse MCP
+  resources, and check/update/remove plugins. Changes are written to the active
+  opencode config document, which opencode hot-reloads.
 - **Profiles** — bundle provider API keys and switch them at runtime.
 - **Deep links** — every view has a URL (`/sessions`, `/search`, `/stats`, …) and
   each session has its own handle (`/sessions/<id>`).
-- **Themes** — eight app-wide skins including Windows XP and Windows 98
-  (via xp.css / 98.css), a skeuomorphic Winamp-style theme, Nord and a CRT.
-- **Pop-out windows** — open any session in its own chrome-less browser window.
+- **Themes** — ten app-wide skins including Windows XP and Windows 98 (and dark
+  variants of both, via xp.css / 98.css), a skeuomorphic Winamp-style theme,
+  macOS Aqua, Nord and a CRT.
+- **Folder tree** — organize sessions into nested folders, with inclusive
+  subtree filtering, branch collapse, and subfolder creation.
+- **Auto-organize** — one admin click asks opencode to build a folder tree and
+  file existing sessions from their titles, paths and contexts. New sessions
+  are filed automatically when they reach ten user messages; the internal
+  organizer session is archived.
+- **Sidebar directories** — sort working directories by latest session, session
+  count, or name; collapse the list to show a compact session switcher instead.
+- **Pop-out windows** — open any session in its own themed window; it inherits
+  the active skin and drops the redundant app toolbar.
+- **Compact toolbar** — optionally merge Sessions, Search, Stats, Terminal,
+  Settings, Users, Extensions, Profiles and the live indicator into the desktop
+  title bar. Pop-outs then keep only the window controls in their header.
 - **Cross-platform** — runs on Linux, macOS and Windows via [Bun](https://bun.sh).
 
 ## Requirements
@@ -96,6 +123,31 @@ aiman --port 5000     # custom port
 
 Then open <http://127.0.0.1:4097>. On first visit you'll be asked to create the
 administrator account.
+
+### Desktop app
+
+The Electron shell wraps the same server and web UI:
+
+```powershell
+cd C:\Users\kristian\Desktop\aiman
+bun run desktop
+```
+
+The shell reuses an aiman already listening on port 4097; otherwise it starts
+the source server itself. To run this source build alongside an existing
+installed aiman, give it another port:
+
+```powershell
+$env:PORT = "4098"
+bun run desktop
+```
+
+Or double-click `run-desktop.bat`. It uses port 4098 by default so it can run
+beside the installed app; pass a different port as its first argument if needed
+(`run-desktop.bat 5000`).
+
+Close any open aiman desktop window first — the shell is single-instance. Build
+an installer with `bun run desktop:build`; the output goes to `desktop-dist/`.
 
 ## Configuration
 

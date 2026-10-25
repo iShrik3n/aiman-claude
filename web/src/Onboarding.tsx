@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api } from "./api";
+import Icon from "./Icon";
 import { completeOnboarding, setChatMode, setTheme, toast, useStore } from "./store";
 import { THEMES } from "./themes";
 
@@ -37,7 +38,7 @@ export default function Onboarding() {
     <div className="auth-wrap">
       <div className="auth-card" style={{ width: 440 }}>
         <div className="brand" style={{ fontSize: 20, marginBottom: 4 }}>
-          open<span>code</span> · aiman
+          Ai<span>MAN</span>
         </div>
         <div className="onb-steps">
           {steps.map((label, i) => (
@@ -51,7 +52,7 @@ export default function Onboarding() {
           <>
             <h3 style={{ margin: "8px 0" }}>Welcome, {s.auth.user?.username}</h3>
             <p className="muted small">
-              aiman is a web UI for your opencode sessions. This short setup covers
+              AiMAN is a web UI for your opencode sessions. This short setup covers
               security and your preferred chat experience.
             </p>
             <button className="btn primary full" style={{ marginTop: 16 }} onClick={() => setStep(1)}>
@@ -151,7 +152,7 @@ export default function Onboarding() {
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
               <button className="btn ghost" onClick={() => setStep(1)}>
-                ← Back
+                <Icon name="back" /> Back
               </button>
               <button className="btn primary" onClick={() => setStep(3)}>
                 Next

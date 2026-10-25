@@ -4,8 +4,10 @@ import {
   logout,
   newSession,
   openMenu,
+  redoSession,
   store,
   toast,
+  undoLastMessage,
 } from "./store";
 
 export type BuiltinCmd = { name: string; description: string };
@@ -67,17 +69,11 @@ export async function runBuiltin(name: string): Promise<boolean> {
       if (!id) return toast("no active session"), true;
       await api.summarize(id).then(() => toast("compacting…")).catch((e) => toast(String(e)));
       return true;
-    case "undo": {
-      if (!id) return toast("no active session"), true;
-      const entries = store.get().entries[id] ?? [];
-      const lastUser = [...entries].reverse().find((e) => e.info?.role === "user");
-      if (!lastUser) return toast("nothing to undo"), true;
-      await api.revert(id, lastUser.info.id).then(() => toast("reverted")).catch((e) => toast(String(e)));
+    case "undo":
+      await undoLastMessage(id);
       return true;
-    }
     case "redo":
-      if (!id) return toast("no active session"), true;
-      await api.unrevert(id).then(() => toast("restored")).catch((e) => toast(String(e)));
+      await redoSession(id);
       return true;
     case "share": {
       if (!id) return toast("no active session"), true;

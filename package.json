@@ -1,8 +1,9 @@
 {
   "name": "aiman",
   "version": "1.8.0",
-  "description": "Self-hosted web UI and session manager for opencode — browse, search, organise and analyse your opencode sessions.",
+  "description": "AiMAN — self-hosted web UI and session manager for opencode.",
   "type": "module",
+  "main": "desktop/main.cjs",
   "bin": {
     "aiman": "bin/aiman.mjs"
   },
@@ -10,6 +11,7 @@
     "bin",
     "server",
     "dist",
+    "desktop",
     "scripts",
     "deploy",
     "README.md",
@@ -23,7 +25,10 @@
     "build": "bun run --cwd web build",
     "build:web": "bun install --cwd web && bun run --cwd web build",
     "typecheck": "bunx tsc -p web/tsconfig.json --noEmit",
-    "prepublishOnly": "bun run build:web"
+    "prepublishOnly": "bun run build:web",
+    "desktop": "electron desktop/main.cjs",
+    "desktop:dir": "electron-builder --win --x64 --dir",
+    "desktop:build": "electron-builder --win --x64"
   },
   "engines": {
     "bun": ">=1.1.0"
@@ -44,5 +49,48 @@
   "bugs": {
     "url": "https://github.com/spacewalkingninja/aiman/issues"
   },
-  "homepage": "https://github.com/spacewalkingninja/aiman#readme"
+  "homepage": "https://github.com/spacewalkingninja/aiman#readme",
+  "build": {
+    "appId": "ai.aiman.desktop",
+    "productName": "aiman",
+    "asar": true,
+    "directories": {
+      "output": "desktop-dist"
+    },
+    "files": [
+      "desktop/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "bin",
+        "to": "aiman/bin"
+      },
+      {
+        "from": "server",
+        "to": "aiman/server"
+      },
+      {
+        "from": "dist",
+        "to": "aiman/dist"
+      },
+      {
+        "from": "package.json",
+        "to": "aiman/package.json"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "devDependencies": {
+    "electron": "^45.0.0",
+    "electron-builder": "^26.18.0"
+  }
 }

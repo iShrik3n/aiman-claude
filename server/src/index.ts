@@ -13,6 +13,12 @@ import { ensureFtsMode, syncFts, pruneFts, search } from "./fts";
 import { aggregateStats, sessionStats, usageBySession } from "./stats";
 import { isV2 } from "./db";
 import { handleOcV2 } from "./ocv2";
+import { handleExtensions } from "./extensions";
+import {
+  autoOrganizeAll,
+  ensureAutoOrganizeBaseline,
+  scanForAutoOrganize,
+} from "./organizer";
 import { ocData, ocFetch } from "./ocClient";
 import {
   activateProfileForUser,
@@ -35,6 +41,7 @@ import {
   createUser,
   deleteSession,
   deleteUser,
+  findUser,
   findUsername,
   isSecure,
   listUsers,
@@ -773,6 +780,12 @@ async function handle(req: Request): Promise<Response> {
     return json({ ok: true });
   }
 
+  // ---------- extensions (MCP servers + plugins) ----------
+  if (p === "/api/extensions" || p.startsWith("/api/extensions/")) {
+    if (!user!.is_admin) return json({ error: "forbidden" }, 403);
+    return handleExtensions(req, url);
+  }
+
   if (p === "/api/health") {
     let terminal = false;
     try {
@@ -851,7 +864,11 @@ async function handle(req: Request): Promise<Response> {
     return json({ ok: true });
   }
 
-  if (p === "/api/sessions" && method === "GET") return json(listSessions(url));
+  if (p === "/api/sessions" && method === "GET") {
+    // Background filing for sessions that just reached their 10th user turn.
+    void scanForAutoOrganize();
+    return json(listSessions(url));
+  }
 
   if (p === "/api/stats" && method === "GET") {
     const userId = url.searchParams.get("user") || undefined;
@@ -1002,7 +1019,35 @@ async function handle(req: Request): Promise<Response> {
   if (p === "/api/folders" && method === "POST") {
     const b = await readBody(req);
     if (!b.name) return json({ error: "name required" }, 400);
-    return json(createFolder(String(b.name), b.color ?? null), 201);
+    return json(
+      createFolder(String(b.name), b.color ?? null, b.parentId ?? b.parent_id ?? null),
+      201,
+    );
+  }
+
+  if (p === "/api/folders/auto-organize" && method === "POST") {
+    if (!user!.is_admin) return json({ error: "forbidden" }, 403);
+    const b = await readBody(req);
+    const modelKey = typeof b.model === "string" ? b.model : "";
+    const [providerID, ...rest] = modelKey.split("/");
+    const model =
+      providerID && rest.length
+        ? {
+            providerID,
+            modelID: rest.join("/"),
+            ...(typeof b.variant === "string" && b.variant ? { variant: b.variant } : {}),
+          }
+        : undefined;
+    try {
+      return json(
+        await autoOrganizeAll({
+          model,
+          agent: typeof b.agent === "string" ? b.agent : undefined,
+        }),
+      );
+    } catch (e) {
+      return json({ error: String(e) }, 502);
+    }
   }
 
   let m = p.match(/^\/api\/folders\/([^/]+)$/);
@@ -1102,10 +1147,17 @@ setTimeout(() => {
   } catch (e) {
     console.error("[boot] profiles failed:", e);
   }
+  try {
+    ensureAutoOrganizeBaseline();
+  } catch (e) {
+    console.error("[boot] organizer baseline failed:", e);
+  }
   runSync();
 }, 500);
 const syncTimer = setInterval(runSync, 1500);
 if (typeof syncTimer.unref === "function") syncTimer.unref();
+const organizerTimer = setInterval(() => void scanForAutoOrganize(), 60_000);
+if (typeof organizerTimer.unref === "function") organizerTimer.unref();
 
 Bun.serve({
   port: PORT,

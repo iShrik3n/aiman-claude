@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type AuthUser } from "./api";
+import Icon from "./Icon";
 import { store, toast, useStore } from "./store";
 
 export default function Users() {
@@ -141,7 +142,7 @@ export default function Users() {
 
       <div style={{ marginTop: 24 }}>
         <button className="btn ghost" onClick={() => store.set({ view: "chat" })}>
-          ← Back
+          <Icon name="back" /> Back
         </button>
       </div>
     </div>
