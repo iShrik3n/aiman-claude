@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, type TreeNode } from "./api";
 import Icon, { type IconName } from "./Icon";
+import {
+  MAX_SAFE_IMAGE_BYTES,
+  MAX_SAFE_PDF_BYTES,
+  MAX_SAFE_TEXT_BYTES,
+} from "./filePreview";
 
 type Rect = { x: number; y: number; w: number; h: number };
 type Placed = { node: TreeNode; rect: Rect; depth: number; header: number };
@@ -104,6 +109,8 @@ const IMG_EXT = new Set([
   ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", ".svg", ".ico", ".bmp", ".tif", ".tiff",
 ]);
 
+const PDF_EXT = new Set([".pdf"]);
+
 // Everything that is NOT in this set is treated as text and auto-loaded (so we
 // don't have to keep an ever-growing allowlist of languages). Images are
 // handled separately (rendered straight from /api/raw).
@@ -156,7 +163,23 @@ const MAX_RENDER_CHARS = 120_000; // cap rendered source per cell
 const ZOOM_MIN = 0.04;
 const ZOOM_MAX = 8000; // effectively "infinite" — enough to read a whole file
 
-export default function CodeMap({ directories }: { directories: string[] }) {
+export default function CodeMap({
+  directories,
+  light = false,
+  safePreviews = true,
+  limits,
+}: {
+  directories: string[];
+  /** Skip heavy automatic loading; keep the same treemap layout. */
+  light?: boolean;
+  /** In light mode, still render images, PDFs and small text within size caps. */
+  safePreviews?: boolean;
+  /** User-configured caps, already converted to bytes. */
+  limits?: { textBytes: number; imageBytes: number; pdfBytes: number };
+}) {
+  const textLimit = limits?.textBytes ?? MAX_SAFE_TEXT_BYTES;
+  const imageLimit = limits?.imageBytes ?? MAX_SAFE_IMAGE_BYTES;
+  const pdfLimit = limits?.pdfBytes ?? MAX_SAFE_PDF_BYTES;
   const [dir, setDir] = useState(directories[0] ?? "");
   const [tree, setTree] = useState<TreeNode | null>(null);
   const [loading, setLoading] = useState(false);
@@ -174,6 +197,8 @@ export default function CodeMap({ directories }: { directories: string[] }) {
   const drag = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
   const inflight = useRef<Set<string>>(new Set());
   const requested = useRef<Set<string>>(new Set());
+  // Invalidates in-flight previews when the directory or preview mode changes.
+  const generation = useRef(0);
 
   useEffect(() => {
     if (directories.length && !directories.includes(dir)) setDir(directories[0]!);
@@ -184,6 +209,7 @@ export default function CodeMap({ directories }: { directories: string[] }) {
     if (!dir) return;
     setLoading(true);
     setError(null);
+    generation.current++;
     try {
       const t = await api.tree(dir, { depth: 10, max: 12000 });
       setTree(t);
@@ -223,21 +249,47 @@ export default function CodeMap({ directories }: { directories: string[] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tree]);
 
-  // Auto-load text files (≤200k) and any file that's big enough on screen.
-  // Images don't need fetching — they're rendered straight from /api/raw.
+  // Lightweight mode: drop any prefetched bodies. The map still renders from
+  // the tree metadata alone, and double-click editing fetches one file on demand.
+  useEffect(() => {
+    if (!light) return;
+    generation.current++;
+    setFiles({});
+    requested.current.clear();
+  }, [light, safePreviews, textLimit]);
+
+  // Auto-load text files. Full mode keeps the old generous cap; lightweight
+  // mode only reads small text for cells that are actually on screen.
+  // Images and PDFs are rendered straight from /api/raw, with their own caps.
   useEffect(() => {
     if (!size.w || !size.h) return;
+    if (light && !safePreviews) return;
+    let stopped = false;
+    const gen = generation.current;
     const cand: { path: string; area: number }[] = [];
     for (const p of placed) {
       if (p.node.type !== "file") continue;
       const ext = p.node.ext ?? "";
-      if (IMG_EXT.has(ext)) continue; // images render directly, no fetch
+      if (IMG_EXT.has(ext) || PDF_EXT.has(ext)) continue; // rendered from raw
+      if (BINARY_EXT.has(ext)) continue;
       const pw = (p.rect.w / 100) * size.w * view.scale;
       const ph = (p.rect.h / 100) * size.h * view.scale;
       const area = pw * ph;
-      const isBinary = BINARY_EXT.has(ext);
-      const auto = !isBinary && p.node.size <= MAX_AUTO_BYTES;
-      if (auto || (area > MIN_PREVIEW_AREA && !isBinary)) {
+      if (light) {
+        const sx = (p.rect.x / 100) * size.w * view.scale + view.tx;
+        const sy = (p.rect.y / 100) * size.h * view.scale + view.ty;
+        const visible =
+          sx < size.w + 80 &&
+          sy < size.h + 80 &&
+          sx + pw > -80 &&
+          sy + ph > -80;
+        if (visible && area > MIN_PREVIEW_AREA && p.node.size <= textLimit) {
+          cand.push({ path: p.node.path, area });
+        }
+        continue;
+      }
+      const auto = p.node.size <= MAX_AUTO_BYTES;
+      if (auto || area > MIN_PREVIEW_AREA) {
         cand.push({ path: p.node.path, area });
       }
     }
@@ -246,16 +298,22 @@ export default function CodeMap({ directories }: { directories: string[] }) {
     const todo = cand
       .slice(0, MAX_AUTO_FILES)
       .filter((c) => !requested.current.has(c.path));
-    for (const c of todo) requested.current.add(c.path);
 
     let i = 0;
     const worker = async () => {
       while (i < todo.length) {
+        if (stopped) return;
         const c = todo[i++]!;
+        if (requested.current.has(c.path)) continue;
+        requested.current.add(c.path);
         inflight.current.add(c.path);
         try {
           const d = await api.fileGet(dir, c.path);
-          setFiles((prev) => ({ ...prev, [c.path]: d }));
+          // A directory or preview-mode change invalidates this response, but
+          // ordinary pan/zoom keeps it so already-fetched cells stay useful.
+          if (gen === generation.current) {
+            setFiles((prev) => ({ ...prev, [c.path]: d }));
+          }
         } catch {}
         finally {
           inflight.current.delete(c.path);
@@ -263,8 +321,11 @@ export default function CodeMap({ directories }: { directories: string[] }) {
       }
     };
     Promise.all(Array.from({ length: Math.min(FETCH_CONCURRENCY, todo.length) }, worker));
+    return () => {
+      stopped = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [placed, view.scale, size.w, size.h, dir]);
+  }, [placed, view.scale, view.tx, view.ty, size.w, size.h, dir, light, safePreviews, textLimit]);
 
   function fitToRect(rect: Rect) {
     const W = size.w || 1;
@@ -419,9 +480,24 @@ export default function CodeMap({ directories }: { directories: string[] }) {
               const isDir = node.type === "dir";
               const data = files[node.path];
               const isImg = !isDir && IMG_EXT.has(node.ext ?? "");
-              // Images render as soon as the cell is a usable thumbnail.
-              const showImg = isImg && sw > 40 && sh > 28;
-              const showText = !isImg && data?.type === "text" && sw * sh > MIN_PREVIEW_AREA;
+              const isPdf = !isDir && PDF_EXT.has(node.ext ?? "");
+              const previewArea = sw * sh > MIN_PREVIEW_AREA;
+              const mediaAllowed = !light || safePreviews;
+              const imageAllowed =
+                isImg && mediaAllowed && (!light || node.size <= imageLimit);
+              const pdfAllowed = isPdf && mediaAllowed && (!light || node.size <= pdfLimit);
+              // Media only mounts for cells that are actually on screen (the
+              // off-screen cull above), so even safe previews stay lazy.
+              const showImg = imageAllowed && sw > 40 && sh > 28;
+              const showImgPlaceholder =
+                isImg && !showImg && (light ? !imageAllowed : false) && sw > 40 && sh > 28;
+              const showPdf = pdfAllowed && sw > 100 && sh > 80;
+              const showPdfPlaceholder = isPdf && !showPdf && sw > 40 && sh > 28;
+              const textAllowed =
+                !isImg && !isPdf && (!light || (safePreviews && node.size <= textLimit));
+              const showText = textAllowed && data?.type === "text" && previewArea;
+              const showSkeleton =
+                light && !isDir && !isImg && !isPdf && previewArea && !showText;
               const showLabel = sw > 28 && sh > 11;
               const fontSize = Math.min(14, Math.max(7, Math.min(sw, sh) / 6));
               return (
@@ -437,7 +513,14 @@ export default function CodeMap({ directories }: { directories: string[] }) {
                   }}
                   title={`${node.path} · ${humanSize(node.size)}`}
                   onClick={() => isDir && fitToRect(rect)}
-                  onDoubleClick={() => !isDir && openEditor(node)}
+                  onDoubleClick={() => {
+                    if (isDir) return;
+                    if (isImg || isPdf) {
+                      window.open(api.rawUrl(dir, node.path), "_blank", "noopener,noreferrer");
+                      return;
+                    }
+                    openEditor(node);
+                  }}
                 >
                   {showLabel && (
                     <div className="cm-label" style={{ fontSize }}>
@@ -458,15 +541,42 @@ export default function CodeMap({ directories }: { directories: string[] }) {
                       alt={node.name}
                     />
                   )}
+                  {showImgPlaceholder && (
+                    <div className="cm-img-ph">
+                      <Icon name="image" size={Math.min(28, Math.max(12, fontSize * 1.6))} />
+                    </div>
+                  )}
+                  {showPdf && (
+                    <iframe
+                      className="cm-pdf"
+                      loading="lazy"
+                      tabIndex={-1}
+                      title={node.name}
+                      src={`${api.rawUrl(dir, node.path)}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
+                    />
+                  )}
+                  {showPdfPlaceholder && (
+                    <div className="cm-img-ph">
+                      <Icon name="file" size={Math.min(28, Math.max(12, fontSize * 1.6))} />
+                    </div>
+                  )}
                   {showText && (
                     <pre className="cm-code">{data?.content?.slice(0, MAX_RENDER_CHARS)}</pre>
+                  )}
+                  {showSkeleton && (
+                    <div
+                      className="cm-skeleton"
+                      style={{ top: Math.max(15, fontSize + 5) }}
+                    />
                   )}
                 </div>
               );
             })}
           </div>
           <div className="cm-hint">
-            wheel = zoom · middle-drag = pan · click folder = zoom in · double-click file = edit
+            {light
+              ? `light mode: ${safePreviews ? "images, PDFs & small text only" : "metadata only"} · wheel = zoom · middle-drag = pan · double-click file = open/edit`
+              : "wheel = zoom · middle-drag = pan · click folder = zoom in · double-click file = open/edit"}
           </div>
         </div>
       )}

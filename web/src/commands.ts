@@ -23,6 +23,7 @@ export const BUILTINS: BuiltinCmd[] = [
   { name: "share", description: "Share this session (copy link)" },
   { name: "unshare", description: "Stop sharing this session" },
   { name: "terminal", description: "Open the terminal tab" },
+  { name: "btw", description: "Ask a side question without interrupting this session" },
   { name: "stats", description: "Open usage statistics" },
   { name: "help", description: "Keyboard shortcuts" },
   { name: "clear", description: "Clear the input" },

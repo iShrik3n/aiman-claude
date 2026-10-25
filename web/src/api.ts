@@ -31,6 +31,50 @@ export type Session = {
   usage: Usage | null;
 };
 
+export type QueueFile = {
+  uri?: string;
+  url?: string;
+  name?: string;
+  filename?: string;
+  mime?: string;
+};
+
+export type QueueItem = {
+  id: string;
+  sessionId: string;
+  text: string;
+  files: QueueFile[];
+  createdAt: number;
+  status: "pending" | "sending" | "sent" | "failed" | "cancelled";
+  quietMs: number;
+  blockQuestions: boolean;
+  blockPermissions: boolean;
+  blockShells: boolean;
+  blockSubagents: boolean;
+  nextSendAt: number | null;
+  blockedReason: string | null;
+  error: string | null;
+  attempts: number;
+  sentAt: number | null;
+};
+
+export type QueueResponse = {
+  items: QueueItem[];
+  serverNow: number;
+};
+
+export type BtwItem = {
+  id: string;
+  sessionId: string;
+  sideSessionId: string | null;
+  question: string;
+  answer: string | null;
+  status: "pending" | "done" | "failed";
+  error: string | null;
+  createdAt: number;
+  completedAt: number | null;
+};
+
 export type ServiceStatus = {
   platform: string;
   manager: "systemd" | "launchd" | "schtasks" | null;
@@ -375,6 +419,37 @@ export const api = {
       if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
       return true;
     }),
+  queue: (sessionId: string) =>
+    fetch(`/api/sessions/${sessionId}/queue`).then(j<QueueResponse>),
+  enqueue: (
+    sessionId: string,
+    body: {
+      text: string;
+      files?: QueueFile[];
+      quietMs: number;
+      blockQuestions: boolean;
+      blockPermissions: boolean;
+      blockShells: boolean;
+      blockSubagents: boolean;
+    },
+  ) =>
+    fetch(`/api/sessions/${sessionId}/queue`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(j<QueueResponse & { ok: boolean; item: QueueItem }>),
+  cancelQueued: (id: string) =>
+    fetch(`/api/queue/${id}`, { method: "DELETE" }).then(j<{ ok: boolean }>),
+  btwHistory: (sessionId: string) =>
+    fetch(`/api/sessions/${sessionId}/btw`).then(j<{ items: BtwItem[] }>),
+  btwAsk: (sessionId: string, question: string) =>
+    fetch(`/api/sessions/${sessionId}/btw`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ question }),
+    }).then(j<{ ok: boolean; item: BtwItem }>),
+  btwDelete: (id: string) =>
+    fetch(`/api/btw/${id}`, { method: "DELETE" }).then(j<{ ok: boolean }>),
   abort: (sessionId: string) =>
     fetch(`/oc/session/${sessionId}/abort`, { method: "POST" }).then(j),
   createSession: (directory: string, title?: string) =>

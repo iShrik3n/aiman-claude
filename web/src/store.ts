@@ -12,6 +12,11 @@ import {
   type Todo,
 } from "./api";
 import { applyTheme, DEFAULT_THEME } from "./themes";
+import {
+  DEFAULT_MAX_IMAGE_MB,
+  DEFAULT_MAX_PDF_MB,
+  DEFAULT_MAX_TEXT_KB,
+} from "./filePreview";
 
 export type View =
   | "chat"
@@ -84,9 +89,37 @@ type State = {
   opencodeV2: boolean;
   thinkingOpen: boolean;
   shellOutputOpen: boolean;
+  /** Do not prefetch file contents for the split code map. */
+  fileMapSkipContent: boolean;
+  /** In lightweight mode, still show images, PDFs and small text files. */
+  fileMapSafePreviews: boolean;
+  /** Size caps for lightweight previews (KB for text, MB for media). */
+  fileMapMaxTextKb: number;
+  fileMapMaxImageMb: number;
+  fileMapMaxPdfMb: number;
+  /** Deferred-message queue settings. */
+  queueEnabled: boolean;
+  queueEnter: boolean;
+  queueQuietSeconds: number;
+  queueBlockQuestions: boolean;
+  queueBlockPermissions: boolean;
+  queueBlockShells: boolean;
+  queueBlockSubagents: boolean;
   /** Merge the app toolbar into the desktop title bar. */
   compactToolbar: boolean;
 };
+
+/** Read a positive numeric setting from localStorage, clamped to a range. */
+function readLimit(key: string, fallback: number, min: number, max: number): number {
+  try {
+    const raw = localStorage.getItem(key);
+    const value = raw == null ? fallback : Number(raw);
+    if (!Number.isFinite(value)) return fallback;
+    return Math.min(max, Math.max(min, value));
+  } catch {
+    return fallback;
+  }
+}
 
 /** Per-model variant memory, e.g. { "deepseek/deepseek-flash": "high" }. */
 function readVariantMap(): Record<string, string> {
@@ -137,6 +170,36 @@ let state: State = {
   thinkingOpen: (typeof localStorage !== "undefined" ? localStorage.getItem("oc_thinking_open") : "1") !== "0",
   shellOutputOpen:
     (typeof localStorage !== "undefined" ? localStorage.getItem("oc_shell_output_open") : "1") !== "0",
+  fileMapSkipContent:
+    (typeof localStorage !== "undefined"
+      ? localStorage.getItem("oc_file_map_skip_content")
+      : "1") !== "0",
+  fileMapSafePreviews:
+    (typeof localStorage !== "undefined"
+      ? localStorage.getItem("oc_file_map_safe_previews")
+      : "1") !== "0",
+  fileMapMaxTextKb: readLimit("oc_file_map_max_text_kb", DEFAULT_MAX_TEXT_KB, 1, 4096),
+  fileMapMaxImageMb: readLimit("oc_file_map_max_image_mb", DEFAULT_MAX_IMAGE_MB, 0.1, 100),
+  fileMapMaxPdfMb: readLimit("oc_file_map_max_pdf_mb", DEFAULT_MAX_PDF_MB, 0.1, 500),
+  queueEnabled:
+    (typeof localStorage !== "undefined" ? localStorage.getItem("oc_queue_enabled") : "1") !== "0",
+  queueEnter:
+    typeof localStorage !== "undefined" && localStorage.getItem("oc_queue_enter") === "1",
+  queueQuietSeconds: readLimit("oc_queue_quiet_seconds", 10, 0, 120),
+  queueBlockQuestions:
+    (typeof localStorage !== "undefined"
+      ? localStorage.getItem("oc_queue_block_questions")
+      : "1") !== "0",
+  queueBlockPermissions:
+    (typeof localStorage !== "undefined"
+      ? localStorage.getItem("oc_queue_block_permissions")
+      : "1") !== "0",
+  queueBlockShells:
+    (typeof localStorage !== "undefined" ? localStorage.getItem("oc_queue_block_shells") : "1") !== "0",
+  queueBlockSubagents:
+    (typeof localStorage !== "undefined"
+      ? localStorage.getItem("oc_queue_block_subagents")
+      : "1") !== "0",
   compactToolbar:
     typeof localStorage !== "undefined" && localStorage.getItem("oc_compact_toolbar") === "1",
 };
@@ -207,6 +270,87 @@ export function setShellOutputOpen(open: boolean) {
     localStorage.setItem("oc_shell_output_open", open ? "1" : "0");
   } catch {}
   set({ shellOutputOpen: open });
+}
+
+/**
+ * Keep the split file map lightweight: do not prefetch text contents or image
+ * thumbnails. Double-click editing still reads a single file on demand.
+ */
+export function setFileMapSkipContent(skip: boolean) {
+  try {
+    localStorage.setItem("oc_file_map_skip_content", skip ? "1" : "0");
+  } catch {}
+  set({ fileMapSkipContent: skip });
+}
+
+/**
+ * In lightweight mode, keep rendering the cheap/visual file kinds: images,
+ * PDFs and small text files. Turn this off for a metadata-only map.
+ */
+export function setFileMapSafePreviews(allow: boolean) {
+  try {
+    localStorage.setItem("oc_file_map_safe_previews", allow ? "1" : "0");
+  } catch {}
+  set({ fileMapSafePreviews: allow });
+}
+
+function setLimit(
+  key: string,
+  stateKey: "fileMapMaxTextKb" | "fileMapMaxImageMb" | "fileMapMaxPdfMb",
+  value: number,
+  min: number,
+  max: number,
+) {
+  const next = Math.min(max, Math.max(min, value));
+  try {
+    localStorage.setItem(key, String(next));
+  } catch {}
+  set({ [stateKey]: next } as Partial<State>);
+}
+
+export function setFileMapMaxTextKb(value: number) {
+  setLimit("oc_file_map_max_text_kb", "fileMapMaxTextKb", value, 1, 4096);
+}
+
+export function setFileMapMaxImageMb(value: number) {
+  setLimit("oc_file_map_max_image_mb", "fileMapMaxImageMb", value, 0.1, 100);
+}
+
+export function setFileMapMaxPdfMb(value: number) {
+  setLimit("oc_file_map_max_pdf_mb", "fileMapMaxPdfMb", value, 0.1, 500);
+}
+
+function setBoolean(key: string, stateKey: keyof State, value: boolean) {
+  try {
+    localStorage.setItem(key, value ? "1" : "0");
+  } catch {}
+  set({ [stateKey]: value } as Partial<State>);
+}
+
+export function setQueueEnabled(value: boolean) {
+  setBoolean("oc_queue_enabled", "queueEnabled", value);
+}
+export function setQueueEnter(value: boolean) {
+  setBoolean("oc_queue_enter", "queueEnter", value);
+}
+export function setQueueQuietSeconds(value: number) {
+  const next = Math.min(120, Math.max(0, Math.round(value)));
+  try {
+    localStorage.setItem("oc_queue_quiet_seconds", String(next));
+  } catch {}
+  set({ queueQuietSeconds: next });
+}
+export function setQueueBlockQuestions(value: boolean) {
+  setBoolean("oc_queue_block_questions", "queueBlockQuestions", value);
+}
+export function setQueueBlockPermissions(value: boolean) {
+  setBoolean("oc_queue_block_permissions", "queueBlockPermissions", value);
+}
+export function setQueueBlockShells(value: boolean) {
+  setBoolean("oc_queue_block_shells", "queueBlockShells", value);
+}
+export function setQueueBlockSubagents(value: boolean) {
+  setBoolean("oc_queue_block_subagents", "queueBlockSubagents", value);
 }
 
 /** Merge navigation into the desktop title bar (the standalone pop-out keeps it compact). */

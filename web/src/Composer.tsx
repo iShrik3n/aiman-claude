@@ -1,5 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { api, type Usage } from "./api";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+} from "react";
+import { api, type QueueItem, type Usage } from "./api";
 import { BUILTINS, runBuiltin } from "./commands";
 import { abortSession, sendPrompt, setAgent, setModel, setVariant, toast, useStore } from "./store";
 import { agentAccent } from "./agents";
@@ -39,12 +46,21 @@ function fileUri(path: string): string {
   return "file://" + encodeURI(withRoot).replace(/#/g, "%23").replace(/\?/g, "%3F");
 }
 
-export default function Composer({ sessionId }: { sessionId: string }) {
+export default function Composer({
+  sessionId,
+  onBtw,
+}: {
+  sessionId: string;
+  onBtw?: (question: string) => void;
+}) {
   const s = useStore();
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [custom, setCustom] = useState<Cmd[]>([]);
   const [palSel, setPalSel] = useState(0);
+  const [queueItems, setQueueItems] = useState<QueueItem[]>([]);
+  const [queueServerOffset, setQueueServerOffset] = useState(0);
+  const [queueTick, setQueueTick] = useState(Date.now());
 
   // Up/Down recall previously sent prompts for this session.
   const [histIdx, setHistIdx] = useState(-1);
@@ -67,6 +83,36 @@ export default function Composer({ sessionId }: { sessionId: string }) {
     setHistIdx(-1);
     draftRef.current = "";
   }, [sessionId]);
+
+  // The deferred queue lives on the server so it survives reloads and browser
+  // closes. Poll while the composer is visible so the quiet-window bar and
+  // blocker messages stay current.
+  useEffect(() => {
+    let alive = true;
+    setQueueItems([]);
+    const load = async () => {
+      try {
+        const result = await api.queue(sessionId);
+        if (!alive) return;
+        setQueueItems(result.items);
+        setQueueServerOffset(result.serverNow - Date.now());
+      } catch {
+        // The session may be gone, or the manager may be restarting.
+      }
+    };
+    void load();
+    const timer = setInterval(() => void load(), 2_000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (!queueItems.some((item) => item.nextSendAt)) return;
+    const timer = setInterval(() => setQueueTick(Date.now()), 250);
+    return () => clearInterval(timer);
+  }, [queueItems]);
 
   function recallHistory(dir: 1 | -1) {
     if (!promptHistory.length) return;
@@ -194,6 +240,8 @@ export default function Composer({ sessionId }: { sessionId: string }) {
 
   const status = s.statuses[sessionId];
   const busy = status && status.type !== "idle";
+  const pendingPermissions = s.permissions[sessionId] ?? [];
+  const pendingQuestions = s.questions[sessionId] ?? [];
   const usage: Usage | null | undefined = s.sessions.find((x) => x.id === sessionId)?.usage;
 
   // opencode's context indicator uses the latest assistant message (not the
@@ -237,6 +285,11 @@ export default function Composer({ sessionId }: { sessionId: string }) {
         const name = m[1]!;
         const args = (m[2] ?? "").trim();
         setText("");
+        if (name === "btw") {
+          if (onBtw) onBtw(args);
+          else toast("BTW side questions are unavailable here");
+          return;
+        }
         if (await runBuiltin(name)) return;
         // custom command
         try {
@@ -277,6 +330,70 @@ export default function Composer({ sessionId }: { sessionId: string }) {
     }
   }
 
+  async function queue() {
+    const value = text.trim();
+    if ((!value && !attachments.length) || sending) return;
+    if (!s.queueEnabled) {
+      toast("Deferred messages are disabled in Settings");
+      return;
+    }
+    if (!s.opencodeV2) {
+      toast("Deferred messages require opencode v2");
+      return;
+    }
+    if (value.startsWith("/")) {
+      toast("Slash commands can't be queued");
+      return;
+    }
+
+    setSending(true);
+    try {
+      const result = await api.enqueue(sessionId, {
+        text: value,
+        files: attachments.map((a) => ({
+          uri: a.uri,
+          name: a.name,
+          mime: a.mime,
+        })),
+        quietMs: s.queueQuietSeconds * 1000,
+        blockQuestions: s.queueBlockQuestions,
+        blockPermissions: s.queueBlockPermissions,
+        blockShells: s.queueBlockShells,
+        blockSubagents: s.queueBlockSubagents,
+      });
+      setQueueItems(result.items);
+      setQueueServerOffset(result.serverNow - Date.now());
+      setText("");
+      setHistIdx(-1);
+      draftRef.current = "";
+      clearAttachments();
+      toast("Queued for after this task");
+    } catch (e) {
+      toast(`Queue failed: ${e}`);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function cancelQueuedItem(id: string) {
+    try {
+      await api.cancelQueued(id);
+      const result = await api.queue(sessionId);
+      setQueueItems(result.items);
+      setQueueServerOffset(result.serverNow - Date.now());
+      toast("Queued message cancelled");
+    } catch (e) {
+      toast(`Could not cancel: ${e}`);
+    }
+  }
+
+  function isQueueShortcut(e: KeyboardEvent<HTMLTextAreaElement>): boolean {
+    return (
+      e.key === "Enter" &&
+      (e.getModifierState?.("AltGraph") || (e.altKey && e.ctrlKey))
+    );
+  }
+
   function pickCommand(c: Cmd) {
     // parameterless built-ins run immediately; everything else gets inserted
     const paramless = ["new", "sessions", "models", "agents", "compact", "undo", "redo", "share", "unshare", "terminal", "stats", "help", "logout"];
@@ -292,6 +409,7 @@ export default function Composer({ sessionId }: { sessionId: string }) {
   }
 
   const canSend = !sending && uploading === 0 && (!!text.trim() || attachments.length > 0);
+  const queueNow = queueTick + queueServerOffset;
 
   return (
     <div
@@ -331,6 +449,102 @@ export default function Composer({ sessionId }: { sessionId: string }) {
         </div>
       )}
 
+      {queueItems.length > 0 && (
+        <div className="queue-tray">
+          <div className="queue-head">
+            <Icon name="clock" size={13} />
+            <b>Deferred messages</b>
+            <span className="muted small">
+              — sent one at a time after the current task is fully done
+            </span>
+          </div>
+          {queueItems.map((item, index) => {
+            const remaining = item.nextSendAt ? Math.max(0, item.nextSendAt - queueNow) : null;
+            const pct =
+              item.nextSendAt && item.quietMs > 0
+                ? Math.max(
+                    0,
+                    Math.min(
+                      100,
+                      ((item.quietMs - (remaining ?? 0)) / item.quietMs) * 100,
+                    ),
+                  )
+                : 0;
+            const label =
+              item.status === "sending"
+                ? "Sending…"
+                : item.status === "failed"
+                  ? "Failed"
+                  : `Queued${queueItems.length > 1 ? ` #${index + 1}` : ""}`;
+            const preview =
+              item.text.trim() ||
+              `${item.files.length} attachment${item.files.length === 1 ? "" : "s"}`;
+            return (
+              <div
+                key={item.id}
+                className={
+                  "queue-item" +
+                  (item.status === "failed" ? " failed" : "") +
+                  (item.status === "sending" ? " sending" : "")
+                }
+              >
+                <div className="queue-item-head">
+                  <span className="queue-label">{label}</span>
+                  <span className="queue-preview" title={preview}>
+                    {preview}
+                  </span>
+                  {item.status !== "sending" &&
+                    !(item.status === "pending" && item.nextSendAt && item.quietMs > 0) && (
+                      <button
+                        type="button"
+                        className="btn ghost sm queue-cancel"
+                        onClick={() => void cancelQueuedItem(item.id)}
+                        title={
+                          item.status === "failed"
+                            ? "Dismiss failed message"
+                            : "Cancel this queued message"
+                        }
+                      >
+                        {item.status === "failed" ? "Dismiss" : "Cancel"}
+                      </button>
+                    )}
+                </div>
+                {item.status === "pending" && item.nextSendAt && item.quietMs > 0 ? (
+                  <div
+                    className="queue-wait"
+                    title={`Sending in ${Math.ceil((remaining ?? 0) / 1000)} seconds unless cancelled`}
+                  >
+                    <div className="queue-progress">
+                      <span style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="queue-eta">
+                      {remaining && remaining > 0
+                        ? `${Math.ceil(remaining / 1000)}s`
+                        : "sending…"}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn ghost sm"
+                      onClick={() => void cancelQueuedItem(item.id)}
+                      title="Cancel before this message is sent"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : item.blockedReason ? (
+                  <div className="queue-reason">{item.blockedReason}</div>
+                ) : item.status === "sending" ? (
+                  <div className="queue-reason">Delivering message to opencode…</div>
+                ) : null}
+                {item.status === "failed" && item.error && (
+                  <div className="queue-reason queue-error">{item.error}</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {(attachments.length > 0 || uploading > 0) && (
         <div className="attachments">
           {attachments.map((a) => (
@@ -358,7 +572,7 @@ export default function Composer({ sessionId }: { sessionId: string }) {
       <textarea
         ref={taRef}
         value={text}
-        placeholder="Message opencode…  (Enter to send · Shift+Enter newline · / for commands · Tab changes agent · paste or drop files)"
+        placeholder="Message opencode…  (Enter to send · Shift+Enter newline · AltGr+Enter to queue · / for commands · paste or drop files)"
         onChange={(e) => setText(e.target.value)}
         onPaste={(e) => {
           const files = Array.from(e.clipboardData?.files ?? []);
@@ -368,6 +582,11 @@ export default function Composer({ sessionId }: { sessionId: string }) {
           }
         }}
         onKeyDown={(e) => {
+          if (isQueueShortcut(e)) {
+            e.preventDefault();
+            void queue();
+            return;
+          }
           if (paletteOpen) {
             if (e.key === "ArrowDown") {
               e.preventDefault();
@@ -405,7 +624,13 @@ export default function Composer({ sessionId }: { sessionId: string }) {
           }
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
-            send();
+            const queueOnEnter =
+              s.queueEnabled &&
+              s.opencodeV2 &&
+              s.queueEnter &&
+              (busy || pendingPermissions.length > 0 || pendingQuestions.length > 0);
+            if (queueOnEnter) void queue();
+            else void send();
           }
         }}
       />
@@ -491,6 +716,17 @@ export default function Composer({ sessionId }: { sessionId: string }) {
         {busy && (
           <button className="btn danger" onClick={() => abortSession(sessionId)}>
             <Icon name="stop" /> Stop
+          </button>
+        )}
+        {s.queueEnabled && s.opencodeV2 && (
+          <button
+            type="button"
+            className="btn"
+            disabled={!canSend}
+            onClick={() => void queue()}
+            title="Queue for after the current task is fully done (AltGr+Enter)"
+          >
+            <Icon name="clock" /> Queue
           </button>
         )}
         <button className="btn primary" disabled={!canSend} onClick={send}>

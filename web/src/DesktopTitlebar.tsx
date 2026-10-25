@@ -160,8 +160,11 @@ export default function DesktopTitlebar({
       <span className="dtb-orb" aria-hidden="true" />
       <span className="dtb-name">{caption}</span>
       <span className="dtb-sub">{sub}</span>
-      {nav ? <div className="titlebar-nav-slot">{nav}</div> : null}
-      <span className="spacer" />
+      {/* When compact navigation is present it already contains the flexible
+          spacer. Adding another spacer here split the leftover width and left
+          the profile/live/user/logout group floating left of the window
+          controls — especially obvious at full screen. */}
+      {nav ? <div className="titlebar-nav-slot">{nav}</div> : <span className="spacer" />}
       <WindowControls />
     </div>
   );

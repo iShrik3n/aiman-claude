@@ -35,7 +35,9 @@ export default function SessionList() {
   // beneath their parent. When searching, keep the matched session's ancestors
   // so a hit inside a subagent is still reachable.
   const rows = useMemo(() => {
-    const base = filterSessions(s.sessions, s.filters, s.folders);
+    const base = filterSessions(s.sessions, s.filters, s.folders).filter(
+      (session) => !(session.parentId && session.title.startsWith("btw:")),
+    );
     if (!s.filters.q) return base;
     const byId = new Map(s.sessions.map((x) => [x.id, x]));
     const keep = new Set(base.map((x) => x.id));
@@ -304,7 +306,16 @@ export default function SessionList() {
       <div className="split-right">
         {scopedDirs.length ? (
           <ErrorBoundary label="Codebase visualizer error">
-            <CodeMap directories={scopedDirs} />
+            <CodeMap
+              directories={scopedDirs}
+              light={s.fileMapSkipContent}
+              safePreviews={s.fileMapSafePreviews}
+              limits={{
+                textBytes: s.fileMapMaxTextKb * 1024,
+                imageBytes: s.fileMapMaxImageMb * 1_000_000,
+                pdfBytes: s.fileMapMaxPdfMb * 1_000_000,
+              }}
+            />
           </ErrorBoundary>
         ) : (
           <div className="empty">No directory to visualise.</div>

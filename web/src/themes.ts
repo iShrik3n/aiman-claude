@@ -10,7 +10,7 @@ export type Theme = {
   vars: Record<string, string>;
 };
 
-const SANS = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const SANS = '"Commissioner", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 const MONO = 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace';
 
 const base = (o: Partial<Record<string, string>>) => ({
@@ -116,7 +116,7 @@ export const THEMES: Theme[] = [
       "--btn-hover": "#c8b47e",
       "--accent-fg": "#ffffff",
       "--text-2": "#333333",
-      "--font": '"Tahoma", "Segoe UI", Verdana, sans-serif',
+      "--font": SANS,
       "--font-size": "13px",
       "--code-bg": "#ffffff",
       "--term-bg": "#000000",
@@ -158,7 +158,7 @@ export const THEMES: Theme[] = [
       "--accent-fg": "#0a1a2a",
       "--accent-soft": "rgba(166,210,255,0.18)",
       "--text-2": "#dbe8f6",
-      "--font": '"Tahoma", "Segoe UI", Verdana, sans-serif',
+      "--font": SANS,
       "--font-size": "13px",
       "--code-bg": "#182a3e",
       "--term-bg": "#0b1928",
@@ -210,7 +210,7 @@ export const THEMES: Theme[] = [
       "--btn-hover": "#000080",
       "--accent-fg": "#ffffff",
       "--text-2": "#000000",
-      "--font": '"MS Sans Serif", "Tahoma", Geneva, sans-serif',
+      "--font": SANS,
       "--font-size": "12px",
       "--code-bg": "#000000",
       "--term-bg": "#000000",
@@ -262,7 +262,7 @@ export const THEMES: Theme[] = [
       "--accent-fg": "#ffffff",
       "--accent-soft": "rgba(155,197,255,0.18)",
       "--text-2": "#e5e8eb",
-      "--font": '"MS Sans Serif", "Tahoma", Geneva, sans-serif',
+      "--font": SANS,
       "--font-size": "12px",
       "--code-bg": "#202327",
       "--term-bg": "#0d1115",
@@ -314,7 +314,7 @@ export const THEMES: Theme[] = [
       "--accent-fg": "#122006",
       "--accent-soft": "rgba(168,255,92,0.14)",
       "--text-2": "#bdf2d1",
-      "--font": '"Tahoma", "Verdana", "Trebuchet MS", sans-serif',
+      "--font": SANS,
       "--font-size": "12.5px",
       "--code-bg": "#021b18",
       "--term-bg": "#02110f",

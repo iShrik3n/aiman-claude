@@ -3,6 +3,18 @@ import { api, type ServiceStatus, type UpdateInfo } from "./api";
 import {
   setChatMode,
   setCompactToolbar,
+  setFileMapMaxImageMb,
+  setFileMapMaxPdfMb,
+  setFileMapMaxTextKb,
+  setFileMapSafePreviews,
+  setFileMapSkipContent,
+  setQueueBlockPermissions,
+  setQueueBlockQuestions,
+  setQueueBlockShells,
+  setQueueBlockSubagents,
+  setQueueEnabled,
+  setQueueEnter,
+  setQueueQuietSeconds,
   setShellOutputOpen,
   setTheme,
   setThinkingOpen,
@@ -12,6 +24,7 @@ import {
 } from "./store";
 import { THEMES } from "./themes";
 import Icon from "./Icon";
+import desotaLogo from "./assets/desota-logo.png";
 
 export default function SettingsView() {
   const s = useStore();
@@ -117,7 +130,7 @@ export default function SettingsView() {
   const mode = s.chatMode;
 
   return (
-    <div className="search-wrap" style={{ maxWidth: 780 }}>
+    <div className="search-wrap settings-page">
       <h2 style={{ marginTop: 0 }}>Settings</h2>
 
       <h3>Appearance</h3>
@@ -172,6 +185,104 @@ export default function SettingsView() {
           </span>
         </span>
       </label>
+
+      <label
+        className="small"
+        style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 10 }}
+      >
+        <input
+          type="checkbox"
+          checked={s.fileMapSkipContent}
+          onChange={(e) => setFileMapSkipContent(e.target.checked)}
+        />
+        <span>
+          <b>Lightweight split file map</b>
+          <span className="muted">
+            {" "}
+            — don’t load arbitrary file contents for previews in the right-side
+            file map. Names, sizes and the treemap stay exactly the same, and
+            double-click still opens a file for editing. On by default.
+          </span>
+        </span>
+      </label>
+
+      <label
+        className="small"
+        style={{
+          display: "flex",
+          gap: 8,
+          alignItems: "flex-start",
+          marginTop: 10,
+          marginLeft: 24,
+          opacity: s.fileMapSkipContent ? 1 : 0.55,
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={s.fileMapSafePreviews}
+          disabled={!s.fileMapSkipContent}
+          onChange={(e) => setFileMapSafePreviews(e.target.checked)}
+        />
+        <span>
+          <b>Safe previews</b>
+          <span className="muted">
+            {" "}
+            — in lightweight mode, still render images and PDFs, plus text files
+            below the limit. Previews are lazy: only cells currently on screen
+            are read. PDFs open in the browser on double-click.
+          </span>
+        </span>
+      </label>
+
+      <div
+        className="small"
+        style={{
+          display: "flex",
+          gap: 14,
+          flexWrap: "wrap",
+          alignItems: "center",
+          marginTop: 8,
+          marginLeft: 49,
+          opacity: s.fileMapSkipContent && s.fileMapSafePreviews ? 1 : 0.55,
+        }}
+      >
+        <label style={{ display: "flex", gap: 5, alignItems: "center" }}>
+          Text ≤
+          <LimitInput
+            value={s.fileMapMaxTextKb}
+            min={1}
+            max={4096}
+            step={1}
+            disabled={!s.fileMapSkipContent || !s.fileMapSafePreviews}
+            onCommit={setFileMapMaxTextKb}
+          />
+          KB
+        </label>
+        <label style={{ display: "flex", gap: 5, alignItems: "center" }}>
+          Images ≤
+          <LimitInput
+            value={s.fileMapMaxImageMb}
+            min={0.1}
+            max={100}
+            step={0.1}
+            disabled={!s.fileMapSkipContent || !s.fileMapSafePreviews}
+            onCommit={setFileMapMaxImageMb}
+          />
+          MB
+        </label>
+        <label style={{ display: "flex", gap: 5, alignItems: "center" }}>
+          PDFs ≤
+          <LimitInput
+            value={s.fileMapMaxPdfMb}
+            min={0.1}
+            max={500}
+            step={0.5}
+            disabled={!s.fileMapSkipContent || !s.fileMapSafePreviews}
+            onCommit={setFileMapMaxPdfMb}
+          />
+          MB
+        </label>
+      </div>
 
       <h3 style={{ marginTop: 24 }}>Chat mode</h3>
       <p className="muted small">
@@ -256,6 +367,133 @@ export default function SettingsView() {
           <span className="muted"> — running and failed tools always expand</span>
         </span>
       </label>
+
+      <h3 style={{ marginTop: 24 }}>Message queue</h3>
+      <p className="muted small">
+        Queue a message while the agent is busy and Aiman will deliver it only
+        after the current task is fully quiescent. Queued messages are sent one
+        at a time, in order, using whatever model and agent the session has at
+        delivery time.
+      </p>
+
+      <label
+        className="small"
+        style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 10 }}
+      >
+        <input
+          type="checkbox"
+          checked={s.queueEnabled}
+          onChange={(e) => setQueueEnabled(e.target.checked)}
+        />
+        <span>
+          <b>Enable deferred messages</b>
+          <span className="muted">
+            {" "}
+            — show the Queue button and allow AltGr+Enter to queue.
+          </span>
+        </span>
+      </label>
+
+      <label
+        className="small"
+        style={{
+          display: "flex",
+          gap: 8,
+          alignItems: "flex-start",
+          marginTop: 10,
+          opacity: s.queueEnabled ? 1 : 0.55,
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={s.queueEnter}
+          disabled={!s.queueEnabled}
+          onChange={(e) => setQueueEnter(e.target.checked)}
+        />
+        <span>
+          <b>Enter queues while the agent is busy</b>
+          <span className="muted">
+            {" "}
+            — off by default, so Enter always sends immediately. The Queue
+            button and AltGr+Enter still queue regardless of this setting.
+          </span>
+        </span>
+      </label>
+
+      <div
+        className="small"
+        style={{
+          display: "flex",
+          gap: 8,
+          alignItems: "center",
+          marginTop: 10,
+          opacity: s.queueEnabled ? 1 : 0.55,
+        }}
+      >
+        <span>
+          <b>Quiet window</b>
+          <span className="muted"> — wait this long after the session is clear</span>
+        </span>
+        <LimitInput
+          value={s.queueQuietSeconds}
+          min={0}
+          max={120}
+          step={1}
+          disabled={!s.queueEnabled}
+          onCommit={setQueueQuietSeconds}
+        />
+        <span>seconds</span>
+      </div>
+
+      <div
+        className="small"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 7,
+          marginTop: 10,
+          marginLeft: 24,
+          opacity: s.queueEnabled ? 1 : 0.55,
+        }}
+      >
+        <span className="muted">Hold delivery while:</span>
+        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            type="checkbox"
+            checked={s.queueBlockQuestions}
+            disabled={!s.queueEnabled}
+            onChange={(e) => setQueueBlockQuestions(e.target.checked)}
+          />
+          a question is waiting for an answer
+        </label>
+        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            type="checkbox"
+            checked={s.queueBlockPermissions}
+            disabled={!s.queueEnabled}
+            onChange={(e) => setQueueBlockPermissions(e.target.checked)}
+          />
+          a permission request is pending
+        </label>
+        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            type="checkbox"
+            checked={s.queueBlockShells}
+            disabled={!s.queueEnabled}
+            onChange={(e) => setQueueBlockShells(e.target.checked)}
+          />
+          a shell command or tool is still running
+        </label>
+        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            type="checkbox"
+            checked={s.queueBlockSubagents}
+            disabled={!s.queueEnabled}
+            onChange={(e) => setQueueBlockSubagents(e.target.checked)}
+          />
+          a subagent is still working
+        </label>
+      </div>
 
       <h3 style={{ marginTop: 24 }}>Backend</h3>
       <table className="markdown" style={{ width: "100%" }}>
@@ -369,11 +607,103 @@ export default function SettingsView() {
         </button>
       </div>
 
+      <h3 style={{ marginTop: 24 }}>About</h3>
+      <div className="about-card">
+        <a
+          className="about-logo"
+          href="https://desota.net/"
+          target="_blank"
+          rel="noreferrer"
+          title="DeSOTA — State Of The Art"
+        >
+          <img src={desotaLogo} alt="DeSOTA — State Of The Art" />
+        </a>
+        <div className="about-body">
+          <div className="about-product">AiMAN</div>
+          <div className="about-by commissioner-brand">by DeSOTA</div>
+          <p className="muted small" style={{ margin: "6px 0 0" }}>
+            Self-hosted session manager for opencode — folders, search, usage,
+            deferred messages, BTW side questions and session tools.
+          </p>
+          <div className="about-meta">Version v{cfg?.version ?? "…"}</div>
+          <div className="about-dev">
+            Developed by <b>Kristian Atanasov</b>
+            <br />
+            <a href="mailto:kristian@uber-dick.net">kristian@uber-dick.net</a>
+          </div>
+          <div className="about-links">
+            <a
+              className="btn sm ghost"
+              href="https://desota.net/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              desota.net
+            </a>
+            <a
+              className="btn sm ghost"
+              href="https://github.com/spacewalkingninja/aiman"
+              target="_blank"
+              rel="noreferrer"
+            >
+              GitHub
+            </a>
+          </div>
+        </div>
+      </div>
+
       <div style={{ marginTop: 24 }}>
         <button className="btn ghost" onClick={() => store.set({ view: "chat" })}>
           <Icon name="back" /> Back
         </button>
       </div>
     </div>
+  );
+}
+
+function LimitInput({
+  value,
+  min,
+  max,
+  step,
+  disabled,
+  onCommit,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  disabled?: boolean;
+  onCommit: (value: number) => void;
+}) {
+  const [text, setText] = useState(String(value));
+
+  useEffect(() => {
+    setText(String(value));
+  }, [value]);
+
+  function commit() {
+    const next = Number(text);
+    if (Number.isFinite(next) && next >= min) onCommit(next);
+    else setText(String(value));
+  }
+
+  return (
+    <input
+      className="input"
+      type="number"
+      inputMode="decimal"
+      min={min}
+      max={max}
+      step={step}
+      disabled={disabled}
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+      }}
+      style={{ width: 74, padding: "2px 6px" }}
+    />
   );
 }

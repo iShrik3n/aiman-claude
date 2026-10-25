@@ -60,7 +60,7 @@ export default function Profiles() {
   }
 
   return (
-    <div className="search-wrap" style={{ maxWidth: 820 }}>
+    <div className="search-wrap profiles-page">
       <h2 style={{ marginTop: 0 }}>Config profiles</h2>
       <p className="muted small">
         Each profile holds provider API keys (DeepSeek, OpenAI, …). Activating a profile

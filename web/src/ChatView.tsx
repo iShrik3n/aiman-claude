@@ -8,12 +8,14 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
 import Composer from "./Composer";
 import PartView from "./PartView";
 import ErrorBoundary from "./ErrorBoundary";
 import FileBrowser from "./FileBrowser";
+import BtwPanel from "./BtwPanel";
 import Icon from "./Icon";
 import { WindowControls } from "./DesktopTitlebar";
 
@@ -110,11 +112,40 @@ export default function ChatView({
   const [stats, setStats] = useState<SessionStats | null>(null);
   const [showStats, setShowStats] = useState(false);
   const [showFiles, setShowFiles] = useState(false);
+  const [showBtw, setShowBtw] = useState(false);
+  const [btwRequest, setBtwRequest] = useState<{ question: string; nonce: number } | null>(
+    null,
+  );
 
   // Floating subagent panels (child sessions spawned by this one).
   const [subModes, setSubModes] = useState<Record<string, "min" | "normal" | "max">>({});
   const [dismissedSubs, setDismissedSubs] = useState<Set<string>>(() => new Set());
   const requestedSubs = useRef<Set<string>>(new Set());
+
+  // Small shell terminals that live in the same dock as subagent windows.
+  const [terminals, setTerminals] = useState<
+    { id: number; mode: "min" | "normal" | "max" }[]
+  >([]);
+  const nextTerminal = useRef(0);
+  useEffect(() => {
+    setTerminals([]);
+    setShowBtw(false);
+    setBtwRequest(null);
+  }, [id]);
+  function openTerminal() {
+    setTerminals((prev) => {
+      if (prev.length >= 4) {
+        toast("Close a terminal before opening another");
+        return prev;
+      }
+      return [...prev, { id: ++nextTerminal.current, mode: "normal" }];
+    });
+  }
+
+  function openBtw(question = "") {
+    setBtwRequest({ question, nonce: Date.now() });
+    setShowBtw(true);
+  }
 
   // ---- quick find inside the open session ----
   const [findOpen, setFindOpen] = useState(false);
@@ -174,6 +205,8 @@ export default function ChatView({
   const now = Date.now();
   const visibleSubs = s.sessions.filter((child) => {
     if (child.parentId !== id || dismissedSubs.has(child.id)) return false;
+    // /btw side sessions are for the history overlay, not the subagent dock.
+    if (child.title.startsWith("btw:")) return false;
     const st = s.statuses[child.id];
     const childBusy = !!st && st.type !== "idle";
     return childBusy || now - child.timeUpdated < 20 * 60 * 1000;
@@ -498,6 +531,20 @@ export default function ChatView({
           <button className="btn ghost sm" onClick={() => setShowStats(true)} title="Session statistics">
             <Icon name="stats" /> stats
           </button>
+          <button
+            className="btn ghost sm"
+            onClick={openTerminal}
+            title="Open a shell terminal in this session's directory"
+          >
+            <Icon name="terminal" /> terminal
+          </button>
+          <button
+            className="btn ghost sm"
+            onClick={() => openBtw()}
+            title="BTW side questions and saved answers"
+          >
+            <Icon name="chat" /> btw
+          </button>
           <button className="btn ghost sm" onClick={loadDiff} title="Show changed files">
             <Icon name="code" /> diff
           </button>
@@ -649,6 +696,20 @@ export default function ChatView({
         >
           <Icon name="search" /> find
         </button>
+        <button
+          className="btn ghost sm"
+          onClick={openTerminal}
+          title="Open a shell terminal in this session's directory"
+        >
+          <Icon name="terminal" /> terminal
+        </button>
+        <button
+          className="btn ghost sm"
+          onClick={() => openBtw()}
+          title="BTW side questions and saved answers"
+        >
+          <Icon name="chat" /> btw
+        </button>
         <button className="btn ghost sm" onClick={loadDiff} title="Show changed files">
           <Icon name="code" /> diff
         </button>
@@ -742,6 +803,13 @@ export default function ChatView({
       {showStats && <SessionStatsCard stats={stats} onClose={() => setShowStats(false)} />}
       {showFiles && (
         <FileBrowser directory={session?.directory ?? ""} onClose={() => setShowFiles(false)} />
+      )}
+      {showBtw && (
+        <BtwPanel
+          sessionId={id}
+          request={btwRequest}
+          onClose={() => setShowBtw(false)}
+        />
       )}
 
       {(todos.length > 0 || diff || perms.length > 0 || (stats && stats.models.length > 0)) && (
@@ -887,8 +955,25 @@ export default function ChatView({
         </button>
       )}
 
-      {visibleSubs.length > 0 && (
+      {(visibleSubs.length > 0 || terminals.length > 0) && (
         <div className="subagent-dock">
+          {terminals.map((terminal) => (
+            <TerminalWindow
+              key={terminal.id}
+              directory={session?.directory ?? ""}
+              mode={terminal.mode}
+              onMode={(mode) =>
+                setTerminals((prev) =>
+                  prev.map((item) =>
+                    item.id === terminal.id ? { ...item, mode } : item,
+                  ),
+                )
+              }
+              onClose={() =>
+                setTerminals((prev) => prev.filter((item) => item.id !== terminal.id))
+              }
+            />
+          ))}
           {visibleSubs.map((child) => {
             const meta = subMeta(child.id);
             const mode = subModes[child.id] ?? "normal";
@@ -948,9 +1033,93 @@ export default function ChatView({
         </div>
       )}
 
-      <Composer sessionId={id} />
+      <Composer sessionId={id} onBtw={openBtw} />
     </div>
   );
+}
+
+/**
+ * Drag a floating window by its header. The transform is relative to the
+ * window's original dock slot, so windows keep their default stacking until
+ * moved. At least a small strip stays on screen.
+ */
+function useWindowDrag() {
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const drag = useRef<{
+    startX: number;
+    startY: number;
+    baseX: number;
+    baseY: number;
+    rect: DOMRect;
+  } | null>(null);
+  const moved = useRef(false);
+  const suppressClick = useRef(false);
+
+  function onPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
+    if (e.button !== 0) return;
+    if ((e.target as HTMLElement).closest("button")) return;
+    const win = e.currentTarget.closest(".subagent") as HTMLElement | null;
+    if (!win) return;
+    e.preventDefault();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    drag.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      baseX: offset.x,
+      baseY: offset.y,
+      rect: win.getBoundingClientRect(),
+    };
+    moved.current = false;
+  }
+
+  function onPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
+    const d = drag.current;
+    if (!d) return;
+    const dx = e.clientX - d.startX;
+    const dy = e.clientY - d.startY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved.current = true;
+    // Keep at least a header-sized strip of the window on screen.
+    const minX = 80 - d.rect.right;
+    const maxX = window.innerWidth - 80 - d.rect.left;
+    // Keep the drag handle itself on screen vertically; the body may extend
+    // below the viewport, but the window can always be dragged back.
+    const minY = 8 - d.rect.top;
+    const maxY = window.innerHeight - 44 - d.rect.top;
+    const clamp = (value: number, lo: number, hi: number) =>
+      Math.min(Math.max(value, Math.min(lo, hi)), Math.max(lo, hi));
+    setOffset({
+      x: d.baseX + clamp(dx, minX, maxX),
+      y: d.baseY + clamp(dy, minY, maxY),
+    });
+  }
+
+  function onPointerUp(e: ReactPointerEvent<HTMLDivElement>) {
+    if (!drag.current) return;
+    e.currentTarget.releasePointerCapture?.(e.pointerId);
+    drag.current = null;
+    if (moved.current) {
+      suppressClick.current = true;
+      setTimeout(() => {
+        suppressClick.current = false;
+      }, 0);
+    }
+  }
+
+  function onHeadClick(restore: () => void) {
+    if (suppressClick.current) return;
+    restore();
+  }
+
+  return {
+    style: { transform: `translate(${offset.x}px, ${offset.y}px)` } as CSSProperties,
+    handlers: {
+      onPointerDown,
+      onPointerMove,
+      onPointerUp,
+      onPointerCancel: onPointerUp,
+    },
+    onHeadClick,
+  };
 }
 
 /** Floating window for a subagent (child session) spawned by this session. */
@@ -974,6 +1143,7 @@ function SubagentPanel({
   onClose: () => void;
 }) {
   const accent = agentAccent(agent);
+  const drag = useWindowDrag();
   const bodyRef = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
   const lastLen = useMemo(
@@ -995,11 +1165,12 @@ function SubagentPanel({
   const stop = (e: { stopPropagation: () => void }) => e.stopPropagation();
 
   return (
-    <div className={`subagent ${mode}`} style={style}>
+    <div className={`subagent ${mode}`} style={{ ...style, ...drag.style }}>
       <div
         className="subagent-head"
-        onClick={() => mode === "min" && onMode("normal")}
-        title={mode === "min" ? "Click to restore" : undefined}
+        {...drag.handlers}
+        onClick={() => drag.onHeadClick(() => mode === "min" && onMode("normal"))}
+        title={mode === "min" ? "Click to restore · drag to move" : "Drag to move"}
       >
         <span className="sub-dot" data-busy={busy ? "true" : "false"} />
         <span className="sub-name">{agent}</span>
@@ -1069,6 +1240,69 @@ function SubagentPanel({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/** Small shell terminal that lives in the floating session dock. */
+function TerminalWindow({
+  directory,
+  mode,
+  onMode,
+  onClose,
+}: {
+  directory: string;
+  mode: "min" | "normal" | "max";
+  onMode: (mode: "min" | "normal" | "max") => void;
+  onClose: () => void;
+}) {
+  const stop = (e: { stopPropagation: () => void }) => e.stopPropagation();
+  const drag = useWindowDrag();
+  const folder =
+    directory.replace(/[\\/]+$/, "").split(/[\\/]/).filter(Boolean).pop() || "shell";
+  const style = {
+    "--msg-accent": "var(--accent)",
+    "--msg-border": "var(--border)",
+  } as CSSProperties;
+
+  return (
+    <div className={`subagent terminal-win ${mode}`} style={{ ...style, ...drag.style }}>
+      <div
+        className="subagent-head"
+        {...drag.handlers}
+        onClick={() => drag.onHeadClick(() => mode === "min" && onMode("normal"))}
+        title={mode === "min" ? "Click to restore · drag to move" : `${directory} · drag to move`}
+      >
+        <Icon name="terminal" size={13} />
+        <span className="sub-name">terminal</span>
+        <span className="sub-activity">{folder}</span>
+        <div className="spacer" />
+        {mode !== "max" && (
+          <button onClick={(e) => (stop(e), onMode("max"))} title="Maximize">
+            <Icon name="windowMax" />
+          </button>
+        )}
+        {mode !== "normal" && (
+          <button onClick={(e) => (stop(e), onMode("normal"))} title="Restore">
+            <Icon name="windowRestore" />
+          </button>
+        )}
+        {mode !== "min" && (
+          <button onClick={(e) => (stop(e), onMode("min"))} title="Minimize">
+            <Icon name="windowMin" />
+          </button>
+        )}
+        <button onClick={(e) => (stop(e), onClose())} title="Close">
+          <Icon name="windowClose" />
+        </button>
+      </div>
+      <div className="terminal-window-body">
+        <ErrorBoundary label="Terminal error">
+          <Suspense fallback={<div className="empty">loading terminal…</div>}>
+            <TerminalPane directory={directory} />
+          </Suspense>
+        </ErrorBoundary>
+      </div>
     </div>
   );
 }

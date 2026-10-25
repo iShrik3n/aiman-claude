@@ -70,7 +70,7 @@ export default function Users() {
   }
 
   return (
-    <div className="search-wrap" style={{ maxWidth: 760 }}>
+    <div className="search-wrap users-page">
       <h2 style={{ marginTop: 0 }}>Users</h2>
       <p className="muted small">Manage who can access this opencode manager.</p>
 

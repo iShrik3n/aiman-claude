@@ -8,6 +8,7 @@ import {
   Check,
   CheckSquare,
   Circle,
+  Clock,
   Code,
   Copy,
   CornerBottomRight,
@@ -106,6 +107,7 @@ export type IconName =
   | "chevronDown"
   | "chevronRight"
   | "circle"
+  | "clock"
   | "close"
   | "code"
   | "config"
@@ -177,6 +179,7 @@ const MODERN: Record<IconName, ModernDef> = {
   chevronDown: { C: NavArrowDown },
   chevronRight: { C: NavArrowRight },
   circle: { C: Circle },
+  clock: { C: Clock },
   close: { C: Xmark },
   code: { C: Code },
   config: { C: Settings },
@@ -329,6 +332,13 @@ function LegacyPixel({ name }: { name: IconName }) {
         <>
           <circle cx="8" cy="8" r="5.5" {...stroke} />
           <circle cx="8" cy="8" r="2.6" {...filled} />
+        </>
+      );
+    case "clock":
+      return (
+        <>
+          <circle cx="8" cy="8" r="5.4" {...stroke} />
+          <path d="M8 4.6V8l2.4 1.5" {...stroke} />
         </>
       );
     case "minus":

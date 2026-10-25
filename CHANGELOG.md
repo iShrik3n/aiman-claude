@@ -7,13 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Compact desktop title bars now let the navigation slot fill the remaining
+  width, so profile/live/user/logout sit flush against the window controls
+  instead of floating left with a growing gap when maximized.
+- Page-level overflow is contained and the layout grid uses a shrinkable main
+  column, preventing horizontal drift at full screen. Settings, Stats, Users and
+  Profiles now keep a full-width scroll container while constraining only their
+  content column, so their scrollbars sit at the page edge rather than at the
+  right edge of a narrow inner column.
+- PTY WebSocket connections now carry the session's location. This fixes blank
+  embedded terminals on opencode v2 when the PTY was created outside the
+  server's default working directory.
+
 ### Changed
+- **Commissioner app font.** The Commissioner variable font is bundled locally
+  (no Google Fonts request at runtime) and is now the app-wide UI typeface. Code,
+  terminals and other technical surfaces keep the monospace stack.
+- **DeSOTA About section.** Settings now has an About card with the DeSOTA
+  wordmark and link, “by DeSOTA” branding, the installed AiMAN version, and the
+  developer credit for Kristian Atanasov (`kristian@uber-dick.net`).
 - **AiMAN branding.** The visible product name is now **AiMAN**. The old
   `opencode · sessions` wordmark is gone from the app, login, onboarding,
   browser title and desktop loading/error screens. Internal package, binary,
   environment-variable and database names remain `aiman` for compatibility.
 
 ### Added
+- **`/btw` side questions.** Use `/btw <question>` or the session toolbar's
+  **btw** button to ask a quick question without touching the main transcript.
+  Recent context is snapshotted into an isolated child session; the answer is
+  saved per main session in a **BTW history** overlay for later review. Side
+  sessions are archived after completion and hidden from the subagent dock.
+- **Deferred message queue.** A new **Queue** action (or **AltGr+Enter**)
+  stores a prompt and delivers it only after the current agent task is fully
+  quiescent: idle, no pending question/permission, no running shell or tool, and
+  no busy subagent. The default quiet window is 10 seconds and is shown as a
+  cancellable progress bar. Messages are delivered one at a time, use the
+  session's model/agent at delivery time, and survive browser or server
+  restarts. Settings control the Enter-key behaviour, quiet window and each
+  blocker. Enter still sends immediately by default.
+- **Session terminals.** The session toolbar now has a **terminal** button that
+  opens a small floating shell window in the session's working directory, with
+  minimize/restore/maximize/close controls like the subagent windows.
+- **Movable floating windows.** Subagent and terminal windows can be dragged by
+  their headers. They stay partially on-screen and keep their position while
+  minimizing, restoring or maximizing.
+- **Lightweight split file map (default on).** The right-side treemap no longer
+  prefetches every eligible text body. A second **Safe previews** setting (also
+  on by default) keeps images, PDFs and small text files visible, but only for
+  cells currently on screen. Text, image and PDF limits are configurable in
+  Settings; names, sizes, layout and double-click open/edit are unchanged.
+  Turning the lightweight setting off restores full prefetching.
 - **Reasoning-effort selector.** Models that expose opencode v2 variants get a
   second dropdown next to the model picker (`Default`, `None`, `Minimal`, `Low`,
   `Medium`, `High`, `Extra high`, `Max`). The choice is remembered per model and

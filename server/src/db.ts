@@ -152,6 +152,47 @@ mgr.exec(`
   CREATE INDEX IF NOT EXISTS idx_msg_usage_session ON msg_usage(session_id);
   CREATE INDEX IF NOT EXISTS idx_msg_usage_day ON msg_usage(day);
   CREATE INDEX IF NOT EXISTS idx_msg_usage_model ON msg_usage(provider_id, model_id);
+
+  /* Messages the user wants delivered after the current agent task is fully
+     quiescent. The aiman worker owns delivery; opencode only sees the prompt
+     when the strict gate passes. */
+  CREATE TABLE IF NOT EXISTS queued_prompts (
+    id                TEXT PRIMARY KEY,
+    session_id        TEXT NOT NULL,
+    text              TEXT NOT NULL DEFAULT '',
+    files_json        TEXT NOT NULL DEFAULT '[]',
+    created_at        INTEGER NOT NULL,
+    status            TEXT NOT NULL DEFAULT 'pending',
+    quiet_ms          INTEGER NOT NULL DEFAULT 10000,
+    block_questions   INTEGER NOT NULL DEFAULT 1,
+    block_permissions INTEGER NOT NULL DEFAULT 1,
+    block_shells      INTEGER NOT NULL DEFAULT 1,
+    block_subagents   INTEGER NOT NULL DEFAULT 1,
+    next_send_at      INTEGER,
+    blocked_reason    TEXT,
+    error             TEXT,
+    attempts          INTEGER NOT NULL DEFAULT 0,
+    sent_at           INTEGER
+  );
+  CREATE INDEX IF NOT EXISTS idx_queued_prompts_session
+    ON queued_prompts(session_id, status, created_at);
+
+  /* /btw side questions and their answers, scoped to the main session so the
+     user can re-open old answers without keeping child sessions visible. */
+  CREATE TABLE IF NOT EXISTS btw_history (
+    id              TEXT PRIMARY KEY,
+    session_id      TEXT NOT NULL,
+    side_session_id TEXT,
+    question        TEXT NOT NULL,
+    answer          TEXT,
+    status          TEXT NOT NULL DEFAULT 'pending',
+    error           TEXT,
+    created_at      INTEGER NOT NULL,
+    prompted_at     INTEGER,
+    completed_at    INTEGER
+  );
+  CREATE INDEX IF NOT EXISTS idx_btw_history_session
+    ON btw_history(session_id, created_at DESC);
 `);
 
 // ---- lightweight migrations (add columns to existing databases) ----

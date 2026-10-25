@@ -230,7 +230,8 @@ export default function TerminalPane({
       ptyId = pty.id;
 
       const proto = location.protocol === "https:" ? "wss" : "ws";
-      ws = new WebSocket(`${proto}://${location.host}/ptyws/${pty.id}`);
+      const ptyQuery = directory ? `?directory=${encodeURIComponent(directory)}` : "";
+      ws = new WebSocket(`${proto}://${location.host}/ptyws/${pty.id}${ptyQuery}`);
       wsRef.current = ws;
       ws.binaryType = "arraybuffer";
       let openedAt = 0;

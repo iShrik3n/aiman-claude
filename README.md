@@ -21,7 +21,26 @@ opencode is working.
 - **Onboarding** — first-run wizard for security (password) and preferences.
 - **Codebase explorer** — select a folder and a CodeCharta-style **treemap** of
   the code appears beside the session list, with a 2D/3D toggle, zoomable
-  directories, inline code/image previews, and a built-in editor.
+  directories and a built-in editor. It is **lightweight by default**: only
+  on-screen cells are read, with configurable size caps for text, image and PDF
+  previews (safe media previews stay on by default).
+- **About / DeSOTA** — Settings includes the DeSOTA wordmark and link
+  ([desota.net](https://desota.net/)), “by DeSOTA” branding and developer credit.
+  The Commissioner variable font is bundled with the app, so no external font
+  request is made at runtime.
+- **/btw side questions** — ask a quick question with `/btw <question>` or the
+  session **btw** button. Aiman snapshots recent context into an isolated child
+  session, leaves the main transcript untouched, and saves the answer in a
+  per-session BTW history for later review.
+- **Deferred messages** — queue a request while the agent is working and Aiman
+  delivers it only after the task is fully quiescent: idle, no pending
+  questions/permissions, no running shells/tools and no busy subagents. A
+  cancellable quiet-window progress bar and full settings control the strict
+  gate; the default Enter key still sends immediately.
+- **Session terminals** — a **terminal** button in the session toolbar opens a
+  small floating shell in the session's working directory, with the same
+  minimize/maximize/close controls as subagent windows. Both terminal and
+  subagent windows can be dragged by their headers.
 - **Terminal chat (default)** — opens each session as the full opencode TUI
   embedded in the browser, attached to that session (streaming, tools and slash
   commands in one view). Switch to the classic structured chat in **Settings**.

@@ -19,7 +19,14 @@ import {
   ensureAutoOrganizeBaseline,
   scanForAutoOrganize,
 } from "./organizer";
-import { ocData, ocFetch } from "./ocClient";
+import {
+  cancelQueuedPrompt,
+  enqueuePrompt,
+  listQueue,
+  startQueueWorker,
+} from "./queue";
+import { askBtw, deleteBtw, listBtw, startBtwWorker } from "./btw";
+import { locationParams, ocData, ocFetch } from "./ocClient";
 import {
   activateProfileForUser,
   createProfile,
@@ -316,22 +323,42 @@ async function wsOpen(ws: any) {
 
   // v2 keeps PTY sockets under /api/pty and accepts a short-lived ticket in the
   // query string (the browser-facing socket cannot send an Authorization header).
+  // PTYs are location-scoped, so both the ticket and the socket need the cwd.
+  const params = new URLSearchParams(data.query);
+  const directory = params.get("directory");
+  const location = locationParams(directory);
   let ticket = "";
   if (isV2()) {
     try {
-      const issued = await ocData<any>(`/api/pty/${encodeURIComponent(data.ptyID)}/connect-token`, {
-        method: "POST",
-        headers: { "x-opencode-ticket": "1" },
-      });
+      const qs = location.toString();
+      const issued = await ocData<any>(
+        `/api/pty/${encodeURIComponent(data.ptyID)}/connect-token${qs ? `?${qs}` : ""}`,
+        {
+          method: "POST",
+          headers: { "x-opencode-ticket": "1" },
+        },
+      );
       ticket = issued?.ticket ?? "";
-    } catch {}
+    } catch (e) {
+      try {
+        ws.close();
+      } catch {}
+      return;
+    }
   }
 
-  const target = isV2()
-    ? `${OC_WS}/api/pty/${encodeURIComponent(data.ptyID)}/connect${ticket ? `?ticket=${encodeURIComponent(ticket)}` : ""}`
-    : `${OC_WS}/pty/${encodeURIComponent(data.ptyID)}/connect${
-        data.query ? "?" + data.query : ""
-      }`;
+  let target: string;
+  if (isV2()) {
+    const q = new URLSearchParams(location);
+    if (ticket) q.set("ticket", ticket);
+    const qs = q.toString();
+    target = `${OC_WS}/api/pty/${encodeURIComponent(data.ptyID)}/connect${qs ? `?${qs}` : ""}`;
+  } else {
+    const v1Query = new URLSearchParams(data.query);
+    v1Query.delete("directory");
+    const qs = v1Query.toString();
+    target = `${OC_WS}/pty/${encodeURIComponent(data.ptyID)}/connect${qs ? `?${qs}` : ""}`;
+  }
 
   let upstream: WebSocket;
   try {
@@ -886,6 +913,60 @@ async function handle(req: Request): Promise<Response> {
     });
   }
 
+  let qm = p.match(/^\/api\/sessions\/([^/]+)\/queue$/);
+  if (qm) {
+    const sessionId = qm[1]!;
+    if (!getSession(sessionId)) return json({ error: "not found" }, 404);
+    if (method === "GET") {
+      return json({ items: listQueue(sessionId), serverNow: Date.now() });
+    }
+    if (method === "POST") {
+      if (!isV2()) return json({ error: "Deferred queue requires opencode v2" }, 400);
+      const b = await readBody(req);
+      const files = Array.isArray(b.files) ? b.files : [];
+      const text = String(b.text ?? "");
+      if (!text.trim() && !files.length) return json({ error: "text or files required" }, 400);
+      const item = enqueuePrompt(sessionId, text, files, {
+        quietMs: Number(b.quietMs ?? 10_000),
+        blockQuestions: b.blockQuestions !== false,
+        blockPermissions: b.blockPermissions !== false,
+        blockShells: b.blockShells !== false,
+        blockSubagents: b.blockSubagents !== false,
+      });
+      return json(
+        { ok: true, item, items: listQueue(sessionId), serverNow: Date.now() },
+        201,
+      );
+    }
+  }
+
+  let qd = p.match(/^\/api\/queue\/([^/]+)$/);
+  if (qd && method === "DELETE") {
+    const result = cancelQueuedPrompt(qd[1]!);
+    if (result === "not_found") return json({ error: "not found" }, 404);
+    if (result === "sending") return json({ error: "message is already being sent" }, 409);
+    return json({ ok: true });
+  }
+
+  let bm = p.match(/^\/api\/sessions\/([^/]+)\/btw$/);
+  if (bm) {
+    const sessionId = bm[1]!;
+    if (!getSession(sessionId)) return json({ error: "not found" }, 404);
+    if (!isV2()) return json({ error: "BTW requires opencode v2" }, 400);
+    if (method === "GET") return json({ items: listBtw(sessionId) });
+    if (method === "POST") {
+      const b = await readBody(req);
+      const question = String(b.question ?? "").trim();
+      if (!question) return json({ error: "question required" }, 400);
+      return json({ ok: true, item: askBtw(sessionId, question) }, 201);
+    }
+  }
+
+  let bd = p.match(/^\/api\/btw\/([^/]+)$/);
+  if (bd && method === "DELETE") {
+    return deleteBtw(bd[1]!) ? json({ ok: true }) : json({ error: "not found" }, 404);
+  }
+
   let sm = p.match(/^\/api\/sessions\/([^/]+)\/stats$/);
   if (sm && method === "GET") return json(sessionStats(sm[1]!));
 
@@ -1151,6 +1232,16 @@ setTimeout(() => {
     ensureAutoOrganizeBaseline();
   } catch (e) {
     console.error("[boot] organizer baseline failed:", e);
+  }
+  try {
+    startQueueWorker();
+  } catch (e) {
+    console.error("[boot] queue worker failed:", e);
+  }
+  try {
+    startBtwWorker();
+  } catch (e) {
+    console.error("[boot] btw worker failed:", e);
   }
   runSync();
 }, 500);

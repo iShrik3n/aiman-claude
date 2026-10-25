@@ -81,7 +81,7 @@ export default function StatsView() {
     .slice(0, 15);
 
   return (
-    <div className="search-wrap" style={{ maxWidth: 1100 }}>
+    <div className="search-wrap stats-page">
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <h2 style={{ margin: "0 12px 0 0" }}>Usage statistics</h2>
         <label className="small muted">

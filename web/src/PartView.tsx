@@ -55,7 +55,7 @@ function useMark(query?: string) {
   return ref;
 }
 
-function Markdown({ text, query }: { text: string; query?: string }) {
+export function Markdown({ text, query }: { text: string; query?: string }) {
   const ref = useMark(query);
   return <div className="markdown" ref={ref} dangerouslySetInnerHTML={{ __html: md(text) }} />;
 }
