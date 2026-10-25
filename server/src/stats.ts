@@ -1,4 +1,4 @@
-import { ocRO } from "./db";
+import { isV2, mgr, ocRO } from "./db";
 
 export type Usage = {
   input: number;
@@ -46,7 +46,13 @@ const AGG = `
   COUNT(*)                                                 AS messages
 `;
 
-const WHERE_ASSISTANT = "json_extract(data,'$.role') = 'assistant'";
+const MESSAGE_TABLE = () => (isV2() ? "session_message" : "message");
+const SESSION_TABLE = () => (isV2() ? "session_v2" : "session");
+const WHERE_ASSISTANT = () =>
+  isV2() ? "type = 'assistant'" : "json_extract(data,'$.role') = 'assistant'";
+const WHERE_USER = () => (isV2() ? "type = 'user'" : "json_extract(data,'$.role') = 'user'");
+const MODEL_PROVIDER = () => (isV2() ? "$.model.providerID" : "$.providerID");
+const MODEL_ID = () => (isV2() ? "$.model.id" : "$.modelID");
 
 /** SQL fragment + params restricting an aggregate to a set of session ids. */
 function sessionFilter(ids?: string[]): { sql: string; params: any[] } {
@@ -56,13 +62,35 @@ function sessionFilter(ids?: string[]): { sql: string; params: any[] } {
 }
 
 export function usageBySession(sessionIds?: string[]): Map<string, Usage> {
+  const map = new Map<string, Usage>();
+
+  // v2 maintains per-session totals on `session_v2`, so reading those 358 rows
+  // is ~100x faster than json_extract() over every message.
+  if (isV2()) {
+    const filter =
+      sessionIds && sessionIds.length
+        ? ` WHERE id IN (${sessionIds.map(() => "?").join(",")})`
+        : sessionIds
+          ? " WHERE 1=0"
+          : "";
+    const rows = ocRO
+      .query(
+        `SELECT id AS sid, tokens_input AS input, tokens_output AS output,
+                tokens_reasoning AS reasoning, tokens_cache_read AS cacheRead,
+                tokens_cache_write AS cacheWrite, cost, 0 AS messages
+           FROM session_v2${filter}`,
+      )
+      .all(...(sessionIds ?? [])) as any[];
+    for (const r of rows) map.set(r.sid, add(empty(), r));
+    return map;
+  }
+
   const f = sessionFilter(sessionIds);
   const rows = ocRO
     .query(
-      `SELECT session_id AS sid, ${AGG} FROM message WHERE ${WHERE_ASSISTANT}${f.sql} GROUP BY session_id`,
+      `SELECT session_id AS sid, ${AGG} FROM ${MESSAGE_TABLE()} WHERE ${WHERE_ASSISTANT()}${f.sql} GROUP BY session_id`,
     )
     .all(...f.params) as any[];
-  const map = new Map<string, Usage>();
   for (const r of rows) {
     const u = add(empty(), r);
     map.set(r.sid, u);
@@ -70,13 +98,44 @@ export function usageBySession(sessionIds?: string[]): Map<string, Usage> {
   return map;
 }
 
+const USAGE_AGG = `
+  IFNULL(SUM(input),0)       AS input,
+  IFNULL(SUM(output),0)      AS output,
+  IFNULL(SUM(reasoning),0)   AS reasoning,
+  IFNULL(SUM(cache_read),0)  AS cacheRead,
+  IFNULL(SUM(cache_write),0) AS cacheWrite,
+  IFNULL(SUM(cost),0)        AS cost,
+  COUNT(*)                   AS messages
+`;
+
+function usageFilter(sessionIds?: string[]): { sql: string; params: any[] } {
+  if (!sessionIds) return { sql: "", params: [] };
+  if (!sessionIds.length) return { sql: " WHERE 1=0", params: [] };
+  return { sql: ` WHERE session_id IN (${sessionIds.map(() => "?").join(",")})`, params: sessionIds };
+}
+
 export function usageByModel(sessionIds?: string[]): any[] {
+  if (isV2()) {
+    const f = usageFilter(sessionIds);
+    const rows = mgr
+      .query(
+        `SELECT provider_id AS providerID, model_id AS modelID, ${USAGE_AGG}
+           FROM msg_usage${f.sql}
+          GROUP BY provider_id, model_id ORDER BY cost DESC`,
+      )
+      .all(...f.params) as any[];
+    return rows.map((r) => {
+      const u = add(empty(), r);
+      return { providerID: r.providerID ?? "unknown", modelID: r.modelID ?? "unknown", ...u };
+    });
+  }
+
   const f = sessionFilter(sessionIds);
   const rows = ocRO
     .query(
-      `SELECT json_extract(data,'$.providerID') AS providerID,
-              json_extract(data,'$.modelID') AS modelID, ${AGG}
-       FROM message WHERE ${WHERE_ASSISTANT}${f.sql}
+      `SELECT json_extract(data,'${MODEL_PROVIDER()}') AS providerID,
+              json_extract(data,'${MODEL_ID()}') AS modelID, ${AGG}
+       FROM ${MESSAGE_TABLE()} WHERE ${WHERE_ASSISTANT()}${f.sql}
        GROUP BY providerID, modelID ORDER BY cost DESC`,
     )
     .all(...f.params) as any[];
@@ -87,11 +146,27 @@ export function usageByModel(sessionIds?: string[]): any[] {
 }
 
 export function usageByDay(sessionIds?: string[]): any[] {
+  if (isV2()) {
+    const f = usageFilter(sessionIds);
+    const rows = mgr
+      .query(
+        `SELECT day, ${USAGE_AGG}
+           FROM msg_usage${f.sql} GROUP BY day ORDER BY day DESC LIMIT 60`,
+      )
+      .all(...f.params) as any[];
+    return rows
+      .map((r) => {
+        const u = add(empty(), r);
+        return { day: r.day, ...u };
+      })
+      .reverse();
+  }
+
   const f = sessionFilter(sessionIds);
   const rows = ocRO
     .query(
       `SELECT date(time_created/1000,'unixepoch') AS day, ${AGG}
-       FROM message WHERE ${WHERE_ASSISTANT}${f.sql} GROUP BY day ORDER BY day DESC LIMIT 60`,
+       FROM ${MESSAGE_TABLE()} WHERE ${WHERE_ASSISTANT()}${f.sql} GROUP BY day ORDER BY day DESC LIMIT 60`,
     )
     .all(...f.params) as any[];
   return rows
@@ -102,21 +177,34 @@ export function usageByDay(sessionIds?: string[]): any[] {
     .reverse();
 }
 
+const sessionStatsCache = new Map<string, { at: number; data: any }>();
+
 export function sessionStats(sessionId: string) {
+  const cached = sessionStatsCache.get(sessionId);
+  if (cached && Date.now() - cached.at < 5000) return cached.data;
+
   const models = usageByModel([sessionId]);
   const totals = empty();
   for (const m of models) add(totals, m);
   const userMessages = (
     ocRO
       .query(
-        `SELECT COUNT(*) AS n FROM message WHERE session_id = ? AND json_extract(data,'$.role') = 'user'`,
+        `SELECT COUNT(*) AS n FROM ${MESSAGE_TABLE()} WHERE session_id = ? AND ${WHERE_USER()}`,
       )
       .get(sessionId) as { n: number }
   ).n;
-  return { sessionId, totals, userMessages, models };
+  const data = { sessionId, totals, userMessages, models };
+  sessionStatsCache.set(sessionId, { at: Date.now(), data });
+  return data;
 }
 
+const aggregateCache = new Map<string, { at: number; data: any }>();
+
 export function aggregateStats(sessionIds?: string[]) {
+  const key = sessionIds ? [...sessionIds].sort().join(",") : "*";
+  const cached = aggregateCache.get(key);
+  if (cached && Date.now() - cached.at < 10_000) return cached.data;
+
   const models = usageByModel(sessionIds);
   const totals = empty();
   for (const m of models) add(totals, m);
@@ -130,7 +218,9 @@ export function aggregateStats(sessionIds?: string[]) {
       const ph = sessionIds.map(() => "?").join(",");
       archived = (
         ocRO
-          .query(`SELECT COUNT(*) AS n FROM session WHERE time_archived IS NOT NULL AND id IN (${ph})`)
+          .query(
+            `SELECT COUNT(*) AS n FROM ${SESSION_TABLE()} WHERE time_archived IS NOT NULL AND id IN (${ph})`,
+          )
           .get(...sessionIds) as { n: number }
       ).n;
     }
@@ -140,7 +230,7 @@ export function aggregateStats(sessionIds?: string[]) {
       userMessages = (
         ocRO
           .query(
-            `SELECT COUNT(*) AS n FROM message WHERE json_extract(data,'$.role') = 'user' AND session_id IN (${ph})`,
+            `SELECT COUNT(*) AS n FROM ${MESSAGE_TABLE()} WHERE ${WHERE_USER()} AND session_id IN (${ph})`,
           )
           .get(...sessionIds) as { n: number }
       ).n;
@@ -150,14 +240,14 @@ export function aggregateStats(sessionIds?: string[]) {
     counts = ocRO
       .query(
         `SELECT
-           (SELECT COUNT(*) FROM session) AS sessions,
-           (SELECT COUNT(*) FROM session WHERE time_archived IS NOT NULL) AS archived,
-           (SELECT COUNT(*) FROM message WHERE json_extract(data,'$.role') = 'user') AS userMessages`,
+           (SELECT COUNT(*) FROM ${SESSION_TABLE()}) AS sessions,
+           (SELECT COUNT(*) FROM ${SESSION_TABLE()} WHERE time_archived IS NOT NULL) AS archived,
+           (SELECT COUNT(*) FROM ${MESSAGE_TABLE()} WHERE ${WHERE_USER()}) AS userMessages`,
       )
       .get() as any;
   }
 
-  return {
+  const data = {
     totals: {
       ...totals,
       sessions: counts.sessions,
@@ -167,4 +257,6 @@ export function aggregateStats(sessionIds?: string[]) {
     models,
     days,
   };
+  aggregateCache.set(key, { at: Date.now(), data });
+  return data;
 }

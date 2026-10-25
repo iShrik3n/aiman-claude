@@ -4,7 +4,7 @@ import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 import { api } from "./api";
 import { cssVar } from "./themes";
-import { useStore } from "./store";
+import { setChatMode, useStore } from "./store";
 
 function termTheme() {
   return {
@@ -176,11 +176,13 @@ export default function TerminalPane({
       let opencodeUrl = "http://127.0.0.1:4096";
       let opencodeBin = "opencode";
       let platform = /Windows/i.test(navigator.userAgent) ? "win32" : "linux";
+      let opencodeV2 = false;
       try {
         const cfg = await api.config();
         opencodeUrl = cfg.opencodeUrl || opencodeUrl;
         opencodeBin = cfg.opencodeBin || opencodeBin;
         platform = cfg.platform || platform;
+        opencodeV2 = !!cfg.opencodeV2;
       } catch {}
 
       const body: {
@@ -195,21 +197,22 @@ export default function TerminalPane({
         // Launch the opencode TUI attached to this session. Start it through a
         // shell with the binary's absolute path (spawning it directly as the
         // PTY leader aborts, and bare "opencode" may not be on the PTY's PATH).
-        const attach = [opencodeBin, "attach", opencodeUrl, "--session", sessionId];
-        if (directory) attach.push("--dir", directory);
+        //
+        // v1 used `opencode attach <url> --session <id>`; v2 made the top-level
+        // CLI the TUI and replaced `--dir` with a positional directory.
+        const cli = opencodeV2
+          ? [opencodeBin]
+              .concat(directory ? [directory] : [])
+              .concat(["--server", opencodeUrl, "--session", sessionId])
+          : [opencodeBin, "attach", opencodeUrl, "--session", sessionId].concat(
+              directory ? ["--dir", directory] : [],
+            );
         if (platform === "win32") {
           body.command = "powershell.exe";
-          body.args = [
-            "-NoProfile",
-            "-Command",
-            "& " + [opencodeBin, "attach", opencodeUrl, "--session", sessionId]
-              .concat(directory ? ["--dir", directory] : [])
-              .map(psQuote)
-              .join(" "),
-          ];
+          body.args = ["-NoProfile", "-Command", "& " + cli.map(psQuote).join(" ")];
         } else {
           body.command = "/bin/bash";
-          body.args = ["-lc", "exec " + attach.map(posixQuote).join(" ")];
+          body.args = ["-lc", "exec " + cli.map(posixQuote).join(" ")];
         }
       }
 
@@ -230,8 +233,10 @@ export default function TerminalPane({
       ws = new WebSocket(`${proto}://${location.host}/ptyws/${pty.id}`);
       wsRef.current = ws;
       ws.binaryType = "arraybuffer";
+      let openedAt = 0;
       ws.onopen = () => {
         if (!disposed) setStatus("");
+        openedAt = Date.now();
         doResize();
       };
       ws.onmessage = (ev) => {
@@ -245,7 +250,15 @@ export default function TerminalPane({
         }
       };
       ws.onclose = () => {
-        if (!disposed) setStatus("session ended — reopen to reconnect");
+        if (disposed) return;
+        // The TUI dying within a couple of seconds means it could not start
+        // (e.g. opencode's CLI changed how it attaches). Fall back to the
+        // structured chat instead of leaving a dead terminal on screen.
+        if (openedAt && Date.now() - openedAt < 3000) {
+          setChatMode("web");
+          return;
+        }
+        setStatus("session ended — reopen to reconnect");
       };
       ws.onerror = () => {
         if (!disposed) setStatus("connection error");

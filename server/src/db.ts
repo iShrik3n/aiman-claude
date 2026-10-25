@@ -1,12 +1,32 @@
 import { Database } from "bun:sqlite";
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { MANAGER_DB as CFG_MANAGER_DB, OPENCODE_DB as CFG_OPENCODE_DB } from "./config";
+import {
+  MANAGER_DB as CFG_MANAGER_DB,
+  OPENCODE_DB as CFG_OPENCODE_DB,
+  OPENCODE_DATA_DIR,
+} from "./config";
 
 export const OPENCODE_DB = CFG_OPENCODE_DB;
 export const MANAGER_DB = CFG_MANAGER_DB;
 
 mkdirSync(dirname(MANAGER_DB), { recursive: true });
+
+if (!existsSync(OPENCODE_DB)) {
+  console.error(
+    [
+      "",
+      "  aiman could not find opencode's database.",
+      "",
+      `    looked for: ${OPENCODE_DB}`,
+      `    data dir:   ${OPENCODE_DATA_DIR}`,
+      "",
+      "  Start opencode once (or set OPENCODE_DB) and try again.",
+      "",
+    ].join("\n"),
+  );
+  process.exit(1);
+}
 
 // Read-only connection to opencode's database.
 export const ocRO = new Database(OPENCODE_DB, { readonly: true });
@@ -16,6 +36,27 @@ ocRO.exec("PRAGMA query_only = true;");
 // Writable connection, used ONLY for the archive flag on session.time_archived.
 export const ocRW = new Database(OPENCODE_DB);
 ocRW.exec("PRAGMA busy_timeout = 5000;");
+
+/**
+ * opencode v2 stores sessions/messages in `session_v2` / `session_message`
+ * (with parts embedded in the message JSON). The v1 tables still exist for
+ * databases that were migrated, so detect by schema rather than by app version.
+ */
+let _isV2: boolean | null = null;
+export function isV2(): boolean {
+  if (_isV2 === null) {
+    try {
+      const has = (name: string) =>
+        !!ocRO
+          .query("SELECT 1 AS ok FROM sqlite_master WHERE type = 'table' AND name = ?")
+          .get(name);
+      _isV2 = has("session_v2") && has("session_message");
+    } catch {
+      _isV2 = false;
+    }
+  }
+  return _isV2;
+}
 
 // Our own database: folders, per-session metadata, search index, settings.
 export const mgr = new Database(MANAGER_DB);
@@ -90,6 +131,27 @@ mgr.exec(`
     message_id UNINDEXED,
     type       UNINDEXED
   );
+
+  /* Compact per-message usage so statistics never json_extract() the whole
+     message body (which is dominated by content arrays). Filled by the same
+     background pass that builds the FTS index. */
+  CREATE TABLE IF NOT EXISTS msg_usage (
+    message_id  TEXT PRIMARY KEY,
+    session_id  TEXT NOT NULL,
+    day         TEXT,
+    provider_id TEXT,
+    model_id    TEXT,
+    input       INTEGER NOT NULL DEFAULT 0,
+    output      INTEGER NOT NULL DEFAULT 0,
+    reasoning   INTEGER NOT NULL DEFAULT 0,
+    cache_read  INTEGER NOT NULL DEFAULT 0,
+    cache_write INTEGER NOT NULL DEFAULT 0,
+    cost        REAL NOT NULL DEFAULT 0,
+    time_created INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE INDEX IF NOT EXISTS idx_msg_usage_session ON msg_usage(session_id);
+  CREATE INDEX IF NOT EXISTS idx_msg_usage_day ON msg_usage(day);
+  CREATE INDEX IF NOT EXISTS idx_msg_usage_model ON msg_usage(provider_id, model_id);
 `);
 
 // ---- lightweight migrations (add columns to existing databases) ----

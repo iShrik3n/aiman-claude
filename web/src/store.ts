@@ -69,6 +69,8 @@ type State = {
   chatMode: ChatMode;
   theme: string;
   onboarded: boolean | null;
+  opencodeV2: boolean;
+  thinkingOpen: boolean;
 };
 
 let state: State = {
@@ -100,6 +102,8 @@ let state: State = {
   theme:
     (typeof localStorage !== "undefined" && localStorage.getItem("oc_theme")) || DEFAULT_THEME,
   onboarded: null,
+  opencodeV2: false,
+  thinkingOpen: (typeof localStorage !== "undefined" ? localStorage.getItem("oc_thinking_open") : "1") !== "0",
 };
 
 applyTheme(state.theme);
@@ -141,6 +145,14 @@ export function setTheme(id: string) {
     localStorage.setItem("oc_theme", id);
   } catch {}
   set({ theme: id });
+}
+
+/** Whether "Thinking" cards start expanded. */
+export function setThinkingOpen(open: boolean) {
+  try {
+    localStorage.setItem("oc_thinking_open", open ? "1" : "0");
+  } catch {}
+  set({ thinkingOpen: open });
 }
 
 /** Open a session in its own pop-out browser window. */
@@ -210,7 +222,14 @@ export async function activateProfile(id: string) {
   }
 }
 
-export async function loadModelsAgents() {
+let agentsRetry: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * The launcher starts aiman before `opencode serve` has finished loading, so
+ * the first catalogue request can legitimately come back empty. Keep retrying
+ * for a while instead of freezing the selector on the fallback agent.
+ */
+export async function loadModelsAgents(attempt = 0) {
   try {
     const [prov, ag] = await Promise.all([api.providers(), api.agents()]);
     const opts: ModelOpt[] = [];
@@ -227,7 +246,18 @@ export async function loadModelsAgents() {
       .filter((a) => a.mode !== "subagent" && !hidden.includes(a.name))
       .map((a) => a.name);
     set({ models: opts, agents: primaries.length ? primaries : ["build"] });
-  } catch {}
+
+    const incomplete = !primaries.length || !opts.length;
+    if (incomplete && attempt < 12) {
+      if (agentsRetry) clearTimeout(agentsRetry);
+      agentsRetry = setTimeout(() => loadModelsAgents(attempt + 1), 2500);
+    }
+  } catch {
+    if (attempt < 12) {
+      if (agentsRetry) clearTimeout(agentsRetry);
+      agentsRetry = setTimeout(() => loadModelsAgents(attempt + 1), 2500);
+    }
+  }
 }
 
 // ---------------- data loading ----------------
@@ -235,7 +265,7 @@ export async function loadModelsAgents() {
 let refreshTimer: any = null;
 function scheduleRefresh() {
   clearTimeout(refreshTimer);
-  refreshTimer = setTimeout(() => refreshSessions().catch(() => {}), 400);
+  refreshTimer = setTimeout(() => refreshSessions().catch(() => {}), 800);
 }
 
 export function filterSessions(sessions: Session[], f: Filters): Session[] {
@@ -265,9 +295,19 @@ export function filterSessions(sessions: Session[], f: Filters): Session[] {
   return rows;
 }
 
+let refreshInFlight: Promise<void> | null = null;
 export async function refreshSessions() {
-  const sessions = await api.sessions({ archived: "all" });
-  set({ sessions, ready: true });
+  // Several events can request a refresh at once; never stack slow requests.
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = (async () => {
+    try {
+      const sessions = await api.sessions({ archived: "all" });
+      set({ sessions, ready: true });
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+  return refreshInFlight;
 }
 
 export async function refreshMeta() {
@@ -330,7 +370,13 @@ export async function bootstrap() {
   await Promise.all([refreshSessions(), refreshMeta(), loadModelsAgents(), loadProfiles()]);
   try {
     const cfg = await api.config();
-    set({ onboarded: cfg.onboarded });
+    set({ onboarded: cfg.onboarded, opencodeV2: !!cfg.opencodeV2 });
+    // opencode v2 removed `opencode attach` and its TUI does not attach through
+    // the PTY bridge, so v2 sessions always use the structured web chat.
+    if (cfg.opencodeV2 && !localStorage.getItem("oc_chat_mode")) {
+      localStorage.setItem("oc_chat_mode", "web");
+      set({ chatMode: "web" });
+    }
   } catch {
     set({ onboarded: true });
   }
@@ -447,14 +493,67 @@ export async function createSession(directory: string, title?: string) {
 export async function sendPrompt(
   sessionId: string,
   text: string,
-  opts: { model?: { providerID: string; modelID: string }; agent?: string },
+  opts: {
+    model?: { providerID: string; modelID: string };
+    agent?: string;
+    files?: { url: string; filename: string; mime?: string }[];
+  },
 ) {
-  const parts = [{ type: "text", text }];
-  await api.promptAsync(sessionId, {
-    parts,
-    model: opts.model,
-    agent: opts.agent,
-  });
+  const parts: any[] = [];
+  if (text) parts.push({ type: "text", text });
+  for (const f of opts.files ?? []) parts.push({ type: "file", ...f });
+
+  // Show the message immediately; the DB-backed copy replaces it on idle.
+  const tmpId = `tmp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const optimistic: MessageEntry = {
+    info: {
+      id: tmpId,
+      sessionID: sessionId,
+      role: "user",
+      time: { created: Date.now() },
+    },
+    parts: [
+      ...(text
+        ? [
+            {
+              id: `${tmpId}:text`,
+              sessionID: sessionId,
+              messageID: tmpId,
+              type: "text",
+              text,
+            },
+          ]
+        : []),
+      ...(opts.files ?? []).map((f, i) => ({
+        id: `${tmpId}:file:${i}`,
+        sessionID: sessionId,
+        messageID: tmpId,
+        type: "file",
+        filename: f.filename,
+        url: f.url,
+        mime: f.mime,
+      })),
+    ],
+  };
+  const current = state.entries[sessionId] ?? [];
+  set({ entries: { ...state.entries, [sessionId]: [...current, optimistic] } });
+
+  try {
+    await api.promptAsync(sessionId, {
+      parts,
+      model: opts.model,
+      agent: opts.agent,
+    });
+  } catch (e) {
+    // Roll the optimistic row back if the prompt never reached opencode.
+    set({
+      entries: {
+        ...state.entries,
+        [sessionId]: (state.entries[sessionId] ?? []).filter((x) => x.info?.id !== tmpId),
+      },
+    });
+    throw e;
+  }
 }
 
 export async function abortSession(id: string) {
@@ -544,10 +643,30 @@ let es: EventSource | null = null;
 export function connectEvents() {
   if (es) return;
   if (typeof location !== "undefined" && location.search.includes("nosse")) return;
-  es = new EventSource("/oc/global/event");
-  es.onopen = () => set({ connected: true });
-  es.onerror = () => set({ connected: false });
-  es.onmessage = (ev) => {
+  const src = new EventSource("/oc/global/event");
+  es = src;
+  src.onopen = () => {
+    set({ connected: true });
+    // Recover the agent/model catalogues if they were fetched before opencode
+    // finished booting.
+    if (state.agents.length < 2 || state.models.length === 0) loadModelsAgents();
+  };
+  src.onerror = () => {
+    set({ connected: false });
+    // EventSource retries on its own unless the connection failed fatally
+    // (non-200 response). Recreate it in that case so the badge recovers after
+    // opencode comes online.
+    if (es === src && src.readyState === EventSource.CLOSED) {
+      try {
+        src.close();
+      } catch {}
+      es = null;
+      setTimeout(() => {
+        if (!es) connectEvents();
+      }, 2500);
+    }
+  };
+  src.onmessage = (ev) => {
     try {
       const payload = JSON.parse(ev.data).payload;
       if (payload) handleEvent(payload);
@@ -561,8 +680,15 @@ function upsertMessage(info: any) {
   if (!loaded) return;
   const entries = loaded.slice();
   const idx = entries.findIndex((e) => e.info.id === info.id);
-  if (idx >= 0) entries[idx] = { ...entries[idx], info: { ...entries[idx].info, ...info } };
-  else entries.push({ info, parts: [] });
+  if (idx >= 0) {
+    const prev = entries[idx]!;
+    const merged = { ...prev.info, ...info };
+    // Streaming updates carry only `time.completed`; keep the original created.
+    if (prev.info?.time || info?.time) {
+      merged.time = { ...(prev.info?.time ?? {}), ...(info?.time ?? {}) };
+    }
+    entries[idx] = { ...prev, info: merged };
+  } else entries.push({ info, parts: [] });
   entries.sort((a, b) => (a.info.time?.created ?? 0) - (b.info.time?.created ?? 0));
   set({ entries: { ...state.entries, [sid]: entries } });
 }
@@ -589,6 +715,14 @@ function upsertPart(part: Part, delta?: string) {
   if (pIdx >= 0) {
     const existing = entry.parts[pIdx];
     const merged = { ...existing, ...part };
+    // opencode v2 sends tool lifecycles separately (called → success), each with
+    // a partial `state`; keep what earlier events contributed (input, output…).
+    if (existing.state && part.state) {
+      merged.state = { ...existing.state, ...part.state };
+      if (existing.state.metadata || part.state.metadata) {
+        merged.state.metadata = { ...(existing.state.metadata ?? {}), ...(part.state.metadata ?? {}) };
+      }
+    }
     if ((merged.text == null || merged.text === "") && delta) merged.text = (existing.text ?? "") + delta;
     else if (delta && part.text != null && part.text === existing.text) merged.text = existing.text + delta;
     entry.parts[pIdx] = merged;
@@ -675,7 +809,9 @@ function handleEvent(payload: any) {
     case "session.idle": {
       set({ statuses: { ...state.statuses, [p.sessionID]: { type: "idle" } } });
       scheduleRefresh();
-      if (state.activeSessionId === p.sessionID) reloadMessages(p.sessionID);
+      // Resync any session whose transcript is loaded (active session and the
+      // floating subagent panels).
+      if (state.entries[p.sessionID]) reloadMessages(p.sessionID);
       break;
     }
     case "todo.updated":

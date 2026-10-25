@@ -1,4 +1,5 @@
-import { ocRO, ocRW, mgr } from "./db";
+import { isV2, ocRO, ocRW, mgr } from "./db";
+import { ocData } from "./ocClient";
 
 export type SessionRow = {
   id: string;
@@ -30,26 +31,38 @@ export type Folder = {
   created_at: number;
 };
 
+/**
+ * Session projection for either schema. v2 keeps sessions in `session_v2` and
+ * messages in `session_message` (types user/assistant; the other types are
+ * synthetic markers that should not count as conversation turns).
+ */
+function sessionSelect(where = ""): string {
+  if (isV2()) {
+    return `SELECT s.id, s.parent_id, s.slug, s.directory, COALESCE(s.title, '') AS title,
+                   s.time_created, s.time_updated, s.time_archived,
+                   COALESCE(c.n, 0) AS message_count
+              FROM session_v2 s
+              LEFT JOIN (
+                SELECT session_id, COUNT(*) AS n
+                  FROM session_message
+                 WHERE type IN ('user', 'assistant')
+                 GROUP BY session_id
+              ) c ON c.session_id = s.id
+              ${where}`;
+  }
+  return `SELECT s.id, s.parent_id, s.slug, s.directory, s.title,
+                 s.time_created, s.time_updated, s.time_archived,
+                 (SELECT COUNT(*) FROM message m WHERE m.session_id = s.id) AS message_count
+            FROM session s
+            ${where}`;
+}
+
 export function getSession(id: string): SessionRow | null {
-  return (ocRO
-    .query(
-      `SELECT s.id, s.parent_id, s.slug, s.directory, s.title,
-              s.time_created, s.time_updated, s.time_archived,
-              (SELECT COUNT(*) FROM message m WHERE m.session_id = s.id) AS message_count
-       FROM session s WHERE s.id = ?`,
-    )
-    .get(id) as SessionRow | undefined) ?? null;
+  return (ocRO.query(sessionSelect("WHERE s.id = ?")).get(id) as SessionRow | undefined) ?? null;
 }
 
 export function getAllSessions(): SessionRow[] {
-  return ocRO
-    .query(
-      `SELECT s.id, s.parent_id, s.slug, s.directory, s.title,
-              s.time_created, s.time_updated, s.time_archived,
-              (SELECT COUNT(*) FROM message m WHERE m.session_id = s.id) AS message_count
-       FROM session s`,
-    )
-    .all() as SessionRow[];
+  return ocRO.query(sessionSelect()).all() as SessionRow[];
 }
 
 export function getMetaMap(): Map<string, SessionMeta> {
@@ -165,12 +178,26 @@ export function sessionIdsByMeta(filter: { userId?: string; profileId?: string }
 }
 
 export function setArchived(sessionId: string, archived: boolean): void {
+  const table = isV2() ? "session_v2" : "session";
   ocRW
-    .query("UPDATE session SET time_archived = ? WHERE id = ?")
+    .query(`UPDATE ${table} SET time_archived = ? WHERE id = ?`)
     .run(archived ? Date.now() : null, sessionId);
 }
 
-export function renameSession(sessionId: string, title: string): void {
+export async function renameSession(sessionId: string, title: string): Promise<void> {
+  if (isV2()) {
+    // Prefer the API so opencode emits session.renamed and every client agrees.
+    try {
+      await ocData(`/api/session/${encodeURIComponent(sessionId)}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      return;
+    } catch {}
+    ocRW.query("UPDATE session_v2 SET title = ? WHERE id = ?").run(title, sessionId);
+    return;
+  }
   ocRW.query("UPDATE session SET title = ? WHERE id = ?").run(title, sessionId);
 }
 
@@ -178,22 +205,27 @@ export function getSessionsByIds(ids: string[]): Map<string, { title: string; di
   const out = new Map<string, { title: string; directory: string }>();
   if (!ids.length) return out;
   const placeholders = ids.map(() => "?").join(",");
+  const table = isV2() ? "session_v2" : "session";
   const rows = ocRO
-    .query(`SELECT id, title, directory FROM session WHERE id IN (${placeholders})`)
+    .query(
+      `SELECT id, COALESCE(title, '') AS title, directory FROM ${table} WHERE id IN (${placeholders})`,
+    )
     .all(...ids) as { id: string; title: string; directory: string }[];
   for (const r of rows) out.set(r.id, { title: r.title, directory: r.directory });
   return out;
 }
 
 export function distinctDirectories(): string[] {
+  const table = isV2() ? "session_v2" : "session";
   const rows = ocRO
-    .query("SELECT DISTINCT directory FROM session ORDER BY directory")
+    .query(`SELECT DISTINCT directory FROM ${table} ORDER BY directory`)
     .all() as { directory: string }[];
   return rows.map((r) => r.directory).filter(Boolean);
 }
 
 export function sessionDirectory(id: string): string | null {
-  const r = ocRO.query("SELECT directory FROM session WHERE id = ?").get(id) as
+  const table = isV2() ? "session_v2" : "session";
+  const r = ocRO.query(`SELECT directory FROM ${table} WHERE id = ?`).get(id) as
     | { directory: string }
     | undefined;
   return r?.directory ?? null;

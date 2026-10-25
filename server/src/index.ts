@@ -9,8 +9,11 @@ import {
   resolve,
 } from "node:path";
 import { readdir, stat } from "node:fs/promises";
-import { syncFts, pruneFts, search } from "./fts";
+import { ensureFtsMode, syncFts, pruneFts, search } from "./fts";
 import { aggregateStats, sessionStats, usageBySession } from "./stats";
+import { isV2 } from "./db";
+import { handleOcV2 } from "./ocv2";
+import { ocData, ocFetch } from "./ocClient";
 import {
   activateProfileForUser,
   createProfile,
@@ -257,7 +260,12 @@ async function serveStatic(url: URL): Promise<Response> {
   const file = Bun.file(full);
   if (await file.exists()) {
     const headers = new Headers();
-    if (rel.startsWith("/assets/")) headers.set("cache-control", "public, max-age=31536000, immutable");
+    if (rel.startsWith("/assets/")) {
+      headers.set("cache-control", "public, max-age=31536000, immutable");
+    } else {
+      // index.html points at hashed bundles; never let a stale copy survive an update.
+      headers.set("cache-control", "no-cache");
+    }
     return new Response(file, { headers });
   }
   const index = Bun.file(join(DIST, "index.html"));
@@ -296,11 +304,28 @@ function ptyUpgrade(req: Request, server: any, url: URL): Response | undefined {
   return ok ? undefined : new Response("websocket upgrade failed", { status: 400 });
 }
 
-function wsOpen(ws: any) {
+async function wsOpen(ws: any) {
   const data = ws.data as PtySocket;
-  const target = `${OC_WS}/pty/${encodeURIComponent(data.ptyID)}/connect${
-    data.query ? "?" + data.query : ""
-  }`;
+
+  // v2 keeps PTY sockets under /api/pty and accepts a short-lived ticket in the
+  // query string (the browser-facing socket cannot send an Authorization header).
+  let ticket = "";
+  if (isV2()) {
+    try {
+      const issued = await ocData<any>(`/api/pty/${encodeURIComponent(data.ptyID)}/connect-token`, {
+        method: "POST",
+        headers: { "x-opencode-ticket": "1" },
+      });
+      ticket = issued?.ticket ?? "";
+    } catch {}
+  }
+
+  const target = isV2()
+    ? `${OC_WS}/api/pty/${encodeURIComponent(data.ptyID)}/connect${ticket ? `?ticket=${encodeURIComponent(ticket)}` : ""}`
+    : `${OC_WS}/pty/${encodeURIComponent(data.ptyID)}/connect${
+        data.query ? "?" + data.query : ""
+      }`;
+
   let upstream: WebSocket;
   try {
     upstream = new WebSocket(target);
@@ -767,12 +792,13 @@ async function handle(req: Request): Promise<Response> {
   if (p === "/api/config") {
     let terminal = false;
     try {
-      const r = await fetch(OPENCODE_URL + "/pty", { method: "GET" });
+      const r = isV2() ? await ocFetch("/api/pty") : await fetch(OPENCODE_URL + "/pty", { method: "GET" });
       terminal = r.ok;
     } catch {}
     return json({
       opencodeUrl: OPENCODE_URL,
       opencodeBin: OPENCODE_BIN,
+      opencodeV2: isV2(),
       terminal,
       platform: process.platform,
       onboarded: getUserOnboarded(user!.id),
@@ -1002,7 +1028,7 @@ async function handle(req: Request): Promise<Response> {
     }
     if (method === "PATCH") {
       const b = await readBody(req);
-      if (typeof b.title === "string") renameSession(id, b.title);
+      if (typeof b.title === "string") await renameSession(id, b.title);
       return json({ ok: true });
     }
   }
@@ -1032,10 +1058,20 @@ async function handle(req: Request): Promise<Response> {
 
   if (p === "/terminal" || p.startsWith("/terminal/")) return proxyTerminal(req, url);
 
-  if (p === "/oc" || p.startsWith("/oc/")) return proxyOpenCode(req, url);
+  if (p === "/oc" || p.startsWith("/oc/")) {
+    return isV2() ? handleOcV2(req, url) : proxyOpenCode(req, url);
+  }
 
   return serveStatic(url);
 }
+
+// A dropped SSE client or PTY socket can surface as an aborted fetch promise;
+// log it instead of letting Bun terminate the whole manager.
+process.on("unhandledRejection", (reason) => {
+  const message = String((reason as any)?.message ?? reason);
+  if (/abort/i.test(message) || /closed/i.test(message)) return;
+  console.error("[unhandled]", reason);
+});
 
 // ---- background search indexing ----
 let syncing = false;
@@ -1043,7 +1079,7 @@ function runSync() {
   if (syncing) return;
   syncing = true;
   try {
-    const { indexed, done } = syncFts(1500);
+    const { indexed, done } = syncFts(4000);
     if (indexed) console.log(`[fts] indexed ${indexed} parts${done ? " (caught up)" : ""}`);
   } catch (e) {
     console.error("[fts] sync error:", e);
@@ -1055,6 +1091,7 @@ function runSync() {
 // Defer indexing so the HTTP server starts accepting requests immediately.
 setTimeout(() => {
   try {
+    if (ensureFtsMode()) console.log("[fts] schema changed — rebuilding the search index");
     console.log(`[fts] removed ${pruneFts()} stale index rows`);
   } catch (e) {
     console.error("[boot] prune failed:", e);
@@ -1076,13 +1113,21 @@ Bun.serve({
   idleTimeout: 255,
   development: false,
   async fetch(req, server) {
-    const url = new URL(req.url);
-    if (url.pathname.startsWith("/ptyws/")) {
-      const res = ptyUpgrade(req, server, url);
-      if (res) return res;
-      return undefined;
+    try {
+      const url = new URL(req.url);
+      if (url.pathname.startsWith("/ptyws/")) {
+        const res = ptyUpgrade(req, server, url);
+        if (res) return res;
+        return undefined;
+      }
+      return await handle(req);
+    } catch (e) {
+      console.error("[http] request failed:", e);
+      return new Response(JSON.stringify({ error: "internal_error", detail: String(e) }), {
+        status: 500,
+        headers: { "content-type": "application/json" },
+      });
     }
-    return handle(req);
   },
   websocket: {
     open: wsOpen,

@@ -5,7 +5,97 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.8.0] - 2026-10-25
+
+### Added
+- **opencode v2 support.** aiman detects the storage schema and works with both
+  opencode v1 and v2. On v2 it reads sessions from `session_v2` and messages
+  from `session_message` (parts embedded in the message JSON), builds the search
+  index from those messages, computes usage from the v2 projections, and
+  translates the v2 HTTP API (`/api/session/*`, `/api/provider`, `/api/form`, …)
+  into the shapes the web UI already speaks. The v2 event stream
+  (`session.text.delta`, `session.tool.success`, `session.step.ended`, …) is
+  translated to `message.part.updated`, `message.part.delta`, `session.idle` and
+  permission/question events, so streaming, tool output and live status keep
+  working.
+- **Password-aware launcher.** v2 protects every `/api/*` route with basic auth.
+  `aiman` generates `OPENCODE_SERVER_PASSWORD`, starts `opencode serve` with it,
+  and passes it to the manager as `OPENCODE_PASSWORD`. It verifies a reused
+  server's password and starts its own instance on a free port when it cannot
+  authenticate; a second launch of aiman exits instead of spawning duplicates.
+- **In-session search.** Ctrl+F (or the *find* button) searches the open session
+  for text, thinking and tool input/output with inline highlighting, hit counts
+  and Enter/arrow navigation.
+- **Attachments in the chat composer.** Drag & drop, Ctrl+V or the 📎 picker
+  uploads files to `<session>/.aiman-uploads/`, shows image thumbnails and sends
+  them to the model as `file://` attachments. Messages can be sent with
+  attachments alone.
+- **Agent-aware UI.** The composer, Send button and each assistant message are
+  tinted by the active agent: build = blue, plan = orange, custom agents get a
+  stable purple/violet hue. Assistant headers show `opencode · <agent>`.
+- **Prompt history.** ↑/↓ in the composer recalls previously sent prompts for
+  the session and restores the draft when passing the newest.
+- **Timestamps** on every message, Thinking card and tool card (compact time,
+  full timestamp on hover).
+- **Thinking cards open by default**, configurable in **Settings → Chat mode**.
+- **Subagent windows.** Child sessions spawned by subagent/task tools appear as
+  floating panels with live activity, streaming transcripts, and
+  maximize / restore / minimize (name + activity only) / close.
+- **Sub-sessions in the session list.** Only root sessions appear at the top
+  level; parents with children get an expander and count, children are indented
+  with an *agent* badge, and opening a child auto-expands its ancestors.
+- **Stop controls.** Esc opens a *Stop the running turn?* confirmation (a second
+  Esc confirms); the header and the running-tools strip expose the same action.
+  A running-tools bar lists active tools with an Esc hint.
+- **Virtualised transcript.** At most 40 messages stay in the DOM with
+  *load earlier* batches, while auto-follow keeps the newest block in view.
+  Scrolling up pauses following, shows a “↓ N new messages” pill, and returning
+  to the bottom re-locks it.
+- **Your own messages** appear immediately on Enter (optimistic) and are
+  right-aligned; agent messages stay left-aligned.
+
+### Changed
+- **Faster session list and statistics.** Session usage comes from opencode v2's
+  precomputed `session_v2` cost/token columns instead of parsing 61k message
+  bodies; the model/day statistics read a new compact `msg_usage` table filled
+  by the background indexer, with short-lived result caching.
+- **Fewer refreshes.** `session.viewed` no longer triggers a session-list
+  refresh, the client debounce is 800 ms, and overlapping refreshes collapse
+  into one request.
+- **Search/usage index** rebuild runs in larger background batches (one-time
+  rebuild after upgrading).
+- `index.html` is served with `Cache-Control: no-cache` so a hashed bundle
+  update can't leave a stale page.
+
+### Fixed
+- **"Unable to open database file" on startup.** The database is located by
+  finding `opencode.db`, not merely a directory that happens to exist; a missing
+  database prints a clear message instead of a stack trace.
+- **SSE "disconnected" badge.** The event proxy now sends an initial
+  `: connected` frame, pings every 15 s, returns a retryable stream instead of a
+  fatal 502 while opencode boots, and the client recreates a closed EventSource.
+- **Streaming client disconnects could terminate the process.** Aborted SSE
+  requests are cancelled cleanly and per-request failures are caught.
+- **Transcript jumping to the oldest message** when messages loaded
+  asynchronously, or when the finder auto-jumped while typing; opening a session
+  now reliably lands on the newest message, and content growth keeps the view
+  pinned while following.
+- **Agent/model catalogue stuck on "build"** when fetched before opencode had
+  finished booting; catalogues retry and are refreshed when the event stream
+  connects.
+- **Chat mode on v2.** v2 removed `opencode attach` and its TUI does not stay
+  attached through the PTY bridge, so v2 sessions use the structured web chat;
+  Settings marks terminal chat as *opencode v1 only*.
+
+### Known limitations with opencode v2
+- **Terminal chat** is v1-only (see above).
+- Session **sharing** and the **todo** list have no v2 equivalents; those UI
+  actions report "unsupported" and the todo panel stays empty.
+- **Archive** is written directly to `session_v2.time_archived` (v2 has no
+  archive endpoint), so opencode's own UI may not reflect it until it reloads.
+- v2 replaced interactive **questions** with forms. aiman maps simple forms
+  (string/number/boolean/multiselect) onto its question prompt.
+- Background shell sessions (`/api/shell`) are not surfaced as their own panel.
 
 ## [1.7.1] - 2026-10-09
 

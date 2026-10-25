@@ -370,6 +370,7 @@ export const api = {
       j<{
         opencodeUrl: string;
         opencodeBin: string;
+        opencodeV2?: boolean;
         terminal: boolean;
         platform: string;
         onboarded: boolean;

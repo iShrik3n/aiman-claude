@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type ServiceStatus, type UpdateInfo } from "./api";
-import { setChatMode, setTheme, store, toast, useStore } from "./store";
+import { setChatMode, setTheme, setThinkingOpen, store, toast, useStore } from "./store";
 import { THEMES } from "./themes";
 
 export default function SettingsView() {
@@ -150,30 +150,41 @@ export default function SettingsView() {
       </p>
 
       <div className="mode-grid">
-        <label className={"mode-card" + (mode === "terminal" ? " active" : "")}>
+        <label
+          className={
+            "mode-card" + (mode === "terminal" && !s.opencodeV2 ? " active" : "")
+          }
+          style={s.opencodeV2 ? { opacity: 0.55 } : undefined}
+        >
           <input
             type="radio"
             name="chatmode"
-            checked={mode === "terminal"}
+            disabled={s.opencodeV2}
+            checked={mode === "terminal" && !s.opencodeV2}
             onChange={() => setChatMode("terminal")}
           />
           <div>
             <div className="mode-title">
-              Terminal chat <span className="badge completed">default</span>
+              Terminal chat{" "}
+              {s.opencodeV2 ? (
+                <span className="badge">opencode v1 only</span>
+              ) : (
+                <span className="badge completed">default</span>
+              )}
             </div>
             <div className="small muted">
-              Full opencode TUI attached to the session (streaming, tools and
-              slash commands in one view). Opening a session launches{" "}
-              <code>opencode attach … --session &lt;id&gt;</code>.
+              {s.opencodeV2
+                ? "Not available with opencode v2 — it removed the attach command used by the embedded TUI."
+                : "Full opencode TUI attached to the session (streaming, tools and slash commands in one view). Opening a session launches opencode attach … --session <id>."}
             </div>
           </div>
         </label>
 
-        <label className={"mode-card" + (mode === "web" ? " active" : "")}>
+        <label className={"mode-card" + (mode === "web" || s.opencodeV2 ? " active" : "")}>
           <input
             type="radio"
             name="chatmode"
-            checked={mode === "web"}
+            checked={mode === "web" || s.opencodeV2}
             onChange={() => setChatMode("web")}
           />
           <div>
@@ -184,6 +195,21 @@ export default function SettingsView() {
           </div>
         </label>
       </div>
+
+      <label
+        className="small"
+        style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 14 }}
+      >
+        <input
+          type="checkbox"
+          checked={s.thinkingOpen}
+          onChange={(e) => setThinkingOpen(e.target.checked)}
+        />
+        <span>
+          Open <b>Thinking</b> boxes by default
+          <span className="muted"> — expanded while the model is reasoning</span>
+        </span>
+      </label>
 
       <h3 style={{ marginTop: 24 }}>Backend</h3>
       <table className="markdown" style={{ width: "100%" }}>

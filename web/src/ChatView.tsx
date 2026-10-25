@@ -1,13 +1,75 @@
-import { lazy, memo, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import {
+  lazy,
+  memo,
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import Composer from "./Composer";
 import PartView from "./PartView";
 import ErrorBoundary from "./ErrorBoundary";
 import FileBrowser from "./FileBrowser";
 
 const TerminalPane = lazy(() => import("./TerminalPane"));
-import { api, type MessageEntry, type QuestionRequest, type SessionStats } from "./api";
+import {
+  api,
+  type MessageEntry,
+  type Part,
+  type QuestionRequest,
+  type SessionStats,
+} from "./api";
+import { fmtFull, fmtTime } from "./time";
+import { agentAccent } from "./agents";
+
+/** Text a part contributes to the in-session finder. */
+function partSearchText(part: Part): string {
+  if (part.type === "text" || part.type === "reasoning") return part.text ?? "";
+  if (part.type === "tool") {
+    return [
+      part.tool ?? "",
+      JSON.stringify(part.state?.input ?? {}),
+      part.state?.output ?? "",
+      part.state?.error ?? "",
+    ].join("\n");
+  }
+  if (part.type === "file") return [part.filename ?? "", part.url ?? ""].join(" ");
+  if (part.type === "patch" && Array.isArray(part.files)) return part.files.join("\n");
+  return "";
+}
+
+function entryMatches(entry: MessageEntry, query: string): boolean {
+  return entry.parts.some((p) => partSearchText(p).toLowerCase().includes(query));
+}
+
+/** Wrap query hits in rendered plain text with <mark>. */
+function Highlight({ text, query }: { text: string; query?: string }): ReactNode {
+  const q = (query ?? "").trim().toLowerCase();
+  if (!q) return <>{text}</>;
+  const lower = text.toLowerCase();
+  const out: ReactNode[] = [];
+  let last = 0;
+  let idx = lower.indexOf(q);
+  while (idx >= 0) {
+    if (idx > last) out.push(text.slice(last, idx));
+    out.push(
+      <mark key={`m${idx}`} className="find-mark">
+        {text.slice(idx, idx + q.length)}
+      </mark>,
+    );
+    last = idx + q.length;
+    idx = lower.indexOf(q, last);
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return <>{out}</>;
+}
 import { fmtCost, fmtTokens } from "./StatsView";
 import {
+  abortSession,
   answerQuestion,
   archiveSession,
   createSession,
@@ -41,24 +103,287 @@ export default function ChatView() {
   const [showStats, setShowStats] = useState(false);
   const [showFiles, setShowFiles] = useState(false);
 
-  // ---- windowed rendering for very long histories ----
-  const INITIAL = 30;
-  const STEP = 30;
-  const [windowStart, setWindowStart] = useState(0);
-  const prevId = useRef<string | null>(null);
-  useEffect(() => {
-    if (prevId.current !== id) {
-      prevId.current = id;
-      setWindowStart(Math.max(0, (s.entries[id]?.length ?? 0) - INITIAL));
+  // Floating subagent panels (child sessions spawned by this one).
+  const [subModes, setSubModes] = useState<Record<string, "min" | "normal" | "max">>({});
+  const [dismissedSubs, setDismissedSubs] = useState<Set<string>>(() => new Set());
+  const requestedSubs = useRef<Set<string>>(new Set());
+
+  // ---- quick find inside the open session ----
+  const [findOpen, setFindOpen] = useState(false);
+  const [find, setFind] = useState("");
+  const [findPos, setFindPos] = useState(0);
+  const [confirmStop, setConfirmStop] = useState(false);
+  const confirmStopRef = useRef(false);
+  const findInputRef = useRef<HTMLInputElement>(null);
+
+  // Transcript virtualisation: how many messages live in the DOM at once.
+  const VISIBLE = 40;
+  const STEP = 20;
+
+  const findMatches = useMemo(() => {
+    const q = find.trim().toLowerCase();
+    if (!q) return [] as number[];
+    const hits: number[] = [];
+    entries.forEach((e, i) => {
+      if (entryMatches(e, q)) hits.push(i);
+    });
+    return hits;
+  }, [entries, find]);
+  const findSet = useMemo(() => new Set(findMatches), [findMatches]);
+
+  const thinkingOpen = s.thinkingOpen;
+
+  // Tools/shell commands that are still executing, surfaced under the header.
+  const runningTools = useMemo(() => {
+    const out: { id: string; name: string; detail: string; status: string }[] = [];
+    for (const entry of entries) {
+      for (const part of entry.parts) {
+        if (part.type !== "tool") continue;
+        const status = part.state?.status;
+        if (status !== "running" && status !== "pending") continue;
+        const meta = part.state?.metadata ?? {};
+        const input = part.state?.input ?? {};
+        const detail = String(
+          part.state?.title ??
+            meta.title ??
+            meta.command ??
+            input.command ??
+            input.description ??
+            input.filePath ??
+            input.path ??
+            "",
+        );
+        out.push({ id: part.id, name: part.tool ?? "tool", detail, status });
+      }
     }
-  }, [id, s.entries[id]?.length]);
+    return out;
+  }, [entries]);
+
+  const busy = (status != null && status.type !== "idle") || runningTools.length > 0;
+
+  // Child sessions spawned by task/subagent tools, shown as floating panels.
+  const now = Date.now();
+  const visibleSubs = s.sessions.filter((child) => {
+    if (child.parentId !== id || dismissedSubs.has(child.id)) return false;
+    const st = s.statuses[child.id];
+    const childBusy = !!st && st.type !== "idle";
+    return childBusy || now - child.timeUpdated < 20 * 60 * 1000;
+  });
+
+  function subMeta(childId: string) {
+    const list = s.entries[childId] ?? [];
+    let agent = "subagent";
+    for (let i = list.length - 1; i >= 0; i--) {
+      const name = list[i]?.info?.agentID;
+      if (name) {
+        agent = name;
+        break;
+      }
+    }
+    for (let i = list.length - 1; i >= 0; i--) {
+      for (const part of list[i]!.parts) {
+        if (part.type !== "tool") continue;
+        if (part.state?.status !== "running" && part.state?.status !== "pending") continue;
+        const detail = String(
+          part.state?.title ??
+            part.state?.metadata?.command ??
+            part.state?.input?.command ??
+            part.state?.input?.description ??
+            part.tool ??
+            "",
+        );
+        return {
+          agent,
+          busy: true,
+          activity: `${part.tool ?? "tool"}${detail ? " · " + detail : ""}`,
+        };
+      }
+    }
+    const st = s.statuses[childId];
+    if (st?.type === "retry") return { agent, busy: true, activity: `retry ${st.attempt}` };
+    if (st && st.type !== "idle") return { agent, busy: true, activity: "thinking…" };
+    return { agent, busy: false, activity: "idle" };
+  }
+
+  // Liveness fallback: opencode v2 does not always deliver `session.status`,
+  // so also treat an unfinished last message, running tools, or a running
+  // subagent as "still working".
+  const lastEntry = entries[entries.length - 1];
+  const lastCreated = Number(lastEntry?.info?.time?.created ?? 0);
+  const looksStreaming =
+    !!lastEntry &&
+    Date.now() - lastCreated < 30 * 60 * 1000 &&
+    (lastEntry.info?.role === "user" ||
+      (lastEntry.info?.role === "assistant" && !lastEntry.info?.time?.completed));
+  const subLive = visibleSubs.some((child) => {
+    const st = s.statuses[child.id];
+    if (st && st.type !== "idle") return true;
+    return subMeta(child.id).busy;
+  });
+  const live = busy || subLive || (status == null && looksStreaming);
+
+  /** Open/close the "stop running?" confirmation (ref keeps double-Esc reliable). */
+  function setStopPrompt(open: boolean) {
+    confirmStopRef.current = open;
+    setConfirmStop(open);
+  }
+
+  function reveal(index: number) {
+    const maxStart = Math.max(0, entries.length - VISIBLE);
+    const start = Math.max(0, Math.min(index - Math.floor(VISIBLE / 3), maxStart));
+    stickToBottom.current = false;
+    setWindowStart(start);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const el = bodyRef.current?.querySelector(
+          `[data-entry-index="${index}"]`,
+        ) as HTMLElement | null;
+        el?.scrollIntoView({ block: "center", behavior: "smooth" });
+      });
+    });
+  }
+
+  function gotoMatch(dir: 1 | -1) {
+    if (!findMatches.length) return;
+    const next = (findPos + dir + findMatches.length) % findMatches.length;
+    setFindPos(next);
+    reveal(findMatches[next]!);
+  }
+
+  // Reset the finder when switching sessions.
+  useEffect(() => {
+    setFind("");
+    setFindOpen(false);
+    setFindPos(0);
+    setStopPrompt(false);
+  }, [id]);
+
+  // Reset the hit cursor while typing, but never move the transcript until the
+  // user actually navigates (Enter / arrows) — auto-jumping felt like a glitch.
+  useEffect(() => {
+    setFindPos(0);
+  }, [find]);
+
+  // Ctrl/Cmd+F opens the session finder instead of the browser's.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f" && id !== "__new__") {
+        e.preventDefault();
+        setFindOpen(true);
+        requestAnimationFrame(() => findInputRef.current?.focus());
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [id]);
+
+  // Escape: close the finder, or ask before stopping a running turn. A second
+  // Escape confirms, so a stray keypress never kills a long tool run.
+  useEffect(() => {
+    if (s.chatMode === "terminal" && !s.opencodeV2) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (findOpen) {
+        setFindOpen(false);
+        setFind("");
+        return;
+      }
+      if (confirmStopRef.current) {
+        e.preventDefault();
+        setStopPrompt(false);
+        abortSession(id);
+        return;
+      }
+      if (live) {
+        e.preventDefault();
+        setStopPrompt(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [id, findOpen, live, s.chatMode, s.opencodeV2]);
+
+  // Hide the confirmation if the turn ends while it is open.
+  useEffect(() => {
+    if (!live) setStopPrompt(false);
+  }, [live, id]);
+
+  // Load transcripts for recently active subagent (child) sessions so their
+  // floating panels can follow the shared event stream.
+  useEffect(() => {
+    if (id === "__new__") return;
+    const now = Date.now();
+    for (const child of s.sessions) {
+      if (child.parentId !== id) continue;
+      const childStatus = s.statuses[child.id];
+      const childBusy = !!childStatus && childStatus.type !== "idle";
+      if (!childBusy && now - child.timeUpdated > 20 * 60 * 1000) continue;
+      if (requestedSubs.current.has(child.id)) continue;
+      requestedSubs.current.add(child.id);
+      api
+        .messages(child.id)
+        .then((loaded) =>
+          store.set({ entries: { ...store.get().entries, [child.id]: loaded } }),
+        )
+        .catch(() => requestedSubs.current.delete(child.id));
+    }
+  }, [id, s.sessions, s.statuses]);
+
+  // ---- virtualised transcript -------------------------------------------
+  // Only a small window of messages is kept in the DOM. The window follows the
+  // newest messages while the user is parked at the bottom; scrolling up loads
+  // earlier batches, and a "new messages" button appears when the stream runs
+  // ahead of the viewport.
+  const [windowStart, setWindowStart] = useState(0);
+  const initedFor = useRef<string | null>(null);
+  const stickToBottom = useRef(true);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const lastScrollTop = useRef(0);
+  const ignoreScrollUntil = useRef(0);
+
+  const scrollToBottom = () => {
+    ignoreScrollUntil.current = Date.now() + 300;
+    const snap = () => {
+      const el = bodyRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    };
+    // Two frames cover the window/state update; the timer catches late layout
+    // (images, code blocks) after opening a session.
+    requestAnimationFrame(() => {
+      snap();
+      requestAnimationFrame(snap);
+    });
+    setTimeout(() => {
+      if (stickToBottom.current) snap();
+    }, 200);
+  };
+
+  // First render (or first arrival of messages) for a session.
+  useLayoutEffect(() => {
+    if (!entries.length || initedFor.current === id) return;
+    initedFor.current = id;
+    stickToBottom.current = true;
+    lastScrollTop.current = 0;
+    ignoreScrollUntil.current = Date.now() + 600;
+    setWindowStart(Math.max(0, entries.length - VISIBLE));
+    scrollToBottom();
+  }, [id, entries.length]);
+
+  // Follow new messages only while the user is at the bottom.
+  useEffect(() => {
+    if (!entries.length || !stickToBottom.current) return;
+    setWindowStart(Math.max(0, entries.length - VISIBLE));
+    scrollToBottom();
+  }, [entries.length]);
 
   const loadEarlier = () => {
     const el = bodyRef.current;
     const before = el?.scrollHeight ?? 0;
+    const beforeTop = el?.scrollTop ?? 0;
     setWindowStart((w) => Math.max(0, w - STEP));
     requestAnimationFrame(() => {
-      if (el) el.scrollTop = el.scrollHeight - before + el.scrollTop;
+      const el2 = bodyRef.current;
+      if (el2) el2.scrollTop = el2.scrollHeight - before + beforeTop;
     });
   };
 
@@ -67,12 +392,33 @@ export default function ChatView() {
     [entries],
   );
 
+  // Streaming grows the last message without changing the entry count.
   useEffect(() => {
-    const el = bodyRef.current;
-    if (!el) return;
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
-    if (nearBottom) el.scrollTop = el.scrollHeight;
+    if (stickToBottom.current) scrollToBottom();
   }, [lastLen]);
+
+  // Pin to the bottom whenever the rendered content changes height (images,
+  // code blocks, markdown) while the user is following the stream.
+  useEffect(() => {
+    const inner = innerRef.current;
+    const el = bodyRef.current;
+    if (!inner || !el) return;
+    const ro = new ResizeObserver(() => {
+      if (!stickToBottom.current) return;
+      ignoreScrollUntil.current = Date.now() + 150;
+      el.scrollTop = el.scrollHeight;
+    });
+    ro.observe(inner);
+    return () => ro.disconnect();
+  }, [id]);
+
+  const newestHidden = Math.max(0, entries.length - (windowStart + VISIBLE));
+
+  const jumpToLatest = () => {
+    stickToBottom.current = true;
+    setWindowStart(Math.max(0, entries.length - VISIBLE));
+    scrollToBottom();
+  };
 
   useEffect(() => setTitle(session?.title ?? ""), [session?.id, session?.title]);
 
@@ -92,7 +438,8 @@ export default function ChatView() {
   if (id === "__new__") return <NewSession />;
 
   // Terminal chat mode: embed the opencode TUI attached to this session.
-  if (s.chatMode === "terminal") {
+  // opencode v2 dropped `attach`, so use the structured chat there.
+  if (s.chatMode === "terminal" && !s.opencodeV2) {
     return (
       <div className="chat">
         <div className="chat-head">
@@ -216,8 +563,10 @@ export default function ChatView() {
             {fmtTokens(stats.totals.total)} tok · {fmtCost(stats.totals.cost)}
           </span>
         )}
-        {status && status.type !== "idle" && (
-          <span className="badge running">{status.type === "retry" ? `retry ${status.attempt}` : "working"}</span>
+        {live && (
+          <span className="badge running">
+            {status?.type === "retry" ? `retry ${status.attempt}` : "working"}
+          </span>
         )}
         <div className="spacer" />
         <button
@@ -227,11 +576,30 @@ export default function ChatView() {
         >
           ⇗
         </button>
+        {live && (
+          <button
+            className="btn danger sm"
+            onClick={() => setStopPrompt(true)}
+            title="Stop the running turn (Esc)"
+          >
+            ■ stop
+          </button>
+        )}
         <button className="btn ghost sm" onClick={() => setShowFiles(true)} title="Files">
           files
         </button>
         <button className="btn ghost sm" onClick={() => setShowStats(true)} title="Session statistics">
           stats
+        </button>
+        <button
+          className={"btn ghost sm" + (findOpen ? " active" : "")}
+          onClick={() => {
+            setFindOpen((o) => !o);
+            requestAnimationFrame(() => findInputRef.current?.focus());
+          }}
+          title="Find in this session (Ctrl+F)"
+        >
+          find
         </button>
         <button className="btn ghost sm" onClick={loadDiff} title="Show changed files">
           diff
@@ -246,6 +614,76 @@ export default function ChatView() {
           {session?.timeArchived == null ? "🗄 archive" : "unarchive"}
         </button>
       </div>
+
+      {runningTools.length > 0 && (
+        <div className="running-bar">
+          <span className="running-dot" />
+          <span className="small">
+            <b>{runningTools.length}</b> running
+          </span>
+          {runningTools.map((t) => (
+            <span className="run-chip" key={t.id} title={t.detail || t.name}>
+              <span className="run-name">{t.name}</span>
+              {t.detail && <span className="run-detail">{t.detail}</span>}
+            </span>
+          ))}
+          <div className="spacer" />
+          <span className="small muted">Esc to stop</span>
+          <button className="btn danger sm" onClick={() => setStopPrompt(true)}>
+            ■ Stop
+          </button>
+        </div>
+      )}
+
+      {findOpen && (
+        <div className="find-bar">
+          <input
+            ref={findInputRef}
+            className="input find-input"
+            placeholder="Find in this session…"
+            value={find}
+            onChange={(e) => setFind(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                gotoMatch(e.shiftKey ? -1 : 1);
+              } else if (e.key === "Escape") {
+                setFindOpen(false);
+                setFind("");
+              }
+            }}
+          />
+          <span className="small muted">
+            {find.trim() ? `${findMatches.length ? findPos + 1 : 0}/${findMatches.length}` : ""}
+          </span>
+          <button
+            className="btn ghost sm"
+            onClick={() => gotoMatch(-1)}
+            disabled={!findMatches.length}
+            title="Previous match (Shift+Enter)"
+          >
+            ↑
+          </button>
+          <button
+            className="btn ghost sm"
+            onClick={() => gotoMatch(1)}
+            disabled={!findMatches.length}
+            title="Next match (Enter)"
+          >
+            ↓
+          </button>
+          <button
+            className="btn ghost sm"
+            onClick={() => {
+              setFindOpen(false);
+              setFind("");
+            }}
+            title="Close finder (Esc)"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {showStats && <SessionStatsCard stats={stats} onClose={() => setShowStats(false)} />}
       {showFiles && (
@@ -281,11 +719,37 @@ export default function ChatView() {
       <div
         className="chat-body"
         ref={bodyRef}
+        onWheel={(e) => {
+          // Explicit upward wheel = reading history; stop following at once.
+          if (e.deltaY < 0) stickToBottom.current = false;
+        }}
         onScroll={() => {
           const el = bodyRef.current;
-          if (el && el.scrollTop < 120 && windowStart > 0) loadEarlier();
+          if (!el) return;
+          const top = el.scrollTop;
+          const nearBottom = el.scrollHeight - top - el.clientHeight < 120;
+
+          // Only an upward movement counts as the user leaving the bottom.
+          // Layout/auto-scroll changes are ignored during the snap window.
+          if (Date.now() > ignoreScrollUntil.current && top < lastScrollTop.current - 2) {
+            stickToBottom.current = false;
+          }
+          lastScrollTop.current = top;
+
+          if (nearBottom) {
+            const wasSticking = stickToBottom.current;
+            stickToBottom.current = true;
+            if (!wasSticking) {
+              if (entries.length > windowStart + VISIBLE) {
+                setWindowStart(Math.max(0, entries.length - VISIBLE));
+              }
+              scrollToBottom();
+            }
+          }
+          if (top < 120 && windowStart > 0) loadEarlier();
         }}
       >
+        <div className="chat-inner" ref={innerRef}>
         {entries.length === 0 && <div className="empty">No messages yet — say hello below.</div>}
         {windowStart > 0 && (
           <div style={{ textAlign: "center", marginBottom: 12 }}>
@@ -294,9 +758,21 @@ export default function ChatView() {
             </button>
           </div>
         )}
-        {entries.slice(windowStart).map((e) => (
-          <MessageRow key={e.info?.id ?? Math.random()} entry={e} />
-        ))}
+        {entries.slice(windowStart, windowStart + VISIBLE).map((e, i) => {
+          const index = windowStart + i;
+          const hit = findSet.has(index);
+          return (
+            <MessageRow
+              key={e.info?.id ?? index}
+              entry={e}
+              index={index}
+              query={find}
+              hit={hit}
+              active={hit && index === findMatches[findPos]}
+              thinkingOpen={thinkingOpen}
+            />
+          );
+        })}
 
         {questions.map((q) => (
           <QuestionPrompt key={q.id} req={q} />
@@ -324,9 +800,181 @@ export default function ChatView() {
             </div>
           </div>
         ))}
+        </div>
       </div>
 
+      {newestHidden > 0 && (
+        <button className="jump-latest" onClick={jumpToLatest}>
+          ↓ {newestHidden} new message{newestHidden === 1 ? "" : "s"}
+        </button>
+      )}
+
+      {visibleSubs.length > 0 && (
+        <div className="subagent-dock">
+          {visibleSubs.map((child) => {
+            const meta = subMeta(child.id);
+            const mode = subModes[child.id] ?? "normal";
+            return (
+              <SubagentPanel
+                key={child.id}
+                agent={meta.agent}
+                busy={meta.busy}
+                activity={meta.activity}
+                entries={s.entries[child.id] ?? []}
+                mode={mode}
+                onMode={(m) => setSubModes((prev) => ({ ...prev, [child.id]: m }))}
+                onClose={() =>
+                  setDismissedSubs((prev) => new Set(prev).add(child.id))
+                }
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {confirmStop && (
+        <div className="overlay" onClick={() => setStopPrompt(false)}>
+          <div
+            className="overlay-box"
+            style={{ width: 440 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="overlay-title">Stop the running turn?</div>
+            <div className="small muted" style={{ margin: "10px 0 16px" }}>
+              <b>{s.agent || "opencode"}</b> is still thinking
+              {runningTools.length
+                ? ` and running ${runningTools.length} tool${runningTools.length === 1 ? "" : "s"}`
+                : ""}
+              . Interrupting stops the model response; programs a tool already
+              started may keep running.
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button className="btn sm" onClick={() => setStopPrompt(false)}>
+                Keep running
+              </button>
+              <button
+                className="btn danger sm"
+                onClick={() => {
+                  setStopPrompt(false);
+                  abortSession(id);
+                }}
+              >
+                Stop now
+              </button>
+            </div>
+            <div className="small muted" style={{ marginTop: 10 }}>
+              Press <b>Esc</b> again to confirm.
+            </div>
+          </div>
+        </div>
+      )}
+
       <Composer sessionId={id} />
+    </div>
+  );
+}
+
+/** Floating window for a subagent (child session) spawned by this session. */
+function SubagentPanel({
+  agent,
+  busy,
+  activity,
+  entries,
+  mode,
+  onMode,
+  onClose,
+}: {
+  agent: string;
+  busy: boolean;
+  activity: string;
+  entries: MessageEntry[];
+  mode: "min" | "normal" | "max";
+  onMode: (mode: "min" | "normal" | "max") => void;
+  onClose: () => void;
+}) {
+  const accent = agentAccent(agent);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const stick = useRef(true);
+  const lastLen = useMemo(
+    () => entries.reduce((n, e) => n + e.parts.length + JSON.stringify(e.info).length, 0),
+    [entries],
+  );
+
+  useEffect(() => {
+    if (!stick.current) return;
+    const el = bodyRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [lastLen, mode]);
+
+  const style = {
+    "--msg-accent": accent.accent,
+    "--msg-border": accent.border,
+  } as CSSProperties;
+
+  const stop = (e: { stopPropagation: () => void }) => e.stopPropagation();
+
+  return (
+    <div className={`subagent ${mode}`} style={style}>
+      <div
+        className="subagent-head"
+        onClick={() => mode === "min" && onMode("normal")}
+        title={mode === "min" ? "Click to restore" : undefined}
+      >
+        <span className="sub-dot" data-busy={busy ? "true" : "false"} />
+        <span className="sub-name">{agent}</span>
+        <span className="sub-activity">{activity}</span>
+        <div className="spacer" />
+        {mode !== "max" && (
+          <button onClick={(e) => (stop(e), onMode("max"))} title="Maximize">
+            ▢
+          </button>
+        )}
+        {mode !== "normal" && (
+          <button onClick={(e) => (stop(e), onMode("normal"))} title="Restore">
+            ❐
+          </button>
+        )}
+        {mode !== "min" && (
+          <button onClick={(e) => (stop(e), onMode("min"))} title="Minimize">
+            —
+          </button>
+        )}
+        <button onClick={(e) => (stop(e), onClose())} title="Close">
+          ×
+        </button>
+      </div>
+      {mode !== "min" && (
+        <div
+          className="subagent-body"
+          ref={bodyRef}
+          onScroll={() => {
+            const el = bodyRef.current;
+            if (!el) return;
+            stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+          }}
+        >
+          {entries.length === 0 && <div className="small muted">waiting for output…</div>}
+          {entries.slice(-30).map((entry) => (
+            <div className="sub-msg" key={entry.info?.id}>
+              <div className="sub-role">
+                {entry.info?.role === "user"
+                  ? "prompt"
+                  : (entry.info?.agentID ?? "assistant")}
+              </div>
+              {entry.parts.map((part) =>
+                part.type === "text" || part.type === "reasoning" || part.type === "tool" ? (
+                  <PartView
+                    key={part.id}
+                    part={part}
+                    thinkingOpen={false}
+                    messageTime={entry.info?.time?.created}
+                  />
+                ) : null,
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -437,14 +1085,57 @@ async function forkAt(sessionId: string, messageID: string) {
   }
 }
 
-const MessageRow = memo(function MessageRow({ entry }: { entry: MessageEntry }) {
+const MessageRow = memo(function MessageRow({
+  entry,
+  index,
+  query,
+  hit,
+  active,
+  thinkingOpen,
+}: {
+  entry: MessageEntry;
+  index: number;
+  query?: string;
+  hit?: boolean;
+  active?: boolean;
+  thinkingOpen?: boolean;
+}) {
   const role = entry.info?.role ?? "assistant";
+  const agentName = entry.info?.agentID ?? entry.info?.agent ?? "build";
+  const accent = agentAccent(agentName);
+  const accentStyle =
+    role === "assistant"
+      ? ({
+          "--msg-accent": accent.accent,
+          "--msg-soft": accent.soft,
+          "--msg-border": accent.border,
+        } as CSSProperties)
+      : undefined;
   return (
-    <div className={"msg " + role}>
+    <div
+      className={"msg " + role + (hit ? " find-hit" : "") + (active ? " find-active" : "")}
+      data-entry-index={index}
+      style={accentStyle}
+    >
       <div className="msg-head">
         <div className="msg-role">
-          {role === "user" ? "You" : role === "assistant" ? "opencode" : role}
+          {role === "user"
+            ? "You"
+            : role === "assistant"
+              ? `opencode · ${agentName}`
+              : role}
         </div>
+        {entry.info?.time?.created ? (
+          <span
+            className="msg-time"
+            title={
+              fmtFull(entry.info.time.created) +
+              (entry.info.time.completed ? ` → ${fmtFull(entry.info.time.completed)}` : "")
+            }
+          >
+            {fmtTime(entry.info.time.created)}
+          </span>
+        ) : null}
         {entry.info?.sessionID && entry.info?.id && (
           <button
             className="btn ghost sm fork-btn"
@@ -458,13 +1149,29 @@ const MessageRow = memo(function MessageRow({ entry }: { entry: MessageEntry }) 
       {role === "user" ? (
         <div className="bubble">
           {entry.parts
-            .filter((p) => p.type === "text")
-            .map((p) => (
-              <div key={p.id}>{p.text}</div>
-            ))}
+            .filter((p) => p.type === "text" || p.type === "file")
+            .map((p) =>
+              p.type === "file" ? (
+                <span className="user-file" key={p.id} title={p.url}>
+                  📎 {p.filename ?? p.url ?? "file"}
+                </span>
+              ) : (
+                <div key={p.id}>
+                  <Highlight text={p.text ?? ""} query={query} />
+                </div>
+              ),
+            )}
         </div>
       ) : (
-        entry.parts.map((p) => <PartView key={p.id} part={p} />)
+        entry.parts.map((p) => (
+          <PartView
+            key={p.id}
+            part={p}
+            query={query}
+            thinkingOpen={thinkingOpen}
+            messageTime={entry.info?.time?.created}
+          />
+        ))
       )}
       {entry.info?.error && (
         <div className="permission">

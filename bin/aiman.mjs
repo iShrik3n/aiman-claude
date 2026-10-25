@@ -47,11 +47,12 @@ Options:
   --help                   show this help
 
 Environment:
-  AIMAN_HOME     data directory (default: platform data dir /aiman)
-  OPENCODE_DB    opencode SQLite database
-  OPENCODE_AUTH  opencode auth.json
-  DIST           built web UI directory
-  TERMINAL_URL   optional pyxtermjs terminal backend
+  AIMAN_HOME        data directory (default: platform data dir /aiman)
+  OPENCODE_DB       opencode SQLite database
+  OPENCODE_AUTH     opencode auth.json
+  OPENCODE_PASSWORD password for an existing opencode server (v2)
+  DIST              built web UI directory
+  TERMINAL_URL      optional pyxtermjs terminal backend
 `);
   process.exit(0);
 }
@@ -120,10 +121,49 @@ async function isUp(url) {
   }
 }
 
+/** "v1" | "v2" | "down" — v2 requires auth, v1 has no /api/session route. */
+async function probeOpencode(url) {
+  try {
+    const res = await fetch(url.replace(/\/$/, "") + "/api/session", {
+      signal: AbortSignal.timeout(1500),
+    });
+    if (res.status === 401) return "v2";
+    if (res.status === 404) return "v1";
+    return res.ok ? "v2" : "unknown";
+  } catch {
+    return "down";
+  }
+}
+
+/** True when `password` is accepted by a v2 server. */
+async function authOk(url, password) {
+  if (!password) return false;
+  try {
+    const res = await fetch(url.replace(/\/$/, "") + "/api/info", {
+      headers: {
+        authorization: "Basic " + Buffer.from(`opencode:${password}`).toString("base64"),
+      },
+      signal: AbortSignal.timeout(1500),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/** First port at/after `start` that nothing is listening on. */
+async function pickPort(start, skip) {
+  for (let p = start; p < start + 25; p++) {
+    if (String(p) === String(skip)) continue;
+    if (!(await isUp(`http://127.0.0.1:${p}`))) return p;
+  }
+  return start;
+}
+
 const host = valueOf("--host", process.env.HOST || "127.0.0.1");
 const port = String(valueOf("--port", process.env.PORT || "4097"));
-const opencodePort = String(valueOf("--opencode-port", process.env.OPENCODE_PORT || "4096"));
-const opencodeUrl = valueOf("--opencode-url", process.env.OPENCODE_URL || `http://127.0.0.1:${opencodePort}`);
+let opencodePort = String(valueOf("--opencode-port", process.env.OPENCODE_PORT || "4096"));
+let opencodeUrl = valueOf("--opencode-url", process.env.OPENCODE_URL || `http://127.0.0.1:${opencodePort}`);
 const startOpencode = !has("--no-opencode") && !has("--opencode-url") && !process.env.OPENCODE_URL;
 
 if (!existsSync(SERVER_ENTRY)) {
@@ -148,13 +188,55 @@ if (has("--build") || !existsSync(DIST_INDEX)) {
   }
 }
 
+// Don't start a second manager (and a second opencode) on top of a running one.
+if (await isUp(`http://${host}:${port}`)) {
+  console.log(`>> aiman is already running at http://${host}:${port}`);
+  process.exit(0);
+}
+
 const children = [];
+
+// opencode v2 requires basic auth on every /api route. Generate a password for
+// servers we start ourselves and share it with both the child and the manager.
+let password =
+  process.env.OPENCODE_PASSWORD?.trim() ||
+  process.env.OPENCODE_SERVER_PASSWORD?.trim() ||
+  "";
+const generatePassword = () => "aiman-" + crypto.randomUUID().replace(/-/g, "");
 
 let opencodeChild = null;
 if (startOpencode) {
-  if (await isUp(opencodeUrl)) {
+  let running = await probeOpencode(opencodeUrl);
+  let reuse = running !== "down";
+
+  // A v2 server we didn't start needs its password, and a stale/wrong
+  // OPENCODE_PASSWORD must never be trusted: verify before reusing, otherwise
+  // start our own instance on the next free port.
+  if (running === "v2") {
+    if (password && (await authOk(opencodeUrl, password))) {
+      reuse = true;
+    } else {
+      console.warn(
+        password
+          ? ">> OPENCODE_PASSWORD does not match the running opencode server"
+          : `>> a password-protected opencode v2 server is already running at ${opencodeUrl}`,
+      );
+      const nextPort = await pickPort(Number(opencodePort) + 1, port);
+      console.warn(
+        `>> starting a separate aiman-managed server on port ${nextPort} (set OPENCODE_PASSWORD to reuse the existing one)`,
+      );
+      opencodePort = String(nextPort);
+      opencodeUrl = `http://127.0.0.1:${nextPort}`;
+      running = "down";
+      reuse = false;
+      password = "";
+    }
+  }
+
+  if (reuse) {
     console.log(`>> using opencode server at ${opencodeUrl}`);
   } else {
+    password = password || generatePassword();
     const oc = which("opencode");
     if (!oc) {
       console.warn(
@@ -166,7 +248,11 @@ if (startOpencode) {
         opencodeChild = spawnExternal(
           oc,
           ["serve", "--port", opencodePort, "--hostname", "127.0.0.1"],
-          { stdio: "inherit", cwd: process.cwd() },
+          {
+            stdio: "inherit",
+            cwd: process.cwd(),
+            env: { ...process.env, OPENCODE_SERVER_PASSWORD: password },
+          },
         );
         children.push(opencodeChild);
         for (let i = 0; i < 30; i++) {
@@ -187,6 +273,7 @@ const env = {
   HOST: host,
   PORT: port,
   OPENCODE_URL: opencodeUrl,
+  ...(password ? { OPENCODE_PASSWORD: password } : {}),
 };
 
 console.log(`\n>> aiman running at http://${host}:${port}\n`);

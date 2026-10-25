@@ -1,10 +1,27 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { api, type Usage } from "./api";
 import { BUILTINS, runBuiltin } from "./commands";
-import { abortSession, sendPrompt, setAgent, setModel, store, toast, useStore } from "./store";
+import { abortSession, sendPrompt, setAgent, setModel, toast, useStore } from "./store";
+import { agentAccent } from "./agents";
 import { fmtCost, fmtTokens } from "./StatsView";
 
 type Cmd = { name: string; description: string; custom?: boolean; args?: boolean };
+
+type Attachment = {
+  id: string;
+  name: string;
+  size: number;
+  mime: string;
+  uri: string;
+  preview?: string;
+};
+
+/** Convert an absolute path to a file:// URI that opencode can read. */
+function fileUri(path: string): string {
+  const normalized = path.replace(/\\/g, "/");
+  const withRoot = /^[A-Za-z]:/.test(normalized) ? "/" + normalized : normalized;
+  return "file://" + encodeURI(withRoot).replace(/#/g, "%23").replace(/\?/g, "%3F");
+}
 
 export default function Composer({ sessionId }: { sessionId: string }) {
   const s = useStore();
@@ -12,7 +29,71 @@ export default function Composer({ sessionId }: { sessionId: string }) {
   const [sending, setSending] = useState(false);
   const [custom, setCustom] = useState<Cmd[]>([]);
   const [palSel, setPalSel] = useState(0);
+
+  // Up/Down recall previously sent prompts for this session.
+  const [histIdx, setHistIdx] = useState(-1);
+  const draftRef = useRef("");
+  const promptHistory = useMemo(() => {
+    const out: string[] = [];
+    for (const entry of s.entries[sessionId] ?? []) {
+      if (entry.info?.role !== "user") continue;
+      const body = (entry.parts ?? [])
+        .filter((p) => p.type === "text")
+        .map((p) => p.text ?? "")
+        .join("")
+        .trim();
+      if (body) out.push(body);
+    }
+    return out;
+  }, [s.entries[sessionId]]);
+
+  useEffect(() => {
+    setHistIdx(-1);
+    draftRef.current = "";
+  }, [sessionId]);
+
+  function recallHistory(dir: 1 | -1) {
+    if (!promptHistory.length) return;
+    if (dir === -1) {
+      if (histIdx === -1) draftRef.current = text;
+      const next = histIdx === -1 ? promptHistory.length - 1 : Math.max(0, histIdx - 1);
+      setHistIdx(next);
+      setText(promptHistory[next] ?? "");
+    } else {
+      if (histIdx === -1) return;
+      const next = histIdx + 1;
+      if (next >= promptHistory.length) {
+        setHistIdx(-1);
+        setText(draftRef.current);
+      } else {
+        setHistIdx(next);
+        setText(promptHistory[next] ?? "");
+      }
+    }
+    requestAnimationFrame(() => {
+      const ta = taRef.current;
+      if (ta) ta.setSelectionRange(ta.value.length, ta.value.length);
+    });
+  }
+
+  // drag/drop + paste attachments
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [uploading, setUploading] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const attachmentsRef = useRef<Attachment[]>([]);
+  attachmentsRef.current = attachments;
+
   const taRef = useRef<HTMLTextAreaElement>(null);
+  const session = s.sessions.find((x) => x.id === sessionId);
+  const directory = session?.directory;
+
+  const accent = useMemo(() => agentAccent(s.agent), [s.agent]);
+  const accentStyle = {
+    "--agent-accent": accent.accent,
+    "--agent-soft": accent.soft,
+    "--agent-border": accent.border,
+  } as CSSProperties;
 
   useEffect(() => {
     api
@@ -28,6 +109,52 @@ export default function Composer({ sessionId }: { sessionId: string }) {
       )
       .catch(() => {});
   }, []);
+
+  // Release object URLs when the composer unmounts.
+  useEffect(() => {
+    return () => {
+      for (const a of attachmentsRef.current) if (a.preview) URL.revokeObjectURL(a.preview);
+    };
+  }, []);
+
+  function removeAttachment(id: string) {
+    setAttachments((prev) => {
+      const target = prev.find((a) => a.id === id);
+      if (target?.preview) URL.revokeObjectURL(target.preview);
+      return prev.filter((a) => a.id !== id);
+    });
+  }
+
+  function clearAttachments() {
+    for (const a of attachmentsRef.current) if (a.preview) URL.revokeObjectURL(a.preview);
+    setAttachments([]);
+  }
+
+  async function addFiles(files: File[]) {
+    if (!files.length) return;
+    setUploading((n) => n + files.length);
+    for (const file of files) {
+      try {
+        const uploaded = await api.upload(directory, file, file.name || "paste");
+        const preview = file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined;
+        setAttachments((prev) => [
+          ...prev,
+          {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            name: uploaded.name || file.name || "file",
+            size: uploaded.size ?? file.size,
+            mime: file.type || "application/octet-stream",
+            uri: fileUri(uploaded.path),
+            preview,
+          },
+        ]);
+      } catch (e) {
+        toast(`Upload failed: ${e}`);
+      } finally {
+        setUploading((n) => n - 1);
+      }
+    }
+  }
 
   // slash palette visibility
   const slashMatch = text.match(/^\/([\w-]*)$/);
@@ -50,7 +177,7 @@ export default function Composer({ sessionId }: { sessionId: string }) {
 
   async function send() {
     const value = text.trim();
-    if (!value || sending) return;
+    if ((!value && !attachments.length) || sending) return;
 
     // slash command?
     if (value.startsWith("/")) {
@@ -84,8 +211,12 @@ export default function Composer({ sessionId }: { sessionId: string }) {
       await sendPrompt(sessionId, value, {
         model: m ? { providerID: m.providerID, modelID: m.modelID } : undefined,
         agent: s.agent || undefined,
+        files: attachments.map((a) => ({ url: a.uri, filename: a.name, mime: a.mime })),
       });
       setText("");
+      setHistIdx(-1);
+      draftRef.current = "";
+      clearAttachments();
     } catch (e) {
       alert(`Send failed: ${e}`);
     } finally {
@@ -107,8 +238,25 @@ export default function Composer({ sessionId }: { sessionId: string }) {
     }
   }
 
+  const canSend = !sending && uploading === 0 && (!!text.trim() || attachments.length > 0);
+
   return (
-    <div className="composer">
+    <div
+      className={"composer" + (dragging ? " drag" : "")}
+      style={accentStyle}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragging(false);
+        addFiles(Array.from(e.dataTransfer.files ?? []));
+      }}
+    >
       {paletteOpen && (
         <div className="palette">
           {filtered.map((c, i) => (
@@ -130,11 +278,42 @@ export default function Composer({ sessionId }: { sessionId: string }) {
         </div>
       )}
 
+      {(attachments.length > 0 || uploading > 0) && (
+        <div className="attachments">
+          {attachments.map((a) => (
+            <div className="attachment" key={a.id} title={`${a.name} · ${Math.max(1, Math.round(a.size / 1024))} KB`}>
+              {a.preview ? (
+                <img src={a.preview} alt="" />
+              ) : (
+                <span className="attachment-icon">📎</span>
+              )}
+              <span className="attachment-name">{a.name}</span>
+              <button
+                type="button"
+                className="attachment-x"
+                onClick={() => removeAttachment(a.id)}
+                title="Remove attachment"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+          {uploading > 0 && <span className="small muted">uploading {uploading}…</span>}
+        </div>
+      )}
+
       <textarea
         ref={taRef}
         value={text}
-        placeholder="Message opencode…  (Enter to send · Shift+Enter newline · / for commands · Tab changes agent)"
+        placeholder="Message opencode…  (Enter to send · Shift+Enter newline · / for commands · Tab changes agent · paste or drop files)"
         onChange={(e) => setText(e.target.value)}
+        onPaste={(e) => {
+          const files = Array.from(e.clipboardData?.files ?? []);
+          if (files.length) {
+            e.preventDefault();
+            addFiles(files);
+          }
+        }}
         onKeyDown={(e) => {
           if (paletteOpen) {
             if (e.key === "ArrowDown") {
@@ -155,6 +334,22 @@ export default function Composer({ sessionId }: { sessionId: string }) {
               return;
             }
           }
+          if (!paletteOpen && e.key === "ArrowUp") {
+            const ta = taRef.current;
+            if (ta && ta.selectionStart === 0 && ta.selectionEnd === 0) {
+              e.preventDefault();
+              recallHistory(-1);
+              return;
+            }
+          }
+          if (!paletteOpen && e.key === "ArrowDown" && histIdx >= 0) {
+            const ta = taRef.current;
+            if (!ta || ta.selectionStart === ta.value.length) {
+              e.preventDefault();
+              recallHistory(1);
+              return;
+            }
+          }
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             send();
@@ -162,6 +357,24 @@ export default function Composer({ sessionId }: { sessionId: string }) {
         }}
       />
       <div className="composer-row">
+        <button
+          type="button"
+          className="btn ghost sm attach-btn"
+          onClick={() => fileInputRef.current?.click()}
+          title="Attach files"
+        >
+          📎
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          hidden
+          onChange={(e) => {
+            addFiles(Array.from(e.target.files ?? []));
+            e.target.value = "";
+          }}
+        />
         <select
           className="input"
           value={s.model}
@@ -176,10 +389,10 @@ export default function Composer({ sessionId }: { sessionId: string }) {
           ))}
         </select>
         <select
-          className="input"
+          className="input agent-select"
           value={s.agent}
           onChange={(e) => setAgent(e.target.value)}
-          title="Agent (Tab to cycle)"
+          title="Agent (Tab to cycle) — blue build, orange plan, purple custom"
         >
           {s.agents.map((a) => (
             <option key={a} value={a}>
@@ -198,7 +411,7 @@ export default function Composer({ sessionId }: { sessionId: string }) {
             ■ Stop
           </button>
         )}
-        <button className="btn primary" disabled={sending || !text.trim()} onClick={send}>
+        <button className="btn primary" disabled={!canSend} onClick={send}>
           {sending ? "Sending…" : "Send"}
         </button>
       </div>

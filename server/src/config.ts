@@ -68,14 +68,21 @@ export const DIST =
 
 export const MANAGER_DB = ensureEnv("MANAGER_DB") ?? join(AIMAN_HOME, "manager.db");
 
-/** Candidate opencode data directories, most specific platform first. */
+/**
+ * Candidate opencode data directories.
+ *
+ * opencode moved its state between v1 and v2 (and Windows builds have used
+ * %LOCALAPPDATA% and %APPDATA% over time), so a directory existing is not proof
+ * that it holds the database. Prefer whichever candidate actually contains
+ * `opencode.db`, then fall back to a directory that exists.
+ */
 function opencodeDataDir(): string {
   const home = homedir();
   const candidates: string[] = [];
   if (isWindows) {
-    if (process.env.APPDATA) candidates.push(join(process.env.APPDATA, "opencode"));
-    if (process.env.LOCALAPPDATA) candidates.push(join(process.env.LOCALAPPDATA, "opencode"));
     candidates.push(join(home, ".local", "share", "opencode"));
+    if (process.env.LOCALAPPDATA) candidates.push(join(process.env.LOCALAPPDATA, "opencode"));
+    if (process.env.APPDATA) candidates.push(join(process.env.APPDATA, "opencode"));
   } else if (isMac) {
     candidates.push(join(home, "Library", "Application Support", "opencode"));
     candidates.push(join(home, ".local", "share", "opencode"));
@@ -83,7 +90,12 @@ function opencodeDataDir(): string {
     if (process.env.XDG_DATA_HOME) candidates.push(join(process.env.XDG_DATA_HOME, "opencode"));
     candidates.push(join(home, ".local", "share", "opencode"));
   }
-  return firstExisting(candidates, candidates[candidates.length - 1]!);
+
+  const withDb = candidates.find((c) => existsSync(join(c, "opencode.db")));
+  if (withDb) return withDb;
+
+  const withDir = candidates.find((c) => existsSync(c));
+  return withDir ?? candidates[candidates.length - 1]!;
 }
 
 export const OPENCODE_DATA_DIR = opencodeDataDir();
@@ -93,6 +105,16 @@ export const OPENCODE_DB =
 
 export const OPENCODE_AUTH =
   ensureEnv("OPENCODE_AUTH") ?? join(OPENCODE_DATA_DIR, "auth.json");
+
+/**
+ * Password for `opencode serve` (v2 requires HTTP basic auth for every /api
+ * route). `OPENCODE_SERVER_PASSWORD` is the variable opencode itself reads, so
+ * accept both spellings and pass the same value to the child process.
+ */
+export const OPENCODE_PASSWORD =
+  ensureEnv("OPENCODE_PASSWORD") ??
+  ensureEnv("OPENCODE_SERVER_PASSWORD") ??
+  "";
 
 export const AUTH_BACKUP =
   ensureEnv("AUTH_BACKUP") ?? join(AIMAN_HOME, "opencode-auth-backup.json");

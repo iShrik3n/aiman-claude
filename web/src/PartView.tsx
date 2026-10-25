@@ -1,12 +1,62 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import type { Part } from "./api";
 import DiffView, { synthWriteDiff } from "./DiffView";
+import { fmtFull, fmtTime } from "./time";
 
 function md(text: string) {
   const html = marked.parse(text ?? "", { async: false }) as string;
   return DOMPurify.sanitize(html);
+}
+
+/**
+ * Highlight occurrences of `query` inside rendered markdown. The markdown
+ * container is React-managed only via `dangerouslySetInnerHTML`, so wrapping
+ * its text nodes with <mark> is safe; previous marks are unwrapped first.
+ */
+function useMark(query?: string) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    root.querySelectorAll("mark.find-mark").forEach((m) => {
+      m.replaceWith(document.createTextNode(m.textContent ?? ""));
+    });
+    root.normalize();
+    const q = (query ?? "").trim().toLowerCase();
+    if (!q) return;
+
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const nodes: Text[] = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode as Text);
+
+    for (const node of nodes) {
+      const text = node.nodeValue ?? "";
+      const lower = text.toLowerCase();
+      let idx = lower.indexOf(q);
+      if (idx < 0) continue;
+      const frag = document.createDocumentFragment();
+      let last = 0;
+      while (idx >= 0) {
+        if (idx > last) frag.appendChild(document.createTextNode(text.slice(last, idx)));
+        const mark = document.createElement("mark");
+        mark.className = "find-mark";
+        mark.textContent = text.slice(idx, idx + q.length);
+        frag.appendChild(mark);
+        last = idx + q.length;
+        idx = lower.indexOf(q, last);
+      }
+      if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+      node.parentNode?.replaceChild(frag, node);
+    }
+  }, [query]);
+  return ref;
+}
+
+function Markdown({ text, query }: { text: string; query?: string }) {
+  const ref = useMark(query);
+  return <div className="markdown" ref={ref} dangerouslySetInnerHTML={{ __html: md(text) }} />;
 }
 
 function Collapse({
@@ -32,20 +82,48 @@ function Collapse({
   );
 }
 
-export default function PartView({ part }: { part: Part }) {
+export default function PartView({
+  part,
+  query,
+  thinkingOpen = true,
+  messageTime,
+}: {
+  part: Part;
+  query?: string;
+  thinkingOpen?: boolean;
+  messageTime?: number;
+}) {
+  const when = part.time?.created ?? part.state?.time?.start ?? messageTime;
+
+  function Time() {
+    const label = fmtTime(when);
+    if (!label) return null;
+    return (
+      <span className="part-time" title={fmtFull(when)}>
+        {label}
+      </span>
+    );
+  }
+
   switch (part.type) {
     case "text": {
       if (part.ignored || part.synthetic) return null;
-      return <div className="markdown" dangerouslySetInnerHTML={{ __html: md(part.text ?? "") }} />;
+      return <Markdown text={part.text ?? ""} query={query} />;
     }
     case "reasoning": {
       return (
         <Collapse
+          key={thinkingOpen ? "thinking-open" : "thinking-closed"}
           className="thinking"
-          head={<span className="name">Thinking</span>}
-          defaultOpen={false}
+          head={
+            <>
+              <span className="name">Thinking</span>
+              <Time />
+            </>
+          }
+          defaultOpen={thinkingOpen}
         >
-          <div className="markdown" dangerouslySetInnerHTML={{ __html: md(part.text ?? "") }} />
+          <Markdown text={part.text ?? ""} query={query} />
         </Collapse>
       );
     }
@@ -75,6 +153,7 @@ export default function PartView({ part }: { part: Part }) {
                 <span className="muted small" title={filePath}>
                   {base || st.title || ""}
                 </span>
+                <Time />
               </>
             }
           >
@@ -94,6 +173,7 @@ export default function PartView({ part }: { part: Part }) {
               <span className="name">{part.tool}</span>
               <span className={"badge " + status}>{status}</span>
               {st.title && <span className="muted small">{st.title}</span>}
+              <Time />
             </>
           }
         >
