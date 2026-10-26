@@ -31,7 +31,7 @@
     "desktop": "electron desktop/main.cjs",
     "desktop:prepare": "bun run scripts/prepare-desktop-build.ts",
     "desktop:dir": "bun run desktop:prepare && electron-builder --win --x64 --dir",
-    "desktop:build": "bun run desktop:prepare && electron-builder --win --x64"
+    "desktop:build": "bun run desktop:prepare && electron-builder --win --x64 --publish never"
   },
   "engines": {
     "bun": ">=1.1.0"
