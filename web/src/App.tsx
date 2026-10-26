@@ -10,11 +10,13 @@ import StatsView from "./StatsView";
 import Profiles from "./Profiles";
 import SettingsView from "./SettingsView";
 import ExtensionsView from "./ExtensionsView";
+import Workspace from "./Workspace";
 import DesktopTitlebar from "./DesktopTitlebar";
 import { AppTopbar, CompactTitlebarNav } from "./AppChrome";
 import Overlays from "./Overlays";
 import Login from "./Login";
 import Onboarding from "./Onboarding";
+import DeepLinkHandler from "./DeepLinkHandler";
 
 export default function App() {
   const s = useStore();
@@ -22,6 +24,10 @@ export default function App() {
   useEffect(() => {
     bootstrapAuth().catch((e) => console.error(e));
   }, []);
+
+  useEffect(() => {
+    if (typeof document !== "undefined") document.documentElement.lang = s.language;
+  }, [s.language]);
 
   // Keep the browser URL in sync with the active view / session (handles).
   useEffect(() => {
@@ -73,6 +79,10 @@ export default function App() {
       {s.view === "extensions" && !isAdmin && (
         <div className="empty">Extensions are only available to administrators.</div>
       )}
+      {s.view === "workspace" && isAdmin && <Workspace />}
+      {s.view === "workspace" && !isAdmin && (
+        <div className="empty">Workspace is only available to administrators.</div>
+      )}
       {s.view === "profiles" && <Profiles />}
       {s.view === "settings" && <SettingsView />}
     </div>
@@ -117,6 +127,7 @@ export default function App() {
 
       {s.toast && <div className="toast">{s.toast}</div>}
       <Overlays />
+      <DeepLinkHandler />
     </div>
   );
 }

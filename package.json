@@ -1,6 +1,6 @@
 {
   "name": "aiman",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "description": "AiMAN — self-hosted web UI and session manager for opencode.",
   "type": "module",
   "main": "desktop/main.cjs",
@@ -80,6 +80,14 @@
       {
         "from": ".desktop-build/package.json",
         "to": "aiman/package.json"
+      }
+    ],
+    "protocols": [
+      {
+        "name": "AiMAN deep links",
+        "schemes": [
+          "aiman"
+        ]
       }
     ],
     "win": {

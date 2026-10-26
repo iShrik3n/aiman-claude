@@ -3,6 +3,7 @@ import {
   activateProfile,
   logout,
   store,
+  t,
   useStore,
   type View,
 } from "./store";
@@ -10,19 +11,21 @@ import {
 type NavItem = {
   view: View;
   label: string;
+  key: string;
   icon: IconName;
   admin?: boolean;
 };
 
 const NAV: NavItem[] = [
-  { view: "chat", label: "Sessions", icon: "chat" },
-  { view: "search", label: "Search", icon: "search" },
-  { view: "stats", label: "Stats", icon: "stats" },
-  { view: "terminal", label: "Terminal", icon: "terminal" },
-  { view: "settings", label: "Settings", icon: "settings" },
-  { view: "users", label: "Users", icon: "user", admin: true },
-  { view: "extensions", label: "Extensions", icon: "config", admin: true },
-  { view: "profiles", label: "Profiles", icon: "user" },
+  { view: "chat", key: "nav.sessions", label: "Sessions", icon: "chat" },
+  { view: "search", key: "nav.search", label: "Search", icon: "search" },
+  { view: "stats", key: "nav.stats", label: "Stats", icon: "stats" },
+  { view: "terminal", key: "nav.terminal", label: "Terminal", icon: "terminal" },
+  { view: "settings", key: "nav.settings", label: "Settings", icon: "settings" },
+  { view: "users", key: "nav.users", label: "Users", icon: "user", admin: true },
+  { view: "extensions", key: "nav.extensions", label: "Extensions", icon: "config", admin: true },
+  { view: "workspace", key: "nav.workspace", label: "Workspace", icon: "settings", admin: true },
+  { view: "profiles", key: "nav.profiles", label: "Profiles", icon: "user" },
 ];
 
 /** The main view switcher. `compact` is used inside the desktop title bar. */
@@ -37,10 +40,10 @@ export function AppTabs({ compact = false }: { compact?: boolean }) {
           type="button"
           className={"tab" + (s.view === item.view ? " active" : "")}
           onClick={() => store.set({ view: item.view })}
-          title={item.label}
+          title={t(item.key)}
         >
           <Icon name={item.icon} />
-          <span className="tab-label">{item.label}</span>
+          <span className="tab-label">{t(item.key)}</span>
         </button>
       ))}
     </div>

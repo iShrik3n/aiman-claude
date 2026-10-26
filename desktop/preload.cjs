@@ -24,6 +24,12 @@ contextBridge.exposeInMainWorld("aimanDesktop", {
   toggleMaximize: () => ipcRenderer.invoke("aiman:window", "toggle-maximize"),
   close: () => ipcRenderer.invoke("aiman:window", "close"),
   setTheme: (theme) => ipcRenderer.send("aiman:theme", theme),
+  getPendingDeepLink: () => ipcRenderer.invoke("aiman:deep-link-pending"),
+  onDeepLink: (cb) => {
+    const listener = (_event, url) => cb(url);
+    ipcRenderer.on("aiman:deep-link", listener);
+    return () => ipcRenderer.removeListener("aiman:deep-link", listener);
+  },
   onState: (cb) => {
     const listener = (_event, state) => cb(state);
     ipcRenderer.on("aiman:window-state", listener);

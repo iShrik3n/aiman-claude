@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 /**
  * Central, cross-platform path/port configuration.
@@ -98,13 +98,53 @@ function opencodeDataDir(): string {
   return withDir ?? candidates[candidates.length - 1]!;
 }
 
-export const OPENCODE_DATA_DIR = opencodeDataDir();
+export type OpenCodeServerProfile = {
+  id: string;
+  name: string;
+  url: string;
+  password?: string;
+  db?: string;
+  auth?: string;
+};
+
+export type OpenCodeServersFile = {
+  activeId: string | null;
+  servers: OpenCodeServerProfile[];
+};
+
+export const SERVERS_FILE = join(AIMAN_HOME, "opencode-servers.json");
+
+function readServerFile(): OpenCodeServersFile {
+  try {
+    const parsed = JSON.parse(readFileSync(SERVERS_FILE, "utf8"));
+    if (parsed && Array.isArray(parsed.servers)) {
+      return {
+        activeId: typeof parsed.activeId === "string" ? parsed.activeId : null,
+        servers: parsed.servers.filter(
+          (item: any) => item && typeof item.id === "string" && typeof item.url === "string",
+        ),
+      };
+    }
+  } catch {}
+  return { activeId: null, servers: [] };
+}
+
+const serverFile = readServerFile();
+const activeServer =
+  serverFile.servers.find((item) => item.id === serverFile.activeId) ??
+  serverFile.servers[0] ??
+  null;
+
+const detectedDataDir = opencodeDataDir();
+export const OPENCODE_DATA_DIR = activeServer?.db
+  ? dirname(activeServer.db)
+  : detectedDataDir;
 
 export const OPENCODE_DB =
-  ensureEnv("OPENCODE_DB") ?? join(OPENCODE_DATA_DIR, "opencode.db");
+  ensureEnv("OPENCODE_DB") ?? activeServer?.db ?? join(OPENCODE_DATA_DIR, "opencode.db");
 
 export const OPENCODE_AUTH =
-  ensureEnv("OPENCODE_AUTH") ?? join(OPENCODE_DATA_DIR, "auth.json");
+  ensureEnv("OPENCODE_AUTH") ?? activeServer?.auth ?? join(OPENCODE_DATA_DIR, "auth.json");
 
 /**
  * Password for `opencode serve` (v2 requires HTTP basic auth for every /api
@@ -114,6 +154,7 @@ export const OPENCODE_AUTH =
 export const OPENCODE_PASSWORD =
   ensureEnv("OPENCODE_PASSWORD") ??
   ensureEnv("OPENCODE_SERVER_PASSWORD") ??
+  activeServer?.password ??
   "";
 
 export const AUTH_BACKUP =
@@ -121,5 +162,6 @@ export const AUTH_BACKUP =
 
 export const PORT = Number(ensureEnv("PORT") ?? 4097);
 export const HOST = ensureEnv("HOST") ?? "127.0.0.1";
-export const OPENCODE_URL = ensureEnv("OPENCODE_URL") ?? "http://127.0.0.1:4096";
+export const OPENCODE_URL =
+  ensureEnv("OPENCODE_URL") ?? activeServer?.url ?? "http://127.0.0.1:4096";
 export const TERMINAL_URL = ensureEnv("TERMINAL_URL") ?? "http://127.0.0.1:4098";

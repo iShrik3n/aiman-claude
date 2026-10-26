@@ -8,6 +8,10 @@ import {
   setFileMapMaxTextKb,
   setFileMapSafePreviews,
   setFileMapSkipContent,
+  setFontFamily,
+  setFontSize,
+  setLanguage,
+  setMonoFontFamily,
   setQueueBlockPermissions,
   setQueueBlockQuestions,
   setQueueBlockShells,
@@ -23,7 +27,9 @@ import {
   useStore,
 } from "./store";
 import { THEMES } from "./themes";
+import { LANGUAGES, type Language } from "./i18n";
 import Icon from "./Icon";
+import ServerSettings from "./ServerSettings";
 import desotaLogo from "./assets/desota-logo.png";
 
 export default function SettingsView() {
@@ -164,6 +170,82 @@ export default function SettingsView() {
           </button>
         ))}
       </div>
+
+      <div className="ws-form-row" style={{ marginTop: 14, maxWidth: 720 }}>
+        <label>
+          Language
+          <select
+            className="input"
+            value={s.language}
+            onChange={(e) => setLanguage(e.target.value as Language)}
+          >
+            {LANGUAGES.map((language) => (
+              <option key={language.id} value={language.id}>
+                {language.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          UI font
+          <input
+            className="input"
+            list="aiman-ui-fonts"
+            value={s.fontFamily ?? ""}
+            onChange={(e) => setFontFamily(e.target.value.trim() || null)}
+            placeholder="Theme default"
+          />
+        </label>
+        <label>
+          Code / terminal font
+          <input
+            className="input"
+            list="aiman-mono-fonts"
+            value={s.monoFontFamily ?? ""}
+            onChange={(e) => setMonoFontFamily(e.target.value.trim() || null)}
+            placeholder="Theme default"
+          />
+        </label>
+        <label>
+          Base font size
+          <input
+            className="input"
+            type="number"
+            min={10}
+            max={24}
+            value={s.fontSize ?? ""}
+            onChange={(e) =>
+              setFontSize(e.target.value ? Math.min(24, Math.max(10, Number(e.target.value))) : null)
+            }
+            placeholder="Theme default"
+          />
+        </label>
+        <datalist id="aiman-ui-fonts">
+          <option value="system-ui, sans-serif" />
+          <option value='"Commissioner", sans-serif' />
+          <option value='"Segoe UI", sans-serif' />
+          <option value='"Inter", sans-serif' />
+          <option value='"Georgia", serif' />
+          <option value='"Arial", sans-serif' />
+        </datalist>
+        <datalist id="aiman-mono-fonts">
+          <option value='ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace' />
+          <option value='"Cascadia Code", monospace' />
+          <option value='"Fira Code", monospace' />
+          <option value='"JetBrains Mono", monospace' />
+          <option value='"Consolas", monospace' />
+        </datalist>
+      </div>
+      <button
+        className="btn sm ghost"
+        onClick={() => {
+          setFontFamily(null);
+          setMonoFontFamily(null);
+          setFontSize(null);
+        }}
+      >
+        Reset typography to theme
+      </button>
 
       <label
         className="small"
@@ -520,6 +602,8 @@ export default function SettingsView() {
           </tr>
         </tbody>
       </table>
+
+      <ServerSettings />
 
       <h3 style={{ marginTop: 24 }}>Updates</h3>
       <table className="markdown" style={{ width: "100%" }}>

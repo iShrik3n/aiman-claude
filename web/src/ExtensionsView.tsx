@@ -184,6 +184,7 @@ export default function ExtensionsView() {
   const [pluginBusy, setPluginBusy] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
   const [showBuiltins, setShowBuiltins] = useState(false);
+  const [search, setSearch] = useState("");
 
   async function load(showLoading = true) {
     if (showLoading) setLoading(true);
@@ -282,6 +283,29 @@ export default function ExtensionsView() {
       toast(`Failed: ${e}`);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function toggleMcp(server: McpServer) {
+    if (!server.config) return;
+    setBusy(`toggle:${server.name}`);
+    try {
+      const result = await api.saveMcp({
+        name: server.name,
+        config: { ...server.config, enabled: !server.enabled },
+        directory: dir || null,
+        configPath: server.configPath ?? configPath,
+      });
+      toast(
+        result.runtimeError
+          ? `${server.enabled ? "Disabled" : "Enabled"} ${server.name}; runtime: ${result.runtimeError}`
+          : `${server.enabled ? "Disabled" : "Enabled"} ${server.name}`,
+      );
+      await load(false);
+    } catch (e) {
+      toast(`Failed: ${e}`);
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -433,7 +457,23 @@ export default function ExtensionsView() {
     () => sortedPlugins.filter((p) => p.source.type === "builtin"),
     [sortedPlugins],
   );
-  const visiblePlugins = showBuiltins ? [...externalPlugins, ...builtinPlugins] : externalPlugins;
+  const rawVisiblePlugins = showBuiltins ? [...externalPlugins, ...builtinPlugins] : externalPlugins;
+  const searchText = search.trim().toLowerCase();
+  const visibleMcp = (data?.mcp ?? []).filter((server) => {
+    if (!searchText) return true;
+    return (
+      server.name.toLowerCase().includes(searchText) ||
+      String(server.type ?? "").toLowerCase().includes(searchText) ||
+      JSON.stringify(server.config ?? {}).toLowerCase().includes(searchText)
+    );
+  });
+  const visiblePlugins = rawVisiblePlugins.filter((plugin) => {
+    if (!searchText) return true;
+    return (
+      pluginTarget(plugin).toLowerCase().includes(searchText) ||
+      String(plugin.state?.status ?? "").toLowerCase().includes(searchText)
+    );
+  });
   const outdated = sortedPlugins.filter((p) => p.source.outdated && p.source.target);
   const externalCount = externalPlugins.length;
 
@@ -489,6 +529,15 @@ export default function ExtensionsView() {
             {configPath}
           </span>
         )}
+        <label className="ext-field-inline" style={{ marginLeft: "auto" }}>
+          <span className="muted small">Filter</span>
+          <input
+            className="input"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="name, command, status…"
+          />
+        </label>
       </div>
 
       <div className="ext-subtabs">
@@ -528,11 +577,13 @@ export default function ExtensionsView() {
 
           {loading && !data ? (
             <div className="ext-empty">loading…</div>
-          ) : (data?.mcp.length ?? 0) === 0 ? (
-            <div className="ext-empty">No MCP servers configured.</div>
+          ) : visibleMcp.length === 0 ? (
+            <div className="ext-empty">
+              {(data?.mcp.length ?? 0) === 0 ? "No MCP servers configured." : "No MCP servers match the filter."}
+            </div>
           ) : (
             <div className="ext-grid">
-              {data!.mcp.map((server) => {
+              {visibleMcp.map((server) => {
                 const st = server.status?.status ?? "unknown";
                 const res = resourcesByServer.get(server.name);
                 const rCount = res?.resources.length ?? 0;
@@ -587,6 +638,19 @@ export default function ExtensionsView() {
                           onClick={() => mcpAction(server, "connect")}
                         >
                           {busy === `connect:${server.name}` ? "working…" : "Connect"}
+                        </button>
+                      )}
+                      {server.config && (
+                        <button
+                          className="btn sm"
+                          disabled={busy === `toggle:${server.name}`}
+                          onClick={() => toggleMcp(server)}
+                        >
+                          {busy === `toggle:${server.name}`
+                            ? "working…"
+                            : server.enabled
+                              ? "Disable"
+                              : "Enable"}
                         </button>
                       )}
                       <button className="btn sm" onClick={() => setForm(formForServer(server))}>

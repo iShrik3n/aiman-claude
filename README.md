@@ -64,16 +64,29 @@ opencode is working.
   xterm.js; no Python or external terminal server, works on Linux, macOS and
   Windows.
 - **Users** — first-run admin setup, add/promote/disable/delete users.
-- **Extensions (admin)** — manage opencode MCP servers (local or remote) and
+- **Extensions (admin)** - manage opencode MCP servers (local or remote) and
   plugins from the top bar: add, edit, remove, connect/disconnect, browse MCP
   resources, and check/update/remove plugins. Changes are written to the active
   opencode config document, which opencode hot-reloads.
-- **Profiles** — bundle provider API keys and switch them at runtime.
+- **Workspace (admin)** - an OpenCode configuration cockpit: raw JSONC config
+  editing, providers and models, permissions, system prompt and project rules,
+  LSP/formatter and v2 `cli.json` settings, skills, commands, agents, local
+  plugin files, presets, config profiles, backup/restore, GitHub sync, provider
+  auth, and live manager/opencode logs.
+- **Usage filters and export** - date ranges, project filtering, per-user and
+  per-profile views, CSV export and a PNG snapshot of the dashboard.
+- **Profiles** - bundle provider API keys and switch them at runtime.
 - **Deep links** — every view has a URL (`/sessions`, `/search`, `/stats`, …) and
   each session has its own handle (`/sessions/<id>`).
-- **Themes** — ten app-wide skins including Windows XP and Windows 98 (and dark
-  variants of both, via xp.css / 98.css), a skeuomorphic Winamp-style theme,
-  macOS Aqua, Nord and a CRT.
+- **Themes & typography** - ten app-wide skins including Windows XP and Windows
+  98 (and dark variants of both, via xp.css / 98.css), a skeuomorphic
+  Winamp-style theme, macOS Aqua, Nord and a CRT. Choose custom UI and
+  code/terminal font families, set a base font size, or reset to the theme.
+- **Switchable opencode servers** - keep multiple opencode URLs with their own
+  password, database and auth path, then activate one and restart. Environment
+  variables remain the highest-priority override.
+- **European languages** - navigation and workspace translations for most
+  European languages alongside English, Simplified Chinese and Korean.
 - **Folder tree** — organize sessions into nested folders, with inclusive
   subtree filtering, branch collapse, and subfolder creation.
 - **Auto-organize** — one admin click asks opencode to build a folder tree and
@@ -196,6 +209,26 @@ GitHub release alongside the server/web archives.
 - **Source checkouts** — `git pull`, then `bun run build` (and
   `bun run desktop:build` if you need a fresh installer). Restart the running
   process afterwards.
+
+## Workspace
+
+Administrators get a **Workspace** tab that mirrors OpenCode Studio-style
+configuration management without leaving AiMAN:
+
+- **Raw config** edits `opencode.json` / `opencode.jsonc` with validation,
+  comments and unknown-field preservation.
+- **Providers & models** edits endpoints, API keys, model limits, costs,
+  reasoning/tool-call capabilities and default/small models.
+- **Permissions**, **system prompt**, **project rules** (`AGENTS.md` /
+  `CLAUDE.md`), **LSP/formatters** and v2 **`cli.json`**.
+- **Skills**, **commands**, **agents** and local **plugin files** can be created,
+  edited, imported in bulk, enabled/disabled and deleted.
+- **Presets** save groups of skills, commands, agents, plugins and MCP servers.
+  **Config profiles** snapshot and restore the workspace.
+- **Backup & sync** exports/imports the complete workspace and can push/pull a
+  backup to a private GitHub repo through the `gh` CLI.
+- **Live logs** merges manager logs with the newest opencode log file.
+- **Provider auth** manages API keys and opens an OAuth login terminal.
 
 ## Configuration
 

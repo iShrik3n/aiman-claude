@@ -11,7 +11,8 @@ import {
   type Status,
   type Todo,
 } from "./api";
-import { applyTheme, DEFAULT_THEME } from "./themes";
+import { applyTheme, DEFAULT_THEME, getTheme } from "./themes";
+import { translate, type Language } from "./i18n";
 import {
   DEFAULT_MAX_IMAGE_MB,
   DEFAULT_MAX_PDF_MB,
@@ -26,7 +27,8 @@ export type View =
   | "stats"
   | "profiles"
   | "settings"
-  | "extensions";
+  | "extensions"
+  | "workspace";
 
 export type ChatMode = "web" | "terminal";
 
@@ -85,6 +87,10 @@ type State = {
   activeProfile: string | null;
   chatMode: ChatMode;
   theme: string;
+  language: Language;
+  fontFamily: string | null;
+  monoFontFamily: string | null;
+  fontSize: number | null;
   onboarded: boolean | null;
   opencodeV2: boolean;
   thinkingOpen: boolean;
@@ -165,6 +171,16 @@ let state: State = {
     "terminal") as ChatMode,
   theme:
     (typeof localStorage !== "undefined" && localStorage.getItem("oc_theme")) || DEFAULT_THEME,
+  language: ((typeof localStorage !== "undefined" && localStorage.getItem("oc_language")) ||
+    "en") as Language,
+  fontFamily:
+    (typeof localStorage !== "undefined" && localStorage.getItem("oc_font_family")) || null,
+  monoFontFamily:
+    (typeof localStorage !== "undefined" && localStorage.getItem("oc_mono_font")) || null,
+  fontSize:
+    typeof localStorage !== "undefined" && localStorage.getItem("oc_font_size")
+      ? readLimit("oc_font_size", 14, 10, 24)
+      : null,
   onboarded: null,
   opencodeV2: false,
   thinkingOpen: (typeof localStorage !== "undefined" ? localStorage.getItem("oc_thinking_open") : "1") !== "0",
@@ -204,7 +220,28 @@ let state: State = {
     typeof localStorage !== "undefined" && localStorage.getItem("oc_compact_toolbar") === "1",
 };
 
+export function applyTypography(): void {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  const theme = getTheme(state.theme);
+  root.style.setProperty(
+    "--font",
+    state.fontFamily || theme.vars["--font"] || "-apple-system, BlinkMacSystemFont, sans-serif",
+  );
+  root.style.setProperty(
+    "--mono",
+    state.monoFontFamily ||
+      theme.vars["--mono"] ||
+      'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
+  );
+  root.style.setProperty(
+    "--font-size",
+    state.fontSize != null ? `${state.fontSize}px` : theme.vars["--font-size"] || "14px",
+  );
+}
+
 applyTheme(state.theme);
+applyTypography();
 
 const listeners = new Set<() => void>();
 function set(patch: Partial<State>) {
@@ -254,6 +291,46 @@ export function setTheme(id: string) {
     localStorage.setItem("oc_theme", id);
   } catch {}
   set({ theme: id });
+  applyTypography();
+}
+
+export function setFontFamily(font: string | null): void {
+  try {
+    if (font) localStorage.setItem("oc_font_family", font);
+    else localStorage.removeItem("oc_font_family");
+  } catch {}
+  set({ fontFamily: font });
+  applyTypography();
+}
+
+export function setMonoFontFamily(font: string | null): void {
+  try {
+    if (font) localStorage.setItem("oc_mono_font", font);
+    else localStorage.removeItem("oc_mono_font");
+  } catch {}
+  set({ monoFontFamily: font });
+  applyTypography();
+}
+
+export function setFontSize(size: number | null): void {
+  try {
+    if (size != null) localStorage.setItem("oc_font_size", String(size));
+    else localStorage.removeItem("oc_font_size");
+  } catch {}
+  set({ fontSize: size });
+  applyTypography();
+}
+
+export function setLanguage(language: Language) {
+  try {
+    localStorage.setItem("oc_language", language);
+    document.documentElement.lang = language;
+  } catch {}
+  set({ language });
+}
+
+export function t(key: string): string {
+  return translate(state.language, key);
 }
 
 /** Whether "Thinking" cards start expanded. */
@@ -641,6 +718,7 @@ const VIEW_PATHS: Record<View, string> = {
   profiles: "/profiles",
   settings: "/settings",
   extensions: "/extensions",
+  workspace: "/workspace",
 };
 
 /** Canonical URL path for a given view + active session. */
@@ -668,7 +746,16 @@ export async function applyLocation() {
     return set({ view: "chat", activeSessionId: null });
   }
 
-  const views: View[] = ["search", "stats", "terminal", "users", "profiles", "settings", "extensions"];
+  const views: View[] = [
+    "search",
+    "stats",
+    "terminal",
+    "users",
+    "profiles",
+    "settings",
+    "extensions",
+    "workspace",
+  ];
   const view = views.find((v) => v === first);
   if (view) return set({ view });
   return set({ view: "chat" });

@@ -5,6 +5,40 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-10-26
+
+### Added
+- **Workspace** — an admin configuration cockpit for opencode: raw JSONC
+  editing, providers/models, permissions, system prompt, project rules,
+  LSP/formatter and v2 `cli.json`, skills, commands, agents, local plugin files,
+  presets, config profiles, backup/restore, GitHub sync, provider auth and live
+  logs.
+- **Usage dashboard filters** — date ranges, project filtering, CSV export and
+  PNG dashboard snapshots. The dashboard keeps the existing per-user,
+  per-profile, per-session, cache and reasoning views.
+- **Live log viewer** — captured manager logs plus the newest opencode log file,
+  with level/search filters, pause and auto-scroll.
+- **Deep links** — `aiman://` protocol registration in the Electron shell for
+  launch/open, MCP install and skill/plugin import, guarded by a confirmation
+  dialog.
+- **Installable web app** — manifest, service worker, theme metadata and a skip
+  link.
+- **Typography controls** — choose UI and code/terminal font families, set a
+  base font size, or reset to the active theme's defaults.
+- **Switchable opencode server profiles** — keep multiple URLs with their own
+  password, database and `auth.json`, then activate a profile and restart.
+- **European translations** — navigation and workspace shell translations for
+  Spanish, French, German, Italian, Portuguese, Dutch, Polish, Russian,
+  Ukrainian, Romanian, Czech, Swedish, Norwegian, Danish, Finnish, Greek,
+  Hungarian, Bulgarian, Croatian, Serbian, Slovak, Slovenian, Lithuanian,
+  Latvian, Estonian and Turkish.
+
+### Fixed
+- MCP lists now support search/filter and a one-click enable/disable action.
+- Backup files no longer recreate `cli.json` when the source file did not exist.
+- Ctrl/Cmd+F in a session now scrolls to the highlighted occurrence instead of
+  merely centering the containing message.
+
 ## [1.9.0] - 2026-10-26
 
 ### Fixed
