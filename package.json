@@ -1,6 +1,6 @@
 {
   "name": "aiman",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "AiMAN — self-hosted web UI and session manager for opencode.",
   "type": "module",
   "main": "desktop/main.cjs",
@@ -14,6 +14,8 @@
     "desktop",
     "scripts",
     "deploy",
+    "run-desktop.bat",
+    ".env.example",
     "README.md",
     "LICENSE",
     "CHANGELOG.md"
@@ -27,8 +29,9 @@
     "typecheck": "bunx tsc -p web/tsconfig.json --noEmit",
     "prepublishOnly": "bun run build:web",
     "desktop": "electron desktop/main.cjs",
-    "desktop:dir": "electron-builder --win --x64 --dir",
-    "desktop:build": "electron-builder --win --x64"
+    "desktop:prepare": "bun run scripts/prepare-desktop-build.ts",
+    "desktop:dir": "bun run desktop:prepare && electron-builder --win --x64 --dir",
+    "desktop:build": "bun run desktop:prepare && electron-builder --win --x64"
   },
   "engines": {
     "bun": ">=1.1.0"
@@ -55,11 +58,11 @@
     "productName": "aiman",
     "asar": true,
     "directories": {
-      "output": "desktop-dist"
+      "output": "desktop-dist",
+      "app": "desktop"
     },
     "files": [
-      "desktop/**/*",
-      "package.json"
+      "**/*"
     ],
     "extraResources": [
       {
@@ -75,7 +78,7 @@
         "to": "aiman/dist"
       },
       {
-        "from": "package.json",
+        "from": ".desktop-build/package.json",
         "to": "aiman/package.json"
       }
     ],

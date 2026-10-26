@@ -171,6 +171,21 @@ beside the installed app; pass a different port as its first argument if needed
 
 Close any open aiman desktop window first — the shell is single-instance. Build
 an installer with `bun run desktop:build`; the output goes to `desktop-dist/`.
+Prebuilt Windows installers (`aiman Setup <version>.exe`) are attached to each
+GitHub release alongside the server/web archives.
+
+### Updating
+
+- **Server / web installs** — open **Settings → Updates** and choose
+  **Check for updates**, or `POST /api/update/apply` as an administrator. The
+  updater downloads the latest GitHub release and overlays the runtime files.
+  User data in `AIMAN_HOME` is left untouched.
+- **Desktop app** — download and run the installer from the latest GitHub
+  release. The in-app updater refreshes the bundled server and web UI, but it
+  cannot replace the running Electron shell.
+- **Source checkouts** — `git pull`, then `bun run build` (and
+  `bun run desktop:build` if you need a fresh installer). Restart the running
+  process afterwards.
 
 ## Configuration
 

@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  package:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +27,7 @@ jobs:
           NAME="${GITHUB_REF_NAME#v}"
           STAGE="aiman-$NAME"
           mkdir -p "$STAGE"
-          cp -r bin server dist scripts deploy package.json README.md LICENSE CHANGELOG.md "$STAGE"/
+          cp -r bin server dist scripts deploy desktop package.json README.md LICENSE CHANGELOG.md run-desktop.bat .env.example "$STAGE"/
           tar -czf "aiman-$NAME.tar.gz" "$STAGE"
           (cd "$STAGE" && zip -qr "../aiman-$NAME.zip" .)
           sha256sum "aiman-$NAME.tar.gz" "aiman-$NAME.zip" > SHA256SUMS.txt
@@ -40,3 +40,29 @@ jobs:
             aiman-*.tar.gz
             aiman-*.zip
             SHA256SUMS.txt
+
+  desktop:
+    needs: package
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build web UI
+        run: bun run build:web
+
+      - name: Build Windows desktop installer
+        run: bun run desktop:build
+
+      - name: Attach desktop installer to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            desktop-dist/*.exe
+            desktop-dist/*.blockmap

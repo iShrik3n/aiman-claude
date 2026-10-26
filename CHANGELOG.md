@@ -5,7 +5,7 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.9.0] - 2026-10-26
 
 ### Fixed
 - **Per-session model memory in the composer.** Opening a session now syncs the
@@ -42,6 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   environment-variable and database names remain `aiman` for compatibility.
 
 ### Added
+- **Desktop release packaging.** Tagged releases now attach a Windows Electron
+  installer and include the desktop shell, `run-desktop.bat`, and `.env.example`
+  in the downloadable source archives.
 - **`/btw` side questions.** Use `/btw <question>` or the session toolbar's
   **btw** button to ask a quick question without touching the main transcript.
   Recent context is snapshotted into an isolated child session; the answer is
