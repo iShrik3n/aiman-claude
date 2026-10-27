@@ -72,14 +72,19 @@ fi
 
 restart_service() {
   for unit in aiman opencode-manager; do
-    if systemctl list-unit-files 2>/dev/null | grep -q "^${unit}\.service"; then
+    # Prefer a direct unit-file check (more reliable than list-unit-files when
+    # aiman is running as a manual process).
+    if [ -f "/etc/systemd/system/${unit}.service" ] ||
+       systemctl list-unit-files 2>/dev/null | grep -q "^${unit}\.service"; then
       say "Restarting ${unit}.service"
+      # `restart` also starts an inactive unit.
       if ! sudo -n systemctl restart "$unit" 2>/dev/null; then
         sudo systemctl restart "$unit" || systemctl restart "$unit" || true
       fi
       return 0
     fi
-    if systemctl --user list-unit-files 2>/dev/null | grep -q "^${unit}\.service"; then
+    if [ -f "$HOME/.config/systemd/user/${unit}.service" ] ||
+       systemctl --user list-unit-files 2>/dev/null | grep -q "^${unit}\.service"; then
       say "Restarting user ${unit}.service"
       systemctl --user restart "$unit" || true
       return 0
@@ -102,4 +107,11 @@ if restart_service; then
   exit 0
 fi
 
-say "Updated. Restart aiman yourself (e.g. run 'aiman', or restart your process manager)."
+PIDS="$(pgrep -f 'aiman/app/bin/aiman\.mjs' 2>/dev/null | tr '\n' ' ' || true)"
+if [ -n "${PIDS// /}" ]; then
+  say "aiman is running as a manual process (PID: ${PIDS})."
+  say "Stop it and start aiman again (or install it as a service) to use the new version."
+else
+  say "Updated. Restart aiman yourself (e.g. run 'aiman', or restart your process manager)."
+fi
+exit 0
