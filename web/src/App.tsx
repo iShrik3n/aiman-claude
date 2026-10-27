@@ -13,7 +13,7 @@ import Workspace from "./Workspace";
 import DesktopTitlebar from "./DesktopTitlebar";
 import { AppTopbar, CompactTitlebarNav } from "./AppChrome";
 import { XenoFooter, XenoMicrobar, XenoPodBottom, XenoPodTop } from "./XenoChrome";
-import Xeno3000 from "./Xeno3000";
+import Xeno3000, { Xeno3000Popout } from "./Xeno3000";
 import Overlays from "./Overlays";
 import Login from "./Login";
 import Onboarding from "./Onboarding";
@@ -96,6 +96,25 @@ export default function App() {
   const compact = s.compactToolbar && isDesktop;
   const windowClass = retroWindow ? " window" : "";
 
+  if (popout && s.theme === "xeno3000") {
+    return (
+      <Xeno3000Popout
+        main={
+          <div className="main">
+            {s.activeSessionId ? <ChatView popout compact={compact} /> : <SessionList />}
+          </div>
+        }
+        overlays={
+          <>
+            {s.toast && <div className="toast">{s.toast}</div>}
+            <Overlays />
+            <DeepLinkHandler />
+          </>
+        }
+      />
+    );
+  }
+
   // A pop-out is a single session: no sidebar, no view switcher, no app toolbar.
   if (popout) {
     const popoutSession = s.sessions.find((x) => x.id === s.activeSessionId);
@@ -114,7 +133,6 @@ export default function App() {
   if (s.theme === "xeno3000" && !compact) {
     return (
       <Xeno3000
-        titlebar={<DesktopTitlebar />}
         sidebar={<Sidebar />}
         main={mainContent}
         overlays={

@@ -18,7 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Crimson Pod), paper/K-Jöfol LCD toggle, SFX toggle, and animated spectrum.
 - Bundle Orbitron, Share Tech Mono and VT323 locally.
 - Desktop windows are now transparent so the rounded Xeno 3000 hull has no
-  black square corners behind it.
+  black square corners behind it. The Enlightenment microbar is the caption
+  bar and owns the minimize, maximize and close controls; the hull fills the
+  resize edge instead of leaving a transparent gutter.
+- Detached Xeno 3000 sessions use the same microbar caption controls and a
+  dark floating chat body, removing the white sender area.
 
 ## [1.10.3] - 2026-10-27
 

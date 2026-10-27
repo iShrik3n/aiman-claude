@@ -337,7 +337,8 @@ function createWindow() {
         minHeight: 480,
         title: "AiMAN session",
         frame: false,
-        backgroundColor: "#0e1013",
+        transparent: true,
+        backgroundColor: "#00000000",
         autoHideMenuBar: true,
         webPreferences: {
           preload: path.join(__dirname, "preload.cjs"),

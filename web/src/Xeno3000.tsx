@@ -59,7 +59,19 @@ function Visualizer() {
   return <canvas ref={ref} width={96} height={24} />;
 }
 
-function Microbar() {
+function WindowControls() {
+  const api = typeof window !== "undefined" ? window.aimanDesktop : undefined;
+  if (!api) return null;
+  return (
+    <div className="xeno3000-window-controls">
+      <button type="button" onClick={() => api.minimize()} title="Minimize">–</button>
+      <button type="button" onClick={() => api.toggleMaximize()} title="Maximize">□</button>
+      <button type="button" className="close" onClick={() => api.close()} title="Close">×</button>
+    </div>
+  );
+}
+
+export function Xeno3000Microbar({ compact = false }: { compact?: boolean }) {
   const [skin, setSkin] = useState<Skin>(readSkin);
   const [paper, setPaper] = useState(true);
   const [sfx, setSfx] = useState(true);
@@ -136,7 +148,9 @@ function Microbar() {
         >
           SFX: {sfx ? "ON" : "MUTED"}
         </button>
+        <WindowControls />
       </div>
+      {compact && <div className="xeno3000-drag-fill" />}
     </div>
   );
 }
@@ -179,6 +193,22 @@ function Footer() {
   );
 }
 
+export function Xeno3000Popout({
+  main,
+  overlays,
+}: {
+  main: ReactNode;
+  overlays?: ReactNode;
+}) {
+  return (
+    <div className="app xeno3000-shell xeno3000-popout">
+      <Xeno3000Microbar compact />
+      <div className="xeno3000-popout-body">{main}</div>
+      {overlays}
+    </div>
+  );
+}
+
 export default function Xeno3000({
   titlebar,
   sidebar,
@@ -193,7 +223,7 @@ export default function Xeno3000({
   return (
     <div className="app xeno3000-shell" id="xeno3000-root">
       {titlebar}
-      <Microbar />
+      <Xeno3000Microbar />
       <div className="alien-hull-chassis">
         <header className="top-bridge-hull xeno3000-bridge">
           <div className="xeno3000-brand-pod">

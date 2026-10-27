@@ -911,3 +911,105 @@ html[data-theme="xeno3000"] .composer-row .muted { color: #c1dce5; }
   html[data-theme="xeno3000"] .xeno3000-workspace > .left-biopod { display: none; }
   html[data-theme="xeno3000"] .xeno3000-footer { display: none; }
 }
+/* Edge-to-edge skin: the microbar is the caption bar; the hull owns the resize
+   edge. No transparent gutter around the main window. */
+html[data-theme="xeno3000"] .xeno3000-shell {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+html[data-theme="xeno3000"] .xeno3000-shell > .xeno3000-microbar {
+  flex: none;
+  width: 100%;
+  max-width: none;
+  height: 30px;
+  margin: 0;
+  padding: 0 7px 0 13px;
+  border: 0;
+  border-bottom: 1px solid rgba(140, 190, 207, .38);
+  border-radius: 24px 24px 0 0;
+  background:
+    radial-gradient(ellipse at 12% 50%, rgba(56, 232, 255, .12), transparent 62%),
+    linear-gradient(180deg, #08151d, #02070b);
+  -webkit-app-region: drag;
+}
+html[data-theme="xeno3000"] .xeno3000-microbar button,
+html[data-theme="xeno3000"] .xeno3000-window-controls {
+  -webkit-app-region: no-drag;
+}
+html[data-theme="xeno3000"] .xeno3000-window-controls {
+  height: 22px;
+  display: flex;
+  align-items: stretch;
+  align-self: center;
+  flex: none;
+  margin-left: 5px;
+  border: 1px solid #17242c;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #0a1319;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
+}
+html[data-theme="xeno3000"] .xeno3000-window-controls button {
+  width: 31px;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid rgba(116, 159, 174, .22);
+  border-radius: 0;
+  background: linear-gradient(180deg, #8fa4af 0%, #455761 42%, #1a252c 100%);
+  color: #f0fcff;
+  font: 700 13px/1 "Share Tech Mono", monospace;
+  cursor: pointer;
+}
+html[data-theme="xeno3000"] .xeno3000-window-controls button:first-child { border-left: 0; }
+html[data-theme="xeno3000"] .xeno3000-window-controls button:hover { background: linear-gradient(180deg, #c8f8ff, #5e8fa0 45%, #1e5566); color: #031018; }
+html[data-theme="xeno3000"] .xeno3000-window-controls button.close:hover { background: linear-gradient(180deg, #ff9a9a, #c21d1d 48%, #5b0505); color: #fff; }
+html[data-theme="xeno3000"] .alien-hull-chassis {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 8px 10px 10px;
+  border-top: 0;
+  border-radius: 0 0 24% 14% / 0 0 16% 10%;
+}
+html[data-theme="xeno3000"] .xeno3000-popout {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+html[data-theme="xeno3000"] .xeno3000-popout > .xeno3000-microbar {
+  border-radius: 20px 20px 0 0;
+}
+html[data-theme="xeno3000"] .xeno3000-popout-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0 8px 8px;
+  overflow: hidden;
+  border: 2px solid #526976;
+  border-top: 0;
+  border-radius: 0 0 26px 26px;
+  background: #03080d;
+  box-shadow: inset 0 4px 16px rgba(0,0,0,.85), 0 12px 30px rgba(0,0,0,.55);
+}
+html[data-theme="xeno3000"] .xeno3000-popout-body > .main {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: transparent;
+}
+html[data-theme="xeno3000"] .xeno3000-popout-body .composer {
+  margin: 6px 10px 10px;
+}
+html[data-theme="xeno3000"] .xeno3000-popout-body .chat-head {
+  border-radius: 0;
+}
+@media (max-width: 760px) {
+  html[data-theme="xeno3000"] .alien-hull-chassis { border-radius: 0 0 18px 18px; padding: 5px; }
+  html[data-theme="xeno3000"] .xeno3000-shell > .xeno3000-microbar { border-radius: 0; }
+  html[data-theme="xeno3000"] .xeno3000-microbar .xeno3000-micro-left span:not(.xeno3000-ping),
+  html[data-theme="xeno3000"] .xeno3000-microbar .xeno3000-micro-left b { display: none; }
+}
