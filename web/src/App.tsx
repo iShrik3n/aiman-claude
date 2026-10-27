@@ -12,6 +12,7 @@ import ExtensionsView from "./ExtensionsView";
 import Workspace from "./Workspace";
 import DesktopTitlebar from "./DesktopTitlebar";
 import { AppTopbar, CompactTitlebarNav } from "./AppChrome";
+import { XenoFooter, XenoMicrobar, XenoPodBottom, XenoPodTop } from "./XenoChrome";
 import Overlays from "./Overlays";
 import Login from "./Login";
 import Onboarding from "./Onboarding";
@@ -105,6 +106,31 @@ export default function App() {
         </div>
         {s.toast && <div className="toast">{s.toast}</div>}
         <Overlays />
+      </div>
+    );
+  }
+
+  if (s.theme === "xeno4" && !compact) {
+    return (
+      <div className={"app xeno-shell" + windowClass}>
+        <DesktopTitlebar />
+        <XenoMicrobar />
+        <div className="alien-hull-chassis">
+          <AppTopbar microbar={false} />
+          <div className="plasma-conduit" />
+          <div className="xeno-workspace-grid">
+            <aside className="left-biopod xeno-left-pod">
+              <XenoPodTop />
+              <Sidebar />
+              <XenoPodBottom />
+            </aside>
+            <main className="main-command-cavity">{mainContent}</main>
+          </div>
+          <XenoFooter />
+        </div>
+        {s.toast && <div className="toast">{s.toast}</div>}
+        <Overlays />
+        <DeepLinkHandler />
       </div>
     );
   }

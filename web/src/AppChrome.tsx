@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import Icon, { type IconName } from "./Icon";
 import { logout, store, t, useStore, type View } from "./store";
 import { confirmDiscardWorkspace } from "./workspaceDirty";
+import { XenoMicrobar, XenoVisualizer } from "./XenoChrome";
 
 type NavItem = {
   view: View;
@@ -49,6 +50,9 @@ export function AppTabs({ compact = false }: { compact?: boolean }) {
             }}
             title={t(item.key)}
           >
+            {(s.theme === "xeno" || s.theme === "xeno4") && (
+              <span className="xeno-led-pip" aria-hidden="true" />
+            )}
             <Icon name={item.icon} />
             <span className="tab-label">{t(item.key)}</span>
           </button>
@@ -82,15 +86,26 @@ export function AppActions({ compact = false }: { compact?: boolean }) {
 }
 
 /** The normal (non-compact) app toolbar. */
-export function AppTopbar() {
-  return (
-    <div className="topbar">
+export function AppTopbar({ microbar = true }: { microbar?: boolean }) {
+  const s = useStore();
+  const xeno = s.theme === "xeno" || s.theme === "xeno4";
+  const deck = (
+    <>
       <div className="brand">
+        {xeno && <span className="xeno-agent-label">XENO-AGENT</span>}
         Ai<span>MAN</span>
       </div>
+      {xeno && <XenoVisualizer />}
       <AppTabs />
       <div className="spacer" />
       <AppActions />
+    </>
+  );
+  if (!xeno) return <div className="topbar">{deck}</div>;
+  return (
+    <div className="topbar xeno-topbar">
+      {microbar && <XenoMicrobar />}
+      <div className="xeno-topbar-main">{deck}</div>
     </div>
   );
 }

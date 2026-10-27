@@ -394,6 +394,7 @@ export default function Sidebar() {
           </div>
         </div>
 
+        <div className={"sidebar-directory-block" + (directoriesOpen ? " lcd" : "")}>
         <div className="section-title dir-section-title">
           <button
             type="button"
@@ -454,6 +455,7 @@ export default function Sidebar() {
             </div>
           </>
         )}
+        </div>
       </div>
     </div>
   );

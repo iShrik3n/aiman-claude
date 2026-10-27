@@ -365,7 +365,8 @@ export const THEMES: Theme[] = [
       "--accent-fg": "#031018",
       "--accent-soft": "rgba(121, 231, 255, 0.12)",
       "--text-2": "#c6e4ef",
-      "--font": '"Trebuchet MS", "Commissioner", sans-serif',
+      "--font": '"Share Tech Mono", "Cascadia Mono", "Commissioner", monospace',
+      "--mono": '"Share Tech Mono", "Cascadia Code", "Consolas", monospace',
       "--font-size": "13px",
       "--code-bg": "#030b12",
       "--term-bg": "#02070c",
@@ -522,6 +523,18 @@ export const THEMES: Theme[] = [
     }),
   },
 ];
+
+// K-Jöfol Xeno4 is the source-matched cockpit variant. It shares the same
+// palette object as Alien Grotesque so palette fixes stay in sync.
+const xenoSourceTheme = THEMES.find((theme) => theme.id === "xeno");
+if (xenoSourceTheme) {
+  THEMES.splice(THEMES.indexOf(xenoSourceTheme) + 1, 0, {
+    ...xenoSourceTheme,
+    id: "xeno4",
+    name: "K-Jöfol Xeno4",
+    description: "Source-matched alien cockpit: chrome, cyan dot-matrix and microbar.",
+  });
+}
 
 export const DEFAULT_THEME = "dark";
 

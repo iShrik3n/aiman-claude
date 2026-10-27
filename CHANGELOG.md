@@ -5,6 +5,16 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.3] - 2026-10-27
+
+### Added
+- **K-Jöfol Xeno4 theme** — a separate source-matched cockpit skin alongside
+  Alien Grotesque. It uses the full outside microbar, chrome bridge, animated
+  spectrum pod, plasma conduit, biomech left pod, paper-LCD directory matrix,
+  command cavity and hull footer, with bundled Orbitron / Share Tech Mono /
+  VT323 typography and the four reactor palettes (Cryo-Cyan, K-Jöfol Amber,
+  Xeno Bio-Green, Crimson Pod).
+
 ## [1.10.2] - 2026-10-27
 
 ### Added
@@ -15,6 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   console rail, while sidebar/workspace controls keep staggered organic
   positions and Fibonacci-ish radii. Textures are applied to buttons, tabs and
   chrome surfaces without reducing text contrast.
+- The cockpit structure now follows the supplied K-Jöfol mock: outside microbar
+  with four reactor palettes, chrome bridge with animated spectrum pod, plasma
+  conduit, biomech left pod, command cavity, riveted/ribbed pod decor, speaker
+  grille and hull-integrity footer.
+- The sidebar directory matrix becomes an olive **paper LCD** screen, the
+  bridge uses dark brushed metal with a red ignition capsule for new sessions,
+  and the live spectrum pod uses the bundled Orbitron / Share Tech Mono fonts.
 - Theme preview cards and all admin panels use the same no-hard-edge language,
   including inputs, toolbar strips, notices, diffs and modal shells.
 - Chat surfaces use a readable blue-glass HUD grid rather than clipping
