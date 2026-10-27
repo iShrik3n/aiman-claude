@@ -2390,8 +2390,8 @@ html[data-theme="winxp-dark"] .tab.active {
    slow phyllotaxis field. Layout positions deliberately break the grid.
    ------------------------------------------------------------------------- */
 
-html[data-theme^="xeno"] { color-scheme: dark; }
-html[data-theme^="xeno"] body {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) { color-scheme: dark; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) body {
   position: relative;
   background:
     radial-gradient(ellipse 68% 44% at 16% 4%, rgba(177, 255, 85, 0.14), transparent 66%),
@@ -2400,8 +2400,8 @@ html[data-theme^="xeno"] body {
     linear-gradient(148deg, #11180b 0%, #070a05 48%, #120b16 100%);
   background-attachment: fixed;
 }
-html[data-theme^="xeno"] #root { position: relative; z-index: 1; }
-html[data-theme^="xeno"] body::before {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) #root { position: relative; z-index: 1; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) body::before {
   content: "";
   position: fixed;
   inset: -20%;
@@ -2422,7 +2422,7 @@ html[data-theme^="xeno"] body::before {
 
 /* Outer shell: a kidney/sea-shell silhouette with a rounded upper lip and a
    deep asymmetric underside. The offset leaves the fractal field visible. */
-html[data-theme^="xeno"] .app {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .app {
   width: calc(100% - 28px);
   height: calc(100% - 28px);
   margin: 14px;
@@ -2440,15 +2440,15 @@ html[data-theme^="xeno"] .app {
     0 0 110px rgba(154, 255, 60, .07),
     inset 0 2px 0 rgba(236, 255, 190, .13);
 }
-html[data-theme^="xeno"] .app:not(.popout) { grid-template-rows: 68px 1fr; }
-html[data-theme^="xeno"] .app.popout { grid-template-rows: 1fr; border-radius: 40px 60px 22% 14% / 36px 42px 16% 10%; }
-html[data-theme^="xeno"][data-desktop="1"] .app:not(.popout) { grid-template-rows: auto 68px 1fr; }
-html[data-theme^="xeno"][data-desktop="1"] .app.compact { grid-template-rows: auto 1fr; }
-html[data-theme^="xeno"][data-desktop="1"] .app.popout { grid-template-rows: auto 1fr; }
-html[data-theme^="xeno"][data-desktop="1"] .app.popout.compact { grid-template-rows: 1fr; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .app:not(.popout) { grid-template-rows: 68px 1fr; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .app.popout { grid-template-rows: 1fr; border-radius: 40px 60px 22% 14% / 36px 42px 16% 10%; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"])[data-desktop="1"] .app:not(.popout) { grid-template-rows: auto 68px 1fr; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"])[data-desktop="1"] .app.compact { grid-template-rows: auto 1fr; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"])[data-desktop="1"] .app.popout { grid-template-rows: auto 1fr; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"])[data-desktop="1"] .app.popout.compact { grid-template-rows: 1fr; }
 
 /* Cartilage ridge / metal shelf. Tabs sit on a modulated arc, not a row. */
-html[data-theme^="xeno"] .topbar {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar {
   position: relative;
   z-index: 3;
   gap: 4px;
@@ -2464,7 +2464,7 @@ html[data-theme^="xeno"] .topbar {
     inset 0 -1px 0 rgba(0, 0, 0, .70),
     0 18px 38px rgba(0, 0, 0, .34);
 }
-html[data-theme^="xeno"] .topbar::before {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar::before {
   content: "";
   position: absolute;
   left: 37%;
@@ -2476,7 +2476,7 @@ html[data-theme^="xeno"] .topbar::before {
   filter: blur(5px);
   pointer-events: none;
 }
-html[data-theme^="xeno"] .topbar::after {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar::after {
   content: "";
   position: absolute;
   left: 19%;
@@ -2486,7 +2486,7 @@ html[data-theme^="xeno"] .topbar::after {
   background: linear-gradient(90deg, transparent, rgba(220, 255, 155, .34), rgba(255, 131, 27, .28), transparent);
   pointer-events: none;
 }
-html[data-theme^="xeno"] .brand {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .brand {
   position: relative;
   flex: none;
   width: 174px;
@@ -2514,7 +2514,7 @@ html[data-theme^="xeno"] .brand {
     inset 0 -6px 12px rgba(0, 0, 0, .55);
   transform: translateY(2px) rotate(-3deg);
 }
-html[data-theme^="xeno"] .brand::after {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .brand::after {
   content: "";
   position: absolute;
   right: 6px;
@@ -2530,14 +2530,14 @@ html[data-theme^="xeno"] .brand::after {
     0 0 26px rgba(255, 119, 12, .62),
     inset 0 0 10px rgba(255, 246, 205, .8);
 }
-html[data-theme^="xeno"] .brand span { color: #ff9b2e; text-shadow: 0 0 10px rgba(255, 122, 28, .55); }
-html[data-theme^="xeno"] .topbar .tabs {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .brand span { color: #ff9b2e; text-shadow: 0 0 10px rgba(255, 122, 28, .55); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs {
   gap: 0;
   margin-left: 22px;
   align-items: center;
   overflow: visible;
 }
-html[data-theme^="xeno"] .topbar .tabs .tab {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab {
   position: relative;
   margin: 0 -7px;
   padding: 7px 15px;
@@ -2558,21 +2558,21 @@ html[data-theme^="xeno"] .topbar .tabs .tab {
   transform: translateY(var(--xeno-ty, 0)) rotate(var(--xeno-rot, 0));
   transition: transform .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease;
 }
-html[data-theme^="xeno"] .topbar .tabs .tab:nth-of-type(1) { --xeno-ty: 13px; --xeno-rot: -8deg; }
-html[data-theme^="xeno"] .topbar .tabs .tab:nth-of-type(2) { --xeno-ty: -1px; --xeno-rot: 5deg; }
-html[data-theme^="xeno"] .topbar .tabs .tab:nth-of-type(3) { --xeno-ty: 9px; --xeno-rot: -3deg; }
-html[data-theme^="xeno"] .topbar .tabs .tab:nth-of-type(4) { --xeno-ty: -11px; --xeno-rot: -7deg; }
-html[data-theme^="xeno"] .topbar .tabs .tab:nth-of-type(5) { --xeno-ty: 11px; --xeno-rot: 8deg; }
-html[data-theme^="xeno"] .topbar .tabs .tab:nth-of-type(6) { --xeno-ty: -5px; --xeno-rot: -5deg; }
-html[data-theme^="xeno"] .topbar .tabs .tab:nth-of-type(7) { --xeno-ty: 3px; --xeno-rot: 4deg; }
-html[data-theme^="xeno"] .topbar .tabs .tab:nth-of-type(8) { --xeno-ty: 10px; --xeno-rot: -4deg; }
-html[data-theme^="xeno"] .topbar .tabs .tab:hover {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:nth-of-type(1) { --xeno-ty: 13px; --xeno-rot: -8deg; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:nth-of-type(2) { --xeno-ty: -1px; --xeno-rot: 5deg; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:nth-of-type(3) { --xeno-ty: 9px; --xeno-rot: -3deg; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:nth-of-type(4) { --xeno-ty: -11px; --xeno-rot: -7deg; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:nth-of-type(5) { --xeno-ty: 11px; --xeno-rot: 8deg; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:nth-of-type(6) { --xeno-ty: -5px; --xeno-rot: -5deg; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:nth-of-type(7) { --xeno-ty: 3px; --xeno-rot: 4deg; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:nth-of-type(8) { --xeno-ty: 10px; --xeno-rot: -4deg; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:hover {
   color: #f5ffda;
   border-color: rgba(215, 255, 148, .72);
   transform: translateY(-2px) rotate(0deg) scale(1.025);
   box-shadow: inset 0 2px 0 rgba(243, 255, 213, .34), 0 0 22px rgba(198, 255, 74, .26);
 }
-html[data-theme^="xeno"] .topbar .tabs .tab.active {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab.active {
   color: #211205;
   border-color: rgba(255, 224, 170, .88);
   background:
@@ -2585,23 +2585,23 @@ html[data-theme^="xeno"] .topbar .tabs .tab.active {
     inset 0 -5px 10px rgba(120, 36, 0, .38);
   transform: translateY(3px) rotate(0deg);
 }
-html[data-theme^="xeno"] .nav-admin-sep {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .nav-admin-sep {
   width: 2px;
   height: 32px;
   border-radius: 50%;
   background: linear-gradient(180deg, transparent, rgba(198, 255, 74, .50), rgba(255, 130, 22, .42), transparent);
   transform: rotate(11deg);
 }
-html[data-theme^="xeno"] .topbar .live-status { transform: translateY(12px) rotate(2deg); }
-html[data-theme^="xeno"] .topbar .user-name { transform: translateY(-8px) rotate(-4deg); }
-html[data-theme^="xeno"] .topbar .titlebar-logout {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .live-status { transform: translateY(12px) rotate(2deg); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .user-name { transform: translateY(-8px) rotate(-4deg); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .titlebar-logout {
   transform: translateY(8px) rotate(3deg);
   border-radius: 48% 52% 34% 66% / 62% 38% 62% 38%;
 }
 
 /* Sidebar and transcript: two separate organs floating in the shell. */
-html[data-theme^="xeno"] .layout { gap: 11px; padding: 8px 11px 12px; background: transparent; }
-html[data-theme^="xeno"] .sidebar {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .layout { gap: 11px; padding: 8px 11px 12px; background: transparent; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar {
   position: relative;
   overflow: hidden;
   border: 1px solid rgba(147, 187, 76, .28);
@@ -2615,8 +2615,8 @@ html[data-theme^="xeno"] .sidebar {
     inset -2px 0 0 rgba(0, 0, 0, .58),
     0 16px 42px rgba(0, 0, 0, .38);
 }
-html[data-theme^="xeno"] .sidebar::before,
-html[data-theme^="xeno"] .main::before {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar::before,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .main::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -2628,16 +2628,16 @@ html[data-theme^="xeno"] .main::before {
     repeating-conic-gradient(from 137.5deg at 55% 44%, rgba(208, 139, 255, .032) 0 1deg, transparent 1deg 22deg);
   opacity: .9;
 }
-html[data-theme^="xeno"] .sidebar > *,
-html[data-theme^="xeno"] .main > * { position: relative; z-index: 1; }
-html[data-theme^="xeno"] .sidebar-head {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar > *,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .main > * { position: relative; z-index: 1; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar-head {
   position: relative;
   overflow: visible;
   border-bottom: 0;
   padding: 17px 14px 15px;
   background: radial-gradient(ellipse 190px 70px at 18% 0%, rgba(198, 255, 74, .12), transparent 70%);
 }
-html[data-theme^="xeno"] .sidebar-head .btn.primary {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar-head .btn.primary {
   width: calc(100% + 12px);
   margin-left: -6px;
   padding: 13px 16px;
@@ -2654,34 +2654,34 @@ html[data-theme^="xeno"] .sidebar-head .btn.primary {
     inset 0 2px 0 #f8ffde,
     inset 0 -6px 12px rgba(59, 92, 14, .28);
 }
-html[data-theme^="xeno"] .sidebar-scroll { padding: 8px 12px 20px; }
-html[data-theme^="xeno"] .section-title {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar-scroll { padding: 8px 12px 20px; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .section-title {
   color: #c5e68e;
   font-family: var(--mono);
   font-size: 9.5px;
   letter-spacing: .15em;
   text-shadow: 0 0 10px rgba(198, 255, 74, .22);
 }
-html[data-theme^="xeno"] .nav-item {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .nav-item {
   border: 1px solid transparent;
   border-radius: 42% 58% 34% 66% / 62% 38% 62% 38%;
   transition: transform .16s ease, background .16s ease, border-color .16s ease;
 }
-html[data-theme^="xeno"] .sidebar-scroll > .nav-item:nth-child(3n+1) { transform: translateX(4px) rotate(-.7deg); }
-html[data-theme^="xeno"] .sidebar-scroll > .nav-item:nth-child(3n+2) { transform: translateX(-3px) rotate(.6deg); }
-html[data-theme^="xeno"] .sidebar-scroll > .nav-item:nth-child(3n) { transform: translateX(8px) rotate(-.4deg); }
-html[data-theme^="xeno"] .nav-item:hover {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar-scroll > .nav-item:nth-child(3n+1) { transform: translateX(4px) rotate(-.7deg); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar-scroll > .nav-item:nth-child(3n+2) { transform: translateX(-3px) rotate(.6deg); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar-scroll > .nav-item:nth-child(3n) { transform: translateX(8px) rotate(-.4deg); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .nav-item:hover {
   background: radial-gradient(ellipse at 16% 50%, rgba(198, 255, 74, .14), transparent 70%);
   border-color: rgba(170, 219, 91, .28);
 }
-html[data-theme^="xeno"] .nav-item.active {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .nav-item.active {
   background:
     radial-gradient(ellipse at 20% 36%, rgba(198, 255, 74, .21), transparent 69%),
     rgba(52, 79, 29, .38);
   border-color: rgba(198, 255, 74, .44);
   box-shadow: inset 0 2px 0 rgba(238, 255, 198, .12), 0 0 18px rgba(166, 255, 71, .10);
 }
-html[data-theme^="xeno"] .session-row {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .session-row {
   border: 1px solid rgba(139, 177, 76, .28);
   border-radius: 48% 52% 34% 66% / 62% 38% 62% 38%;
   background:
@@ -2689,18 +2689,18 @@ html[data-theme^="xeno"] .session-row {
     linear-gradient(155deg, rgba(29, 45, 17, .95), rgba(10, 15, 7, .97));
   box-shadow: inset 0 2px 0 rgba(230, 255, 186, .07), 0 6px 18px rgba(0, 0, 0, .22);
 }
-html[data-theme^="xeno"] .session-row:nth-child(2n) { border-radius: 34% 66% 48% 52% / 38% 62% 34% 66%; }
-html[data-theme^="xeno"] .session-row:hover {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .session-row:nth-child(2n) { border-radius: 34% 66% 48% 52% / 38% 62% 34% 66%; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .session-row:hover {
   border-color: rgba(198, 255, 74, .48);
   box-shadow: 0 0 22px rgba(198, 255, 74, .09), inset 0 2px 0 rgba(234, 255, 192, .11);
 }
-html[data-theme^="xeno"] .session-row.active {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .session-row.active {
   border-color: rgba(214, 255, 142, .72);
   background:
     radial-gradient(ellipse at 18% 22%, rgba(198, 255, 74, .20), transparent 68%),
     linear-gradient(155deg, rgba(46, 68, 26, .97), rgba(13, 21, 8, .99));
 }
-html[data-theme^="xeno"] .main {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .main {
   position: relative;
   border: 1px solid rgba(147, 187, 76, .26);
   border-radius: 54px 118px 164px 62px / 48px 94px 128px 54px;
@@ -2712,26 +2712,26 @@ html[data-theme^="xeno"] .main {
     inset 0 2px 0 rgba(232, 255, 184, .08),
     0 18px 48px rgba(0, 0, 0, .34);
 }
-html[data-theme^="xeno"] .chat-head,
-html[data-theme^="xeno"] .find-bar,
-html[data-theme^="xeno"] .running-bar {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-head,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .find-bar,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .running-bar {
   border-bottom: 0;
   background:
     radial-gradient(ellipse 250px 54px at 12% 26%, rgba(198, 255, 74, .11), transparent 72%),
     linear-gradient(180deg, rgba(33, 50, 20, .97), rgba(11, 17, 7, .99));
   box-shadow: inset 0 2px 0 rgba(233, 255, 187, .10), inset 0 -1px 0 rgba(0, 0, 0, .54);
 }
-html[data-theme^="xeno"] .chat-head { border-radius: 44px 100px 0 0 / 34px 58px 0 0; }
-html[data-theme^="xeno"] .chat-head .btn:nth-of-type(odd) { transform: translateY(-2px) rotate(-2.5deg); }
-html[data-theme^="xeno"] .chat-head .btn:nth-of-type(even) { transform: translateY(3px) rotate(2.5deg); }
-html[data-theme^="xeno"] .chat-body {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-head { border-radius: 44px 100px 0 0 / 34px 58px 0 0; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-head .btn:nth-of-type(odd) { transform: translateY(-2px) rotate(-2.5deg); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-head .btn:nth-of-type(even) { transform: translateY(3px) rotate(2.5deg); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-body {
   background:
     repeating-radial-gradient(circle at 78% 9%, rgba(198, 255, 74, .035) 0 1px, transparent 1px 14px),
     repeating-conic-gradient(from 137.5deg at 50% 45%, rgba(208, 139, 255, .018) 0 1deg, transparent 1deg 29deg),
     radial-gradient(ellipse 70% 48% at 48% 0%, rgba(198, 255, 74, .055), transparent 70%),
     linear-gradient(180deg, rgba(0, 0, 0, .015), rgba(0, 0, 0, .22));
 }
-html[data-theme^="xeno"] .composer {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer {
   margin: 8px 15px 16px;
   padding: 13px 16px;
   border: 1px solid rgba(155, 197, 91, .34);
@@ -2746,7 +2746,7 @@ html[data-theme^="xeno"] .composer {
     inset 0 -10px 24px rgba(0, 0, 0, .33),
     0 16px 38px rgba(0, 0, 0, .28);
 }
-html[data-theme^="xeno"] .composer textarea {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer textarea {
   border: 1px solid rgba(150, 190, 90, .30);
   border-radius: 46px 18px 56px 20px / 28px 54px 18px 46px;
   background:
@@ -2755,13 +2755,13 @@ html[data-theme^="xeno"] .composer textarea {
     linear-gradient(160deg, #060d04, #0b1307);
   color: #e7f6c5;
 }
-html[data-theme^="xeno"] .composer textarea:focus {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer textarea:focus {
   border-color: rgba(198, 255, 74, .68);
   box-shadow: 0 0 0 4px rgba(198, 255, 74, .10), inset 0 3px 14px rgba(0, 0, 0, .58);
 }
-html[data-theme^="xeno"] .composer-row .btn:nth-of-type(odd) { transform: translateY(3px) rotate(-2.5deg); }
-html[data-theme^="xeno"] .composer-row .btn:nth-of-type(even) { transform: translateY(-3px) rotate(2.5deg); }
-html[data-theme^="xeno"] .composer .btn.primary {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer-row .btn:nth-of-type(odd) { transform: translateY(3px) rotate(-2.5deg); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer-row .btn:nth-of-type(even) { transform: translateY(-3px) rotate(2.5deg); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer .btn.primary {
   width: 56px;
   height: 56px;
   padding: 0;
@@ -2778,7 +2778,7 @@ html[data-theme^="xeno"] .composer .btn.primary {
   font-size: 10px;
   transform: translateY(-4px) rotate(-5deg);
 }
-html[data-theme^="xeno"] .composer .btn.primary:hover {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer .btn.primary:hover {
   box-shadow:
     0 0 0 3px rgba(24, 31, 16, .9),
     0 0 0 5px rgba(213, 255, 156, .30),
@@ -2787,34 +2787,34 @@ html[data-theme^="xeno"] .composer .btn.primary:hover {
 }
 
 /* No hard-edged controls. */
-html[data-theme^="xeno"] .btn,
-html[data-theme^="xeno"] .tab,
-html[data-theme^="xeno"] .theme-card,
-html[data-theme^="xeno"] .mode-card,
-html[data-theme^="xeno"] .hit,
-html[data-theme^="xeno"] .q-option,
-html[data-theme^="xeno"] .card,
-html[data-theme^="xeno"] .stat-card,
-html[data-theme^="xeno"] .profile-card,
-html[data-theme^="xeno"] .ext-card,
-html[data-theme^="xeno"] .ws-card,
-html[data-theme^="xeno"] .ws-provider-card,
-html[data-theme^="xeno"] .ws-quick-card,
-html[data-theme^="xeno"] .ws-resource-card,
-html[data-theme^="xeno"] .ws-resource-editor,
-html[data-theme^="xeno"] .ws-permission-row,
-html[data-theme^="xeno"] .ws-model-row,
-html[data-theme^="xeno"] .overlay-box,
-html[data-theme^="xeno"] .palette,
-html[data-theme^="xeno"] .toast,
-html[data-theme^="xeno"] .auth-card,
-html[data-theme^="xeno"] .about-card,
-html[data-theme^="xeno"] .question,
-html[data-theme^="xeno"] .permission,
-html[data-theme^="xeno"] .bars {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .btn,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .tab,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .theme-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .mode-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .hit,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .q-option,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .stat-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .profile-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ext-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-provider-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-quick-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-resource-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-resource-editor,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-permission-row,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-model-row,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .overlay-box,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .palette,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .toast,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .auth-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .about-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .question,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .permission,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .bars {
   border-radius: 48% 52% 34% 66% / 62% 38% 62% 38%;
 }
-html[data-theme^="xeno"] .btn {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .btn {
   border: 1px solid rgba(164, 204, 96, .44);
   background:
     radial-gradient(ellipse at 28% 14%, rgba(219, 255, 164, .20), transparent 48%),
@@ -2823,15 +2823,15 @@ html[data-theme^="xeno"] .btn {
   text-shadow: 0 1px 0 rgba(0, 0, 0, .62);
   box-shadow: inset 0 2px 0 rgba(233, 255, 186, .18), 0 5px 14px rgba(0, 0, 0, .27);
 }
-html[data-theme^="xeno"] .btn:not(:disabled):hover {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .btn:not(:disabled):hover {
   border-color: rgba(214, 255, 146, .76);
   color: #f7ffe3;
   box-shadow: inset 0 2px 0 rgba(242, 255, 211, .30), 0 0 24px rgba(198, 255, 74, .22);
 }
-html[data-theme^="xeno"] .btn:not(:disabled):active { transform: translateY(2px) scale(.98); }
-html[data-theme^="xeno"] .btn.ghost { background: transparent; border-color: transparent; box-shadow: none; }
-html[data-theme^="xeno"] .btn.ghost:hover { background: rgba(198, 255, 74, .09); }
-html[data-theme^="xeno"] .btn.primary {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .btn:not(:disabled):active { transform: translateY(2px) scale(.98); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .btn.ghost { background: transparent; border-color: transparent; box-shadow: none; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .btn.ghost:hover { background: rgba(198, 255, 74, .09); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .btn.primary {
   color: #142006;
   border-color: rgba(232, 255, 181, .82);
   background:
@@ -2840,16 +2840,16 @@ html[data-theme^="xeno"] .btn.primary {
   text-shadow: 0 1px 0 rgba(247, 255, 219, .70);
   box-shadow: 0 0 26px rgba(198, 255, 74, .26), inset 0 2px 0 #f8ffdf, inset 0 -6px 10px rgba(65, 101, 14, .28);
 }
-html[data-theme^="xeno"] .btn.danger {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .btn.danger {
   border-color: rgba(255, 127, 127, .62);
   background: radial-gradient(circle at 30% 20%, rgba(255, 210, 210, .42), transparent 42%),
     linear-gradient(160deg, #571818, #1b0707);
 }
-html[data-theme^="xeno"] input.input,
-html[data-theme^="xeno"] select.input,
-html[data-theme^="xeno"] textarea,
-html[data-theme^="xeno"] .composer textarea,
-html[data-theme^="xeno"] .cm-editor {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) input.input,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) select.input,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) textarea,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer textarea,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .cm-editor {
   border: 1px solid rgba(150, 190, 90, .34);
   border-radius: 42% 58% 34% 66% / 62% 38% 62% 38%;
   background:
@@ -2858,24 +2858,24 @@ html[data-theme^="xeno"] .cm-editor {
   color: #e7f6c5;
   box-shadow: inset 0 3px 12px rgba(0, 0, 0, .58);
 }
-html[data-theme^="xeno"] input.input:focus,
-html[data-theme^="xeno"] select.input:focus,
-html[data-theme^="xeno"] textarea:focus {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) input.input:focus,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) select.input:focus,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) textarea:focus {
   border-color: rgba(198, 255, 74, .66);
   box-shadow: 0 0 0 4px rgba(198, 255, 74, .10), inset 0 3px 12px rgba(0, 0, 0, .58);
 }
-html[data-theme^="xeno"] select.input { color-scheme: dark; }
-html[data-theme^="xeno"] select.input option,
-html[data-theme^="xeno"] select.input optgroup { background-color: #0a1206; color: #e7f6c5; }
-html[data-theme^="xeno"] ::placeholder { color: #6f8f4c; }
-html[data-theme^="xeno"] ::selection { background: #c6ff4a; color: #101607; }
-html[data-theme^="xeno"] .badge {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) select.input { color-scheme: dark; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) select.input option,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) select.input optgroup { background-color: #0a1206; color: #e7f6c5; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) ::placeholder { color: #6f8f4c; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) ::selection { background: #c6ff4a; color: #101607; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .badge {
   border-radius: 50% 44% 52% 48% / 48% 54% 46% 52%;
   border-color: rgba(164, 204, 96, .42);
   background: rgba(198, 255, 74, .08);
   color: #d8efa8;
 }
-html[data-theme^="xeno"] .msg.user .bubble {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .msg.user .bubble {
   border: 1px solid rgba(255, 172, 87, .50);
   border-radius: 46% 18% 56% 20% / 28% 54% 18% 46%;
   background:
@@ -2884,90 +2884,90 @@ html[data-theme^="xeno"] .msg.user .bubble {
   color: #fbe6c7;
   box-shadow: inset 0 2px 0 rgba(255, 235, 202, .18), 0 8px 22px rgba(0, 0, 0, .28);
 }
-html[data-theme^="xeno"] .msg.user .bubble a { color: #ffd08a; }
-html[data-theme^="xeno"] .msg.assistant {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .msg.user .bubble a { color: #ffd08a; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .msg.assistant {
   box-shadow: inset 3px 0 0 var(--msg-border, transparent);
   border-radius: 0 42% 42% 0 / 0 38% 38% 0;
 }
-html[data-theme^="xeno"] .markdown pre,
-html[data-theme^="xeno"] .markdown code,
-html[data-theme^="xeno"] .card-body pre {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .markdown pre,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .markdown code,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .card-body pre {
   border-radius: 34px 12px 40px 15px / 18px 40px 12px 34px;
   border-color: rgba(143, 181, 78, .28);
   background: #060d04;
 }
-html[data-theme^="xeno"] .theme-card:nth-child(2n),
-html[data-theme^="xeno"] .stat-card:nth-child(2n),
-html[data-theme^="xeno"] .ws-card:nth-child(2n) {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .theme-card:nth-child(2n),
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .stat-card:nth-child(2n),
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-card:nth-child(2n) {
   border-radius: 34% 66% 48% 52% / 38% 62% 34% 66%;
 }
-html[data-theme^="xeno"] .theme-card:nth-child(3n) {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .theme-card:nth-child(3n) {
   border-radius: 58% 42% 66% 34% / 34% 66% 42% 58%;
 }
-html[data-theme^="xeno"] .about-card,
-html[data-theme^="xeno"] .auth-card {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .about-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .auth-card {
   border: 1px solid rgba(143, 181, 78, .30);
   background:
     radial-gradient(ellipse 220px 130px at 18% 0%, rgba(198, 255, 74, .12), transparent 68%),
     radial-gradient(ellipse 160px 120px at 92% 100%, rgba(166, 76, 202, .12), transparent 70%),
     linear-gradient(155deg, rgba(27, 41, 16, .99), rgba(9, 14, 6, .995));
 }
-html[data-theme^="xeno"] .settings-tabs { border-bottom: 0; box-shadow: 0 12px 24px -20px rgba(198, 255, 74, .50); }
-html[data-theme^="xeno"] .settings-tabs .tab:nth-child(odd) { transform: rotate(-1.4deg) translateY(2px); }
-html[data-theme^="xeno"] .settings-tabs .tab:nth-child(even) { transform: rotate(1.2deg) translateY(-2px); }
-html[data-theme^="xeno"] .ws-shell { gap: 28px; }
-html[data-theme^="xeno"] .ws-sidebar { border-right: 0; padding-right: 4px; }
-html[data-theme^="xeno"] .ws-nav-group-title { letter-spacing: .15em; }
-html[data-theme^="xeno"] .ws-sidebar .tab { border-radius: 48% 52% 34% 66% / 62% 38% 62% 38%; }
-html[data-theme^="xeno"] .ws-sidebar .tab:nth-child(3n+1) { transform: translateX(4px) rotate(-.7deg); }
-html[data-theme^="xeno"] .ws-sidebar .tab:nth-child(3n+2) { transform: translateX(-3px) rotate(.7deg); }
-html[data-theme^="xeno"] .ws-sidebar .tab:nth-child(3n) { transform: translateX(9px) rotate(-.5deg); }
-html[data-theme^="xeno"] .ws-sidebar .tab.active {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .settings-tabs { border-bottom: 0; box-shadow: 0 12px 24px -20px rgba(198, 255, 74, .50); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .settings-tabs .tab:nth-child(odd) { transform: rotate(-1.4deg) translateY(2px); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .settings-tabs .tab:nth-child(even) { transform: rotate(1.2deg) translateY(-2px); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-shell { gap: 28px; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-sidebar { border-right: 0; padding-right: 4px; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-nav-group-title { letter-spacing: .15em; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-sidebar .tab { border-radius: 48% 52% 34% 66% / 62% 38% 62% 38%; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-sidebar .tab:nth-child(3n+1) { transform: translateX(4px) rotate(-.7deg); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-sidebar .tab:nth-child(3n+2) { transform: translateX(-3px) rotate(.7deg); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-sidebar .tab:nth-child(3n) { transform: translateX(9px) rotate(-.5deg); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-sidebar .tab.active {
   transform: translateX(5px) rotate(0deg);
   background: radial-gradient(ellipse at 18% 40%, rgba(198, 255, 74, .21), transparent 70%);
   border-color: rgba(198, 255, 74, .38);
 }
-html[data-theme^="xeno"] .ext-toolbar,
-html[data-theme^="xeno"] .ws-toolbar,
-html[data-theme^="xeno"] .ws-note,
-html[data-theme^="xeno"] .ws-error,
-html[data-theme^="xeno"] .ext-empty,
-html[data-theme^="xeno"] .ws-log,
-html[data-theme^="xeno"] .diff-wrap,
-html[data-theme^="xeno"] .diff-stat {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ext-toolbar,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-toolbar,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-note,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-error,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ext-empty,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-log,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .diff-wrap,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .diff-stat {
   border-radius: 42% 58% 34% 66% / 62% 38% 62% 38%;
 }
-html[data-theme^="xeno"] .ext-toolbar,
-html[data-theme^="xeno"] .ws-toolbar {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ext-toolbar,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-toolbar {
   border-color: rgba(143, 181, 78, .26);
   background:
     radial-gradient(ellipse 200px 46px at 10% 30%, rgba(198, 255, 74, .08), transparent 72%),
     linear-gradient(155deg, rgba(25, 38, 14, .94), rgba(9, 14, 6, .98));
 }
-html[data-theme^="xeno"] .ext-empty {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ext-empty {
   border-color: rgba(143, 181, 78, .24);
   background: rgba(198, 255, 74, .025);
 }
-html[data-theme^="xeno"] .ws-note {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-note {
   border-color: rgba(198, 255, 74, .30);
   background: radial-gradient(ellipse at 10% 20%, rgba(198, 255, 74, .11), transparent 74%);
 }
-html[data-theme^="xeno"] .theme-card,
-html[data-theme^="xeno"] .mode-card { box-shadow: inset 0 2px 0 rgba(236, 255, 192, .08), 0 10px 26px rgba(0, 0, 0, .24); }
-html[data-theme^="xeno"] .theme-card.active,
-html[data-theme^="xeno"] .mode-card.active {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .theme-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .mode-card { box-shadow: inset 0 2px 0 rgba(236, 255, 192, .08), 0 10px 26px rgba(0, 0, 0, .24); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .theme-card.active,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .mode-card.active {
   border-color: rgba(198, 255, 74, .64);
   box-shadow: 0 0 0 1px rgba(198, 255, 74, .18), 0 0 30px rgba(198, 255, 74, .12);
 }
-html[data-theme^="xeno"] .toast {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .toast {
   border: 1px solid rgba(198, 255, 74, .42);
   background:
     radial-gradient(ellipse at 20% 10%, rgba(198, 255, 74, .16), transparent 66%),
     linear-gradient(155deg, rgba(33, 49, 20, .99), rgba(9, 14, 6, .995));
   box-shadow: 0 0 0 1px rgba(0, 0, 0, .58), 0 22px 54px rgba(0, 0, 0, .62);
 }
-html[data-theme^="xeno"] .overlay-box,
-html[data-theme^="xeno"] .palette {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .overlay-box,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .palette {
   background:
     radial-gradient(ellipse 220px 110px at 14% 0%, rgba(198, 255, 74, .14), transparent 68%),
     radial-gradient(ellipse 170px 110px at 92% 100%, rgba(166, 76, 202, .14), transparent 70%),
@@ -2975,32 +2975,32 @@ html[data-theme^="xeno"] .palette {
   border: 1px solid rgba(174, 214, 102, .44);
   box-shadow: 0 34px 100px rgba(0, 0, 0, .78), inset 0 2px 0 rgba(235, 255, 186, .13);
 }
-html[data-theme^="xeno"] .overlay-title {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .overlay-title {
   color: #d9ff92;
   letter-spacing: .07em;
   text-shadow: 0 0 14px rgba(198, 255, 74, .24);
 }
-html[data-theme^="xeno"] .toast,
-html[data-theme^="xeno"] .overlay-box,
-html[data-theme^="xeno"] .palette { transform: rotate(.25deg); }
-html[data-theme^="xeno"] ::-webkit-scrollbar-thumb {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .toast,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .overlay-box,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .palette { transform: rotate(.25deg); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) ::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #6b943e, #2b4116);
   border-radius: 50%;
   border: 1px solid rgba(6, 9, 3, .82);
 }
-html[data-theme^="xeno"] ::-webkit-scrollbar-track { background: rgba(0, 0, 0, .18); }
-html[data-theme^="xeno"] table > thead > tr > * {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) ::-webkit-scrollbar-track { background: rgba(0, 0, 0, .18); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) table > thead > tr > * {
   background: rgba(198, 255, 74, .07);
   border-color: rgba(143, 181, 78, .28);
 }
-html[data-theme^="xeno"] table > tbody > tr > * { color: var(--text); border-color: rgba(143, 181, 78, .18); }
-html[data-theme^="xeno"] .kbd {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) table > tbody > tr > * { color: var(--text); border-color: rgba(143, 181, 78, .18); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .kbd {
   border-radius: 50% 44% 52% 48% / 48% 54% 46% 52%;
   background: #0a1206;
   border-color: rgba(164, 204, 96, .42);
   color: #d9ff92;
 }
-html[data-theme^="xeno"] .desktop-titlebar {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .desktop-titlebar {
   background:
     radial-gradient(ellipse 300px 46px at 20% 50%, rgba(198, 255, 74, .14), transparent 72%),
     radial-gradient(ellipse 120px 30px at 72% 50%, rgba(255, 122, 28, .16), transparent 70%),
@@ -3008,62 +3008,62 @@ html[data-theme^="xeno"] .desktop-titlebar {
   border-bottom: 0;
   box-shadow: inset 0 2px 0 rgba(236, 255, 190, .14), inset 0 -1px 0 rgba(0, 0, 0, .50);
 }
-html[data-theme^="xeno"][data-desktop="1"] .desktop-titlebar { height: 40px; padding-left: 18px; }
-html[data-theme^="xeno"][data-desktop="1"] .dtb-orb {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"])[data-desktop="1"] .desktop-titlebar { height: 40px; padding-left: 18px; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"])[data-desktop="1"] .dtb-orb {
   background: radial-gradient(circle at 35% 30%, #fffbd4, #ff9b24 36%, #7f2600 72%, #140300);
   box-shadow: 0 0 16px rgba(255, 122, 18, .50);
   border-radius: 50% 46% 54% 48%;
 }
-html[data-theme^="xeno"][data-desktop="1"] .win-btn {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"])[data-desktop="1"] .win-btn {
   border-left: 0;
   border-radius: 50% 44% 52% 48% / 48% 54% 46% 52%;
   margin: 4px 2px;
 }
-html[data-theme^="xeno"][data-desktop="1"] .win-btn:hover { background: rgba(198, 255, 74, .10); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"])[data-desktop="1"] .win-btn:hover { background: rgba(198, 255, 74, .10); }
 
 @media (max-width: 1180px) {
-  html[data-theme^="xeno"] .topbar .tabs .tab { transform: none !important; margin: 0 1px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab { transform: none !important; margin: 0 1px; }
 }
 @media (max-width: 760px) {
-  html[data-theme^="xeno"] .app {
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .app {
     width: calc(100% - 10px);
     height: calc(100% - 10px);
     margin: 5px;
     border-radius: 34px 42px 24% 15% / 28px 34px 18% 11%;
   }
-  html[data-theme^="xeno"] .app:not(.popout) { grid-template-rows: 58px 1fr; }
-  html[data-theme^="xeno"] .layout { padding: 6px; gap: 7px; }
-  html[data-theme^="xeno"] .sidebar { border-radius: 48px 20px 72px 28px / 30px 66px 22px 54px; }
-  html[data-theme^="xeno"] .main { border-radius: 34px 58px 78px 34px / 30px 48px 64px 30px; }
-  html[data-theme^="xeno"] .composer { margin: 6px; padding: 10px; }
-  html[data-theme^="xeno"] .brand { width: 138px; height: 42px; padding-right: 51px; }
-  html[data-theme^="xeno"] .brand::after { width: 35px; height: 35px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .app:not(.popout) { grid-template-rows: 58px 1fr; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .layout { padding: 6px; gap: 7px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar { border-radius: 48px 20px 72px 28px / 30px 66px 22px 54px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .main { border-radius: 34px 58px 78px 34px / 30px 48px 64px 30px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer { margin: 6px; padding: 10px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .brand { width: 138px; height: 42px; padding-right: 51px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .brand::after { width: 35px; height: 35px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  html[data-theme^="xeno"] body::before { animation: none; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) body::before { animation: none; }
 }
 /* Usability tuning for the grotesque shell: keep the organic silhouette but
    never clip the chat actions or composer orb. */
-html[data-theme^="xeno"] .topbar .tabs .tab { margin: 0 -4px; }
-html[data-theme^="xeno"] .sidebar {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab { margin: 0 -4px; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar {
   border-radius: 76px 30px 92px 38px / 48px 84px 36px 72px;
 }
-html[data-theme^="xeno"] .main {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .main {
   border-radius: 54px 54px 64px 54px / 46px 46px 52px 48px;
 }
-html[data-theme^="xeno"] .chat-head {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-head {
   border-radius: 44px 32px 0 0 / 34px 26px 0 0;
 }
-html[data-theme^="xeno"] .composer textarea {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer textarea {
   padding: 14px 20px;
 }
 /* Final grotesque usability pass: coherent nav rail, visible composer
    controls, readable text fields and a window silhouette that never eats the
    Send button. */
-html[data-theme^="xeno"] .app {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .app {
   border-radius: 58px 72px 96px 26% / 48px 54px 84px 18%;
 }
-html[data-theme^="xeno"] .topbar .tabs {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs {
   gap: 2px;
   margin-left: 16px;
   padding: 3px 7px;
@@ -3074,98 +3074,98 @@ html[data-theme^="xeno"] .topbar .tabs {
     linear-gradient(180deg, rgba(18, 27, 12, .72), rgba(7, 11, 5, .86));
   box-shadow: inset 0 2px 0 rgba(234, 255, 190, .10), 0 7px 18px rgba(0, 0, 0, .28);
 }
-html[data-theme^="xeno"] .topbar .tabs .tab {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab {
   margin: 0;
   transform: translateY(var(--xeno-ty, 0)) rotate(var(--xeno-rot, 0));
 }
-html[data-theme^="xeno"] .topbar .tabs .tab:nth-of-type(1) { --xeno-ty: 2px; --xeno-rot: -1deg; }
-html[data-theme^="xeno"] .topbar .tabs .tab:nth-of-type(2) { --xeno-ty: -2px; --xeno-rot: 1deg; }
-html[data-theme^="xeno"] .topbar .tabs .tab:nth-of-type(3) { --xeno-ty: 1px; --xeno-rot: -.7deg; }
-html[data-theme^="xeno"] .topbar .tabs .tab:nth-of-type(4) { --xeno-ty: -1px; --xeno-rot: .8deg; }
-html[data-theme^="xeno"] .topbar .tabs .tab:nth-of-type(5) { --xeno-ty: 2px; --xeno-rot: -1deg; }
-html[data-theme^="xeno"] .topbar .tabs .tab:nth-of-type(6) { --xeno-ty: -1px; --xeno-rot: .8deg; }
-html[data-theme^="xeno"] .topbar .tabs .tab:nth-of-type(7) { --xeno-ty: 1px; --xeno-rot: -.7deg; }
-html[data-theme^="xeno"] .topbar .tabs .tab:nth-of-type(8) { --xeno-ty: -1px; --xeno-rot: .6deg; }
-html[data-theme^="xeno"] .topbar .tabs .tab.active { transform: translateY(1px) rotate(0deg); }
-html[data-theme^="xeno"] .main {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:nth-of-type(1) { --xeno-ty: 2px; --xeno-rot: -1deg; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:nth-of-type(2) { --xeno-ty: -2px; --xeno-rot: 1deg; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:nth-of-type(3) { --xeno-ty: 1px; --xeno-rot: -.7deg; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:nth-of-type(4) { --xeno-ty: -1px; --xeno-rot: .8deg; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:nth-of-type(5) { --xeno-ty: 2px; --xeno-rot: -1deg; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:nth-of-type(6) { --xeno-ty: -1px; --xeno-rot: .8deg; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:nth-of-type(7) { --xeno-ty: 1px; --xeno-rot: -.7deg; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:nth-of-type(8) { --xeno-ty: -1px; --xeno-rot: .6deg; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab.active { transform: translateY(1px) rotate(0deg); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .main {
   border-radius: 54px 54px 18px 18px / 46px 46px 14px 14px;
   overflow: hidden;
 }
-html[data-theme^="xeno"] .chat-head {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-head {
   border-radius: 20px 16px 0 0 / 16px 13px 0 0;
 }
-html[data-theme^="xeno"] .composer textarea {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer textarea {
   border-radius: 22px 16px 26px 18px / 18px 26px 16px 22px;
   padding: 13px 18px;
 }
-html[data-theme^="xeno"] .composer .btn.primary {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer .btn.primary {
   margin-right: 4px;
 }
-html[data-theme^="xeno"] .main {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .main {
   border-radius: 24px 30px 18px 18px / 20px 24px 14px 14px;
 }
-html[data-theme^="xeno"] .chat-head {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-head {
   border-radius: 14px 12px 0 0 / 11px 10px 0 0;
   padding-left: 20px;
 }
 /* Content surfaces need generous but safe lobes; only the outer shell, nav
    pods and action buttons should be extreme. */
-html[data-theme^="xeno"] .card,
-html[data-theme^="xeno"] .stat-card,
-html[data-theme^="xeno"] .ext-card,
-html[data-theme^="xeno"] .ws-card,
-html[data-theme^="xeno"] .ws-provider-card,
-html[data-theme^="xeno"] .ws-quick-card,
-html[data-theme^="xeno"] .ws-resource-card,
-html[data-theme^="xeno"] .ws-resource-editor,
-html[data-theme^="xeno"] .ws-permission-row,
-html[data-theme^="xeno"] .ws-model-row,
-html[data-theme^="xeno"] .theme-card,
-html[data-theme^="xeno"] .mode-card,
-html[data-theme^="xeno"] .hit,
-html[data-theme^="xeno"] .question,
-html[data-theme^="xeno"] .permission,
-html[data-theme^="xeno"] .bars,
-html[data-theme^="xeno"] .auth-card,
-html[data-theme^="xeno"] .about-card,
-html[data-theme^="xeno"] .overlay-box,
-html[data-theme^="xeno"] .palette,
-html[data-theme^="xeno"] .toast {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .stat-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ext-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-provider-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-quick-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-resource-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-resource-editor,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-permission-row,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-model-row,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .theme-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .mode-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .hit,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .question,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .permission,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .bars,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .auth-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .about-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .overlay-box,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .palette,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .toast {
   border-radius: 26px 12px 32px 14px / 16px 30px 11px 26px;
 }
-html[data-theme^="xeno"] .theme-card:nth-child(2n),
-html[data-theme^="xeno"] .stat-card:nth-child(2n),
-html[data-theme^="xeno"] .ws-card:nth-child(2n) {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .theme-card:nth-child(2n),
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .stat-card:nth-child(2n),
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-card:nth-child(2n) {
   border-radius: 16px 30px 11px 26px / 26px 16px 30px 11px;
 }
-html[data-theme^="xeno"] .theme-card:nth-child(3n) {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .theme-card:nth-child(3n) {
   border-radius: 32px 14px 26px 12px / 14px 26px 12px 32px;
 }
-html[data-theme^="xeno"] .markdown pre,
-html[data-theme^="xeno"] .markdown code,
-html[data-theme^="xeno"] .card-body pre {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .markdown pre,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .markdown code,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .card-body pre {
   border-radius: 18px 8px 22px 10px / 12px 22px 8px 18px;
 }
-html[data-theme^="xeno"] .msg.user .bubble {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .msg.user .bubble {
   border-radius: 28px 10px 34px 12px / 14px 32px 10px 28px;
   padding: 11px 14px;
 }
-html[data-theme^="xeno"] .msg.assistant {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .msg.assistant {
   border-radius: 0 20px 20px 0 / 0 18px 18px 0;
 }
-html[data-theme^="xeno"] input.input,
-html[data-theme^="xeno"] select.input,
-html[data-theme^="xeno"] textarea,
-html[data-theme^="xeno"] .composer textarea,
-html[data-theme^="xeno"] .cm-editor {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) input.input,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) select.input,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) textarea,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer textarea,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .cm-editor {
   border-radius: 18px 8px 22px 10px / 12px 22px 8px 18px;
 }
-html[data-theme^="xeno"] .composer textarea { padding: 14px 18px; }
-html[data-theme^="xeno"] .chat-head { flex-wrap: wrap; row-gap: 4px; }
-html[data-theme^="xeno"] .chat-title { min-width: 160px; flex: 1 1 160px; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer textarea { padding: 14px 18px; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-head { flex-wrap: wrap; row-gap: 4px; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-title { min-width: 160px; flex: 1 1 160px; }
 /* Hammered cartilage / brushed bile textures on controls. Kept low-contrast so
    labels stay crisp. */
-html[data-theme^="xeno"] .btn {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .btn {
   background:
     repeating-linear-gradient(112deg, rgba(241, 255, 213, .055) 0 1px, transparent 1px 3px),
     repeating-radial-gradient(circle at 30% 24%, rgba(0, 0, 0, .15) 0 1px, transparent 1px 6px),
@@ -3174,7 +3174,7 @@ html[data-theme^="xeno"] .btn {
   background-size: auto, 11px 11px, auto, auto;
   background-blend-mode: soft-light, overlay, normal, normal;
 }
-html[data-theme^="xeno"] .btn.primary {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .btn.primary {
   background:
     repeating-radial-gradient(circle at 28% 26%, rgba(255, 255, 230, .22) 0 1.5px, transparent 1.5px 7px),
     repeating-linear-gradient(104deg, rgba(255, 255, 255, .09) 0 1px, transparent 1px 4px),
@@ -3183,8 +3183,8 @@ html[data-theme^="xeno"] .btn.primary {
   background-size: 13px 13px, auto, auto, auto;
   background-blend-mode: screen, soft-light, normal, normal;
 }
-html[data-theme^="xeno"] .sidebar-head .btn.primary,
-html[data-theme^="xeno"] .composer .btn.primary {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar-head .btn.primary,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer .btn.primary {
   background:
     repeating-radial-gradient(circle at 28% 24%, rgba(255, 255, 236, .28) 0 1.5px, transparent 1.5px 6px),
     repeating-linear-gradient(105deg, rgba(255, 255, 255, .10) 0 1px, transparent 1px 4px),
@@ -3193,13 +3193,13 @@ html[data-theme^="xeno"] .composer .btn.primary {
   background-size: 12px 12px, auto, auto, auto;
   background-blend-mode: screen, soft-light, normal, normal;
 }
-html[data-theme^="xeno"] .btn:hover { background-position: 2px 1px, 0 0, 0 0, 0 0; }
-html[data-theme^="xeno"] .btn.primary:hover {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .btn:hover { background-position: 2px 1px, 0 0, 0 0, 0 0; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .btn.primary:hover {
   background-position: 1px 2px, 0 0, 0 0, 0 0;
 }
-html[data-theme^="xeno"] .topbar .tabs .tab:not(.active),
-html[data-theme^="xeno"] .settings-tabs .tab:not(.active),
-html[data-theme^="xeno"] .ws-sidebar .tab:not(.active) {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:not(.active),
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .settings-tabs .tab:not(.active),
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-sidebar .tab:not(.active) {
   background:
     repeating-linear-gradient(104deg, rgba(236, 255, 202, .045) 0 1px, transparent 1px 3px),
     repeating-radial-gradient(circle at 26% 28%, rgba(0, 0, 0, .14) 0 1px, transparent 1px 6px),
@@ -3209,7 +3209,7 @@ html[data-theme^="xeno"] .ws-sidebar .tab:not(.active) {
   background-blend-mode: soft-light, overlay, normal, normal;
 }
 /* More tactile control grain: brushed ridges plus a sparse pitted surface. */
-html[data-theme^="xeno"] .btn {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .btn {
   background:
     repeating-linear-gradient(112deg, rgba(244, 255, 218, .10) 0 1px, transparent 1px 3px),
     repeating-radial-gradient(circle at 30% 24%, rgba(0, 0, 0, .20) 0 1px, transparent 1px 5px),
@@ -3219,7 +3219,7 @@ html[data-theme^="xeno"] .btn {
   background-size: auto, 9px 9px, 7px 7px, auto, auto;
   background-blend-mode: soft-light, overlay, screen, normal, normal;
 }
-html[data-theme^="xeno"] .btn.primary {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .btn.primary {
   background:
     repeating-linear-gradient(104deg, rgba(255, 255, 255, .13) 0 1px, transparent 1px 4px),
     repeating-radial-gradient(circle at 28% 26%, rgba(255, 255, 238, .30) 0 1.5px, transparent 1.5px 6px),
@@ -3229,8 +3229,8 @@ html[data-theme^="xeno"] .btn.primary {
   background-size: auto, 12px 12px, 8px 8px, auto, auto;
   background-blend-mode: soft-light, screen, screen, normal, normal;
 }
-html[data-theme^="xeno"] .sidebar-head .btn.primary,
-html[data-theme^="xeno"] .composer .btn.primary {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar-head .btn.primary,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer .btn.primary {
   background:
     repeating-linear-gradient(105deg, rgba(255, 255, 255, .14) 0 1px, transparent 1px 4px),
     repeating-radial-gradient(circle at 28% 24%, rgba(255, 255, 240, .34) 0 1.5px, transparent 1.5px 5px),
@@ -3240,9 +3240,9 @@ html[data-theme^="xeno"] .composer .btn.primary {
   background-size: auto, 11px 11px, 7px 7px, auto, auto;
   background-blend-mode: soft-light, screen, screen, normal, normal;
 }
-html[data-theme^="xeno"] .topbar .tabs .tab:not(.active),
-html[data-theme^="xeno"] .settings-tabs .tab:not(.active),
-html[data-theme^="xeno"] .ws-sidebar .tab:not(.active) {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:not(.active),
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .settings-tabs .tab:not(.active),
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-sidebar .tab:not(.active) {
   background:
     repeating-linear-gradient(104deg, rgba(236, 255, 202, .075) 0 1px, transparent 1px 3px),
     repeating-radial-gradient(circle at 26% 28%, rgba(0, 0, 0, .17) 0 1px, transparent 1px 5px),
@@ -3253,20 +3253,20 @@ html[data-theme^="xeno"] .ws-sidebar .tab:not(.active) {
 }
 /* Alien Grotesque: chrome/cyan xenotech direction.
    Silver cartilage shell, deep-blue LCD, orbital cyan controls. */
-html[data-theme^="xeno"] body {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) body {
   background:
     radial-gradient(ellipse 72% 46% at 16% 2%, rgba(154, 233, 255, 0.16), transparent 68%),
     radial-gradient(ellipse 46% 42% at 94% 76%, rgba(197, 247, 255, 0.10), transparent 66%),
     radial-gradient(ellipse 50% 48% at 56% 100%, rgba(90, 159, 203, 0.18), transparent 70%),
     linear-gradient(148deg, #0d1922 0%, #050a0f 48%, #0b121a 100%);
 }
-html[data-theme^="xeno"] body::before {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) body::before {
   background:
     repeating-radial-gradient(circle at 24% 29%, rgba(174, 242, 255, .11) 0 1.5px, transparent 1.5px 12px),
     repeating-radial-gradient(circle at 77% 68%, rgba(226, 250, 255, .075) 0 1px, transparent 1px 19px),
     repeating-conic-gradient(from 137.5deg at 50% 48%, rgba(115, 226, 255, .06) 0 1deg, transparent 1deg 19deg);
 }
-html[data-theme^="xeno"] .app {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .app {
   background:
     radial-gradient(ellipse 58% 48% at 12% 0%, rgba(159, 235, 255, .12), transparent 70%),
     radial-gradient(ellipse 42% 44% at 96% 82%, rgba(121, 231, 255, .10), transparent 68%),
@@ -3279,7 +3279,7 @@ html[data-theme^="xeno"] .app {
     inset 0 2px 0 rgba(255, 255, 255, .88),
     inset 0 -28px 70px rgba(0, 0, 0, .55);
 }
-html[data-theme^="xeno"] .topbar {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar {
   background:
     radial-gradient(ellipse 310px 58px at 13% 22%, rgba(235, 253, 255, .55), transparent 73%),
     radial-gradient(ellipse 190px 44px at 84% 74%, rgba(121, 231, 255, .22), transparent 73%),
@@ -3290,13 +3290,13 @@ html[data-theme^="xeno"] .topbar {
     0 18px 38px rgba(0, 0, 0, .36),
     0 0 24px rgba(109, 228, 255, .10);
 }
-html[data-theme^="xeno"] .topbar::before {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar::before {
   background: radial-gradient(ellipse at center, rgba(129, 234, 255, .48), rgba(114, 214, 255, .12) 42%, transparent 72%);
 }
-html[data-theme^="xeno"] .topbar::after {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar::after {
   background: linear-gradient(90deg, transparent, rgba(230, 252, 255, .55), rgba(121, 231, 255, .42), transparent);
 }
-html[data-theme^="xeno"] .brand {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .brand {
   color: #061018;
   text-shadow: 0 1px 0 rgba(255, 255, 255, .72);
   background:
@@ -3309,8 +3309,8 @@ html[data-theme^="xeno"] .brand {
     inset 0 2px 0 rgba(255, 255, 255, .92),
     inset 0 -6px 12px rgba(0, 0, 0, .44);
 }
-html[data-theme^="xeno"] .brand span { color: #0e6c87; text-shadow: 0 1px 0 rgba(255, 255, 255, .65); }
-html[data-theme^="xeno"] .brand::after {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .brand span { color: #0e6c87; text-shadow: 0 1px 0 rgba(255, 255, 255, .65); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .brand::after {
   background:
     radial-gradient(circle at 34% 27%, #ffffff 0 4%, #dffcff 11%, #79e7ff 36%, #147d9f 64%, #031018 88%, #010507 100%);
   box-shadow:
@@ -3319,14 +3319,14 @@ html[data-theme^="xeno"] .brand::after {
     0 0 28px rgba(121, 231, 255, .72),
     inset 0 0 10px rgba(255, 255, 255, .9);
 }
-html[data-theme^="xeno"] .topbar .tabs {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs {
   border-color: rgba(219, 246, 255, .46);
   background:
     radial-gradient(ellipse 220px 34px at 16% 20%, rgba(255, 255, 255, .20), transparent 72%),
     linear-gradient(180deg, rgba(224, 240, 247, .30), rgba(9, 18, 24, .86));
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, .34), 0 7px 18px rgba(0, 0, 0, .34);
 }
-html[data-theme^="xeno"] .topbar .tabs .tab:not(.active) {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:not(.active) {
   color: #071018;
   text-shadow: 0 1px 0 rgba(255, 255, 255, .68);
   border-color: rgba(232, 251, 255, .72);
@@ -3340,7 +3340,7 @@ html[data-theme^="xeno"] .topbar .tabs .tab:not(.active) {
     inset 0 -4px 8px rgba(0, 0, 0, .28),
     0 4px 10px rgba(0, 0, 0, .30);
 }
-html[data-theme^="xeno"] .topbar .tabs .tab.active {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab.active {
   color: #031018;
   border-color: rgba(225, 251, 255, .98);
   background:
@@ -3354,20 +3354,20 @@ html[data-theme^="xeno"] .topbar .tabs .tab.active {
     inset 0 2px 0 #ffffff,
     inset 0 -5px 10px rgba(2, 39, 51, .34);
 }
-html[data-theme^="xeno"] .nav-admin-sep {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .nav-admin-sep {
   background: linear-gradient(180deg, transparent, rgba(232, 253, 255, .72), rgba(121, 231, 255, .56), transparent);
 }
-html[data-theme^="xeno"] .topbar .live-status,
-html[data-theme^="xeno"] .topbar .user-name,
-html[data-theme^="xeno"] .topbar .titlebar-logout {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .live-status,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .user-name,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .titlebar-logout {
   color: #e7faff;
   text-shadow: 0 1px 2px #000;
 }
-html[data-theme^="xeno"] .topbar .titlebar-logout {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .titlebar-logout {
   border-color: rgba(220, 249, 255, .45);
   background: linear-gradient(160deg, rgba(101, 130, 145, .70), rgba(9, 18, 24, .94));
 }
-html[data-theme^="xeno"] .sidebar {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar {
   background:
     radial-gradient(ellipse 210px 220px at 20% 5%, rgba(150, 236, 255, .14), transparent 70%),
     radial-gradient(ellipse 150px 220px at 94% 84%, rgba(120, 195, 235, .12), transparent 72%),
@@ -3379,17 +3379,17 @@ html[data-theme^="xeno"] .sidebar {
     0 16px 42px rgba(0, 0, 0, .40),
     0 0 24px rgba(100, 220, 255, .08);
 }
-html[data-theme^="xeno"] .sidebar::before,
-html[data-theme^="xeno"] .main::before {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar::before,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .main::before {
   background:
     repeating-radial-gradient(circle at 18% 12%, rgba(174, 242, 255, .050) 0 1px, transparent 1px 15px),
     repeating-radial-gradient(circle at 82% 78%, rgba(236, 253, 255, .030) 0 1px, transparent 1px 23px),
     repeating-conic-gradient(from 137.5deg at 55% 44%, rgba(121, 231, 255, .038) 0 1deg, transparent 1deg 22deg);
 }
-html[data-theme^="xeno"] .sidebar-head {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar-head {
   background: radial-gradient(ellipse 190px 70px at 18% 0%, rgba(161, 239, 255, .14), transparent 70%);
 }
-html[data-theme^="xeno"] .sidebar-head .btn.primary {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar-head .btn.primary {
   color: #041018;
   border-color: rgba(235, 253, 255, .95);
   background:
@@ -3403,37 +3403,37 @@ html[data-theme^="xeno"] .sidebar-head .btn.primary {
     inset 0 2px 0 #ffffff,
     inset 0 -6px 12px rgba(7, 56, 71, .30);
 }
-html[data-theme^="xeno"] .section-title { color: #a9ecff; text-shadow: 0 0 10px rgba(121, 231, 255, .24); }
-html[data-theme^="xeno"] .nav-item { color: #d9f4fc; }
-html[data-theme^="xeno"] .nav-item:hover {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .section-title { color: #a9ecff; text-shadow: 0 0 10px rgba(121, 231, 255, .24); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .nav-item { color: #d9f4fc; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .nav-item:hover {
   background: radial-gradient(ellipse at 16% 50%, rgba(121, 231, 255, .14), transparent 70%);
   border-color: rgba(163, 226, 245, .30);
 }
-html[data-theme^="xeno"] .nav-item.active {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .nav-item.active {
   background:
     radial-gradient(ellipse at 20% 36%, rgba(121, 231, 255, .23), transparent 69%),
     rgba(18, 68, 86, .40);
   border-color: rgba(151, 235, 255, .52);
   box-shadow: inset 0 2px 0 rgba(238, 253, 255, .18), 0 0 18px rgba(92, 220, 255, .12);
 }
-html[data-theme^="xeno"] .session-row {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .session-row {
   border-color: rgba(137, 190, 207, .30);
   background:
     radial-gradient(ellipse at 20% 15%, rgba(121, 231, 255, .08), transparent 64%),
     linear-gradient(155deg, rgba(17, 37, 49, .95), rgba(4, 11, 17, .97));
   box-shadow: inset 0 2px 0 rgba(228, 250, 255, .07), 0 6px 18px rgba(0, 0, 0, .22);
 }
-html[data-theme^="xeno"] .session-row:hover {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .session-row:hover {
   border-color: rgba(158, 238, 255, .52);
   box-shadow: 0 0 22px rgba(100, 225, 255, .11), inset 0 2px 0 rgba(232, 252, 255, .12);
 }
-html[data-theme^="xeno"] .session-row.active {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .session-row.active {
   border-color: rgba(187, 246, 255, .78);
   background:
     radial-gradient(ellipse at 18% 22%, rgba(121, 231, 255, .20), transparent 68%),
     linear-gradient(155deg, rgba(24, 63, 79, .97), rgba(5, 15, 22, .99));
 }
-html[data-theme^="xeno"] .main {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .main {
   background:
     radial-gradient(ellipse 62% 44% at 48% 0%, rgba(121, 231, 255, .09), transparent 68%),
     radial-gradient(ellipse 34% 38% at 100% 100%, rgba(85, 158, 198, .13), transparent 70%),
@@ -3444,9 +3444,9 @@ html[data-theme^="xeno"] .main {
     inset 0 0 42px rgba(89, 216, 255, .10),
     0 18px 48px rgba(0, 0, 0, .36);
 }
-html[data-theme^="xeno"] .chat-head,
-html[data-theme^="xeno"] .find-bar,
-html[data-theme^="xeno"] .running-bar {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-head,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .find-bar,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .running-bar {
   background:
     radial-gradient(ellipse 250px 54px at 12% 26%, rgba(234, 252, 255, .18), transparent 72%),
     linear-gradient(180deg, #eaf6fb 0%, #b5c9d4 9%, #748995 30%, #33434e 70%, #111b23 100%);
@@ -3454,9 +3454,9 @@ html[data-theme^="xeno"] .running-bar {
   text-shadow: 0 1px 0 rgba(255, 255, 255, .55);
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, .88), inset 0 -1px 0 rgba(0, 0, 0, .54);
 }
-html[data-theme^="xeno"] .chat-head .btn,
-html[data-theme^="xeno"] .chat-head select.input { text-shadow: none; }
-html[data-theme^="xeno"] .chat-body {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-head .btn,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-head select.input { text-shadow: none; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-body {
   background:
     repeating-linear-gradient(0deg, rgba(121, 231, 255, .028) 0 1px, transparent 1px 3px),
     repeating-radial-gradient(circle at 78% 9%, rgba(154, 238, 255, .045) 0 1px, transparent 1px 14px),
@@ -3465,7 +3465,7 @@ html[data-theme^="xeno"] .chat-body {
     linear-gradient(180deg, #071722 0%, #030a10 100%);
   color: #dff8ff;
 }
-html[data-theme^="xeno"] .composer {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer {
   border: 1px solid rgba(168, 224, 240, .46);
   border-top: 2px solid rgba(210, 249, 255, .62);
   background:
@@ -3478,7 +3478,7 @@ html[data-theme^="xeno"] .composer {
     0 16px 38px rgba(0, 0, 0, .30),
     0 0 26px rgba(90, 218, 255, .08);
 }
-html[data-theme^="xeno"] .composer textarea {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer textarea {
   border-color: rgba(143, 208, 225, .38);
   background:
     repeating-linear-gradient(0deg, rgba(121, 231, 255, .030) 0 1px, transparent 1px 3px),
@@ -3486,11 +3486,11 @@ html[data-theme^="xeno"] .composer textarea {
     linear-gradient(160deg, #031018, #071720);
   color: #e5faff;
 }
-html[data-theme^="xeno"] .composer textarea:focus {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer textarea:focus {
   border-color: rgba(155, 242, 255, .80);
   box-shadow: 0 0 0 4px rgba(111, 230, 255, .12), inset 0 3px 14px rgba(0, 0, 0, .58);
 }
-html[data-theme^="xeno"] .composer .btn.primary {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer .btn.primary {
   background:
     repeating-linear-gradient(105deg, rgba(255, 255, 255, .18) 0 1px, transparent 1px 4px),
     repeating-radial-gradient(circle at 28% 24%, rgba(255, 255, 255, .46) 0 1.5px, transparent 1.5px 5px),
@@ -3503,7 +3503,7 @@ html[data-theme^="xeno"] .composer .btn.primary {
     0 0 30px rgba(121, 231, 255, .56),
     inset 0 0 12px rgba(255, 255, 255, .82);
 }
-html[data-theme^="xeno"] .btn {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .btn {
   color: #041018;
   text-shadow: 0 1px 0 rgba(255, 255, 255, .66);
   border-color: rgba(235, 252, 255, .72);
@@ -3517,12 +3517,12 @@ html[data-theme^="xeno"] .btn {
   background-blend-mode: soft-light, overlay, screen, normal, normal;
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, .86), 0 5px 14px rgba(0, 0, 0, .28);
 }
-html[data-theme^="xeno"] .btn:not(:disabled):hover {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .btn:not(:disabled):hover {
   border-color: rgba(242, 254, 255, .95);
   color: #031018;
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, .92), 0 0 24px rgba(121, 231, 255, .30);
 }
-html[data-theme^="xeno"] .btn.primary {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .btn.primary {
   color: #031018;
   border-color: rgba(238, 254, 255, .96);
   background:
@@ -3535,19 +3535,19 @@ html[data-theme^="xeno"] .btn.primary {
   background-blend-mode: soft-light, screen, screen, normal, normal;
   box-shadow: 0 0 28px rgba(121, 231, 255, .34), inset 0 2px 0 #ffffff, inset 0 -6px 10px rgba(7, 56, 71, .32);
 }
-html[data-theme^="xeno"] .btn.ghost { color: #c9f2ff; text-shadow: 0 1px 1px #000; background: transparent; border-color: transparent; box-shadow: none; }
-html[data-theme^="xeno"] .btn.ghost:hover { background: rgba(121, 231, 255, .10); }
-html[data-theme^="xeno"] .btn.danger {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .btn.ghost { color: #c9f2ff; text-shadow: 0 1px 1px #000; background: transparent; border-color: transparent; box-shadow: none; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .btn.ghost:hover { background: rgba(121, 231, 255, .10); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .btn.danger {
   color: #fff0f0;
   border-color: rgba(255, 177, 177, .72);
   background: radial-gradient(circle at 30% 20%, rgba(255, 228, 228, .44), transparent 42%),
     linear-gradient(160deg, #712222, #250909);
 }
-html[data-theme^="xeno"] input.input,
-html[data-theme^="xeno"] select.input,
-html[data-theme^="xeno"] textarea,
-html[data-theme^="xeno"] .composer textarea,
-html[data-theme^="xeno"] .cm-editor {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) input.input,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) select.input,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) textarea,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer textarea,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .cm-editor {
   border-color: rgba(143, 208, 225, .40);
   background:
     repeating-radial-gradient(circle at 12% 20%, rgba(121, 231, 255, .022) 0 1px, transparent 1px 14px),
@@ -3555,14 +3555,14 @@ html[data-theme^="xeno"] .cm-editor {
   color: #e5faff;
   box-shadow: inset 0 3px 12px rgba(0, 0, 0, .58);
 }
-html[data-theme^="xeno"] ::placeholder { color: #6f99aa; }
-html[data-theme^="xeno"] ::selection { background: #79e7ff; color: #031018; }
-html[data-theme^="xeno"] .badge {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) ::placeholder { color: #6f99aa; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) ::selection { background: #79e7ff; color: #031018; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .badge {
   border-color: rgba(159, 224, 241, .46);
   background: rgba(121, 231, 255, .09);
   color: #c9f4ff;
 }
-html[data-theme^="xeno"] .msg.user .bubble {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .msg.user .bubble {
   border-color: rgba(151, 235, 255, .66);
   background:
     radial-gradient(ellipse at 20% 15%, rgba(255, 255, 255, .26), transparent 60%),
@@ -3570,42 +3570,42 @@ html[data-theme^="xeno"] .msg.user .bubble {
   color: #e9fcff;
   box-shadow: inset 0 2px 0 rgba(236, 253, 255, .24), 0 8px 22px rgba(0, 0, 0, .28), 0 0 18px rgba(121, 231, 255, .12);
 }
-html[data-theme^="xeno"] .msg.user .bubble a { color: #bff6ff; }
-html[data-theme^="xeno"] .markdown pre,
-html[data-theme^="xeno"] .markdown code,
-html[data-theme^="xeno"] .card-body pre {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .msg.user .bubble a { color: #bff6ff; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .markdown pre,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .markdown code,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .card-body pre {
   border-color: rgba(137, 190, 207, .32);
   background: #030b12;
   color: #c9edf7;
 }
-html[data-theme^="xeno"] .theme-card,
-html[data-theme^="xeno"] .mode-card,
-html[data-theme^="xeno"] .card,
-html[data-theme^="xeno"] .stat-card,
-html[data-theme^="xeno"] .ext-card,
-html[data-theme^="xeno"] .ws-card,
-html[data-theme^="xeno"] .ws-provider-card,
-html[data-theme^="xeno"] .ws-quick-card,
-html[data-theme^="xeno"] .ws-resource-card,
-html[data-theme^="xeno"] .ws-resource-editor,
-html[data-theme^="xeno"] .ws-permission-row,
-html[data-theme^="xeno"] .ws-model-row,
-html[data-theme^="xeno"] .auth-card,
-html[data-theme^="xeno"] .about-card,
-html[data-theme^="xeno"] .overlay-box,
-html[data-theme^="xeno"] .palette,
-html[data-theme^="xeno"] .toast,
-html[data-theme^="xeno"] .ext-toolbar,
-html[data-theme^="xeno"] .ws-toolbar,
-html[data-theme^="xeno"] .ws-note,
-html[data-theme^="xeno"] .ws-error,
-html[data-theme^="xeno"] .ext-empty,
-html[data-theme^="xeno"] .ws-log,
-html[data-theme^="xeno"] .diff-wrap,
-html[data-theme^="xeno"] .diff-stat,
-html[data-theme^="xeno"] .question,
-html[data-theme^="xeno"] .permission,
-html[data-theme^="xeno"] .bars {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .theme-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .mode-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .stat-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ext-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-provider-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-quick-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-resource-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-resource-editor,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-permission-row,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-model-row,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .auth-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .about-card,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .overlay-box,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .palette,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .toast,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ext-toolbar,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-toolbar,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-note,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-error,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ext-empty,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-log,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .diff-wrap,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .diff-stat,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .question,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .permission,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .bars {
   border-color: rgba(144, 201, 218, .30);
   background:
     radial-gradient(ellipse 220px 120px at 18% 0%, rgba(121, 231, 255, .09), transparent 68%),
@@ -3613,47 +3613,47 @@ html[data-theme^="xeno"] .bars {
     linear-gradient(155deg, rgba(13, 32, 44, .99), rgba(3, 10, 16, .995));
   color: #e5f8ff;
 }
-html[data-theme^="xeno"] .theme-card.active,
-html[data-theme^="xeno"] .mode-card.active {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .theme-card.active,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .mode-card.active {
   border-color: rgba(159, 244, 255, .78);
   box-shadow: 0 0 0 1px rgba(121, 231, 255, .24), 0 0 30px rgba(121, 231, 255, .16);
 }
-html[data-theme^="xeno"] .overlay-title { color: #bff6ff; text-shadow: 0 0 14px rgba(121, 231, 255, .28); }
-html[data-theme^="xeno"] .toast {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .overlay-title { color: #bff6ff; text-shadow: 0 0 14px rgba(121, 231, 255, .28); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .toast {
   border-color: rgba(159, 236, 255, .50);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, .62), 0 22px 54px rgba(0, 0, 0, .64), 0 0 28px rgba(100, 225, 255, .12);
 }
-html[data-theme^="xeno"] ::-webkit-scrollbar-thumb {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) ::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #e1f6fc, #7ca0b0 42%, #2b4a58 100%);
   border: 1px solid rgba(2, 8, 12, .82);
 }
-html[data-theme^="xeno"] ::-webkit-scrollbar-track { background: rgba(0, 0, 0, .24); }
-html[data-theme^="xeno"] table > thead > tr > * {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) ::-webkit-scrollbar-track { background: rgba(0, 0, 0, .24); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) table > thead > tr > * {
   background: rgba(121, 231, 255, .08);
   border-color: rgba(144, 201, 218, .30);
 }
-html[data-theme^="xeno"] table > tbody > tr > * { color: #e5f8ff; border-color: rgba(144, 201, 218, .20); }
-html[data-theme^="xeno"] .kbd {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) table > tbody > tr > * { color: #e5f8ff; border-color: rgba(144, 201, 218, .20); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .kbd {
   background: #071720;
   border-color: rgba(159, 224, 241, .44);
   color: #bff6ff;
 }
-html[data-theme^="xeno"] .desktop-titlebar {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .desktop-titlebar {
   background:
     radial-gradient(ellipse 300px 46px at 20% 50%, rgba(238, 253, 255, .30), transparent 72%),
     radial-gradient(ellipse 120px 30px at 72% 50%, rgba(121, 231, 255, .18), transparent 70%),
     linear-gradient(180deg, #eaf6fb 0%, #aabfc9 9%, #5f7480 34%, #1b2a33 75%, #071016 100%);
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, .78), inset 0 -1px 0 rgba(0, 0, 0, .60);
 }
-html[data-theme^="xeno"][data-desktop="1"] .dtb-orb {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"])[data-desktop="1"] .dtb-orb {
   background: radial-gradient(circle at 35% 30%, #ffffff, #c9f8ff 18%, #79e7ff 42%, #126f8d 72%, #031018);
   box-shadow: 0 0 16px rgba(121, 231, 255, .70);
 }
-html[data-theme^="xeno"][data-desktop="1"] .win-btn { color: #e8faff; }
-html[data-theme^="xeno"][data-desktop="1"] .win-btn:hover { background: rgba(121, 231, 255, .14); }
-html[data-theme^="xeno"] .settings-tabs .tab:not(.active),
-html[data-theme^="xeno"] .ws-sidebar .tab:not(.active),
-html[data-theme^="xeno"] .ext-subtabs .tab:not(.active) {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"])[data-desktop="1"] .win-btn { color: #e8faff; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"])[data-desktop="1"] .win-btn:hover { background: rgba(121, 231, 255, .14); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .settings-tabs .tab:not(.active),
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-sidebar .tab:not(.active),
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ext-subtabs .tab:not(.active) {
   color: #c9f2ff;
   text-shadow: 0 1px 2px #000;
   border-color: rgba(144, 201, 218, .28);
@@ -3665,9 +3665,9 @@ html[data-theme^="xeno"] .ext-subtabs .tab:not(.active) {
   background-size: auto, 9px 9px, auto, auto;
   background-blend-mode: soft-light, overlay, normal, normal;
 }
-html[data-theme^="xeno"] .settings-tabs .tab.active,
-html[data-theme^="xeno"] .ws-sidebar .tab.active,
-html[data-theme^="xeno"] .ext-subtabs .tab.active {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .settings-tabs .tab.active,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-sidebar .tab.active,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ext-subtabs .tab.active {
   color: #031018;
   border-color: rgba(225, 251, 255, .92);
   background:
@@ -3677,17 +3677,17 @@ html[data-theme^="xeno"] .ext-subtabs .tab.active {
     radial-gradient(circle at 67% 68%, #effeff 0%, #8cecff 44%, #248eae 100%);
   box-shadow: 0 0 26px rgba(121, 231, 255, .30), inset 0 2px 0 #ffffff;
 }
-html[data-theme^="xeno"] .ws-nav-group-title { color: #9feaff; text-shadow: 0 0 10px rgba(121, 231, 255, .20); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-nav-group-title { color: #9feaff; text-shadow: 0 0 10px rgba(121, 231, 255, .20); }
 /* Cockpit / spaceship layer: starfield, hull seams, HUD grid, corner
    brackets, vents and reactor rings. */
-html[data-theme^="xeno"] body {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) body {
   background:
     radial-gradient(ellipse 70% 54% at 15% 0%, rgba(62, 170, 220, .20), transparent 67%),
     radial-gradient(ellipse 42% 38% at 88% 18%, rgba(139, 105, 255, .13), transparent 68%),
     radial-gradient(ellipse 58% 52% at 54% 100%, rgba(13, 88, 130, .24), transparent 70%),
     linear-gradient(148deg, #07131d 0%, #02060b 46%, #080d18 100%);
 }
-html[data-theme^="xeno"] body::before {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) body::before {
   background-image:
     radial-gradient(1px 1px at 22px 31px, rgba(255, 255, 255, .88), transparent 58%),
     radial-gradient(1.5px 1.5px at 118px 84px, rgba(191, 246, 255, .82), transparent 58%),
@@ -3699,7 +3699,7 @@ html[data-theme^="xeno"] body::before {
   background-size: 220px 190px, 310px 260px, 170px 230px, 280px 210px, 240px 200px, auto, auto;
   opacity: .82;
 }
-html[data-theme^="xeno"] .app {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .app {
   background:
     radial-gradient(ellipse 58% 48% at 12% 0%, rgba(159, 235, 255, .12), transparent 70%),
     radial-gradient(ellipse 42% 44% at 96% 82%, rgba(121, 231, 255, .10), transparent 68%),
@@ -3707,14 +3707,14 @@ html[data-theme^="xeno"] .app {
     repeating-linear-gradient(0deg, transparent 0 66px, rgba(255, 255, 255, .042) 66px 67px, rgba(0, 0, 0, .15) 67px 69px),
     linear-gradient(145deg, #f1f9fd 0%, #b9ccd6 4%, #6c7f8b 9%, #28343d 16%, #0b141b 34%, #040a10 62%, #0d1b24 100%);
 }
-html[data-theme^="xeno"] .topbar {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar {
   background:
     radial-gradient(ellipse 310px 58px at 13% 22%, rgba(235, 253, 255, .48), transparent 73%),
     radial-gradient(ellipse 190px 44px at 84% 74%, rgba(121, 231, 255, .22), transparent 73%),
     repeating-linear-gradient(90deg, transparent 0 109px, rgba(255, 255, 255, .12) 109px 111px, rgba(0, 0, 0, .19) 111px 113px),
     linear-gradient(180deg, #f5fbfe 0%, #c4d7e0 6%, #8499a4 17%, #44535d 44%, #16222b 76%, #060c11 100%);
 }
-html[data-theme^="xeno"] .brand::before {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .brand::before {
   content: "";
   position: absolute;
   right: 2px;
@@ -3726,7 +3726,7 @@ html[data-theme^="xeno"] .brand::before {
   box-shadow: 0 0 12px rgba(121, 231, 255, .32), inset 0 0 8px rgba(121, 231, 255, .20);
   pointer-events: none;
 }
-html[data-theme^="xeno"] .sidebar::after {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar::after {
   content: "";
   position: absolute;
   right: 6px;
@@ -3740,7 +3740,7 @@ html[data-theme^="xeno"] .sidebar::after {
   box-shadow: 0 0 12px rgba(121, 231, 255, .12);
   opacity: .64;
 }
-html[data-theme^="xeno"] .main::after {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .main::after {
   content: "";
   position: absolute;
   inset: 12px;
@@ -3758,7 +3758,7 @@ html[data-theme^="xeno"] .main::after {
     linear-gradient(#8cecff, #8cecff) right bottom / 2px 26px no-repeat;
   filter: drop-shadow(0 0 6px rgba(121, 231, 255, .42));
 }
-html[data-theme^="xeno"] .chat-body {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-body {
   background:
     linear-gradient(rgba(121, 231, 255, .032) 1px, transparent 1px) 0 0 / 38px 38px,
     linear-gradient(90deg, rgba(121, 231, 255, .032) 1px, transparent 1px) 0 0 / 38px 38px,
@@ -3768,7 +3768,7 @@ html[data-theme^="xeno"] .chat-body {
     linear-gradient(180deg, #071722 0%, #030a10 100%);
   box-shadow: inset 0 12px 30px rgba(121, 231, 255, .035), inset 0 -20px 40px rgba(0, 0, 0, .32);
 }
-html[data-theme^="xeno"] .composer {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer {
   border-top: 2px solid rgba(207, 250, 255, .74);
   box-shadow:
     inset 0 2px 0 rgba(242, 254, 255, .18),
@@ -3776,19 +3776,19 @@ html[data-theme^="xeno"] .composer {
     0 16px 38px rgba(0, 0, 0, .32),
     0 0 30px rgba(90, 218, 255, .10);
 }
-html[data-theme^="xeno"] .chat-head {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-head {
   background:
     radial-gradient(ellipse 250px 54px at 12% 26%, rgba(234, 252, 255, .20), transparent 72%),
     repeating-linear-gradient(90deg, transparent 0 86px, rgba(255, 255, 255, .10) 86px 88px, rgba(0, 0, 0, .13) 88px 90px),
     linear-gradient(180deg, #eaf6fb 0%, #b5c9d4 9%, #748995 30%, #33434e 70%, #111b23 100%);
 }
-html[data-theme^="xeno"] .settings-page,
-html[data-theme^="xeno"] .workspace-page {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .settings-page,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .workspace-page {
   background:
     linear-gradient(rgba(121, 231, 255, .018) 1px, transparent 1px) 0 0 / 44px 44px,
     linear-gradient(90deg, rgba(121, 231, 255, .018) 1px, transparent 1px) 0 0 / 44px 44px;
 }
-html[data-theme^="xeno"] .btn::after {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .btn::after {
   content: "";
   position: absolute;
   inset: 3px;
@@ -3797,23 +3797,23 @@ html[data-theme^="xeno"] .btn::after {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12);
   opacity: .55;
 }
-html[data-theme^="xeno"] .btn { position: relative; overflow: hidden; }
-html[data-theme^="xeno"] .chat-head .btn.ghost,
-html[data-theme^="xeno"] .chat-head .btn.ghost:hover {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .btn { position: relative; overflow: hidden; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-head .btn.ghost,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-head .btn.ghost:hover {
   color: #061018;
   text-shadow: 0 1px 0 rgba(255, 255, 255, .62);
 }
-html[data-theme^="xeno"] .chat-head .btn.ghost:hover { background: rgba(6, 25, 35, .10); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-head .btn.ghost:hover { background: rgba(6, 25, 35, .10); }
 /* Closer to the K-Jofol cockpit mock: darker bridge, metal transport ribbons,
    ignition-red new-session pod and a paper-matrix directory screen. */
-html[data-theme^="xeno"] .topbar {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar {
   background:
     radial-gradient(ellipse 310px 58px at 13% 22%, rgba(235, 253, 255, .32), transparent 73%),
     radial-gradient(ellipse 190px 44px at 84% 74%, rgba(121, 231, 255, .22), transparent 73%),
     repeating-linear-gradient(90deg, transparent 0 109px, rgba(255, 255, 255, .075) 109px 111px, rgba(0, 0, 0, .24) 111px 113px),
     linear-gradient(180deg, #aebfc9 0%, #6d818d 8%, #384750 24%, #18232b 54%, #090f14 86%, #1b2831 100%);
 }
-html[data-theme^="xeno"] .topbar .tabs .tab:not(.active) {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:not(.active) {
   color: #e7f9ff;
   text-shadow: 0 1px 2px #000;
   border-color: rgba(184, 217, 230, .48);
@@ -3827,11 +3827,11 @@ html[data-theme^="xeno"] .topbar .tabs .tab:not(.active) {
     inset 0 -4px 8px rgba(0, 0, 0, .50),
     0 4px 10px rgba(0, 0, 0, .42);
 }
-html[data-theme^="xeno"] .topbar .tabs .tab:not(.active):hover {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:not(.active):hover {
   color: #ffffff;
   border-color: rgba(146, 238, 255, .78);
 }
-html[data-theme^="xeno"] .sidebar-head .btn.primary {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar-head .btn.primary {
   color: #240008;
   border-color: rgba(255, 226, 235, .96);
   background:
@@ -3845,7 +3845,7 @@ html[data-theme^="xeno"] .sidebar-head .btn.primary {
     inset 0 2px 0 #ffffff,
     inset 0 -6px 12px rgba(100, 0, 27, .34);
 }
-html[data-theme^="xeno"] .chat-head {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-head {
   background:
     radial-gradient(ellipse 250px 54px at 12% 26%, rgba(235, 253, 255, .16), transparent 72%),
     repeating-linear-gradient(90deg, transparent 0 86px, rgba(255, 255, 255, .07) 86px 88px, rgba(0, 0, 0, .18) 88px 90px),
@@ -3854,13 +3854,13 @@ html[data-theme^="xeno"] .chat-head {
   text-shadow: 0 1px 2px #000;
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, .38), inset 0 -1px 0 rgba(0, 0, 0, .60);
 }
-html[data-theme^="xeno"] .chat-head .btn.ghost,
-html[data-theme^="xeno"] .chat-head .btn.ghost:hover {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-head .btn.ghost,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-head .btn.ghost:hover {
   color: #dff9ff;
   text-shadow: 0 1px 2px #000;
 }
-html[data-theme^="xeno"] .chat-head .btn.ghost:hover { background: rgba(121, 231, 255, .10); }
-html[data-theme^="xeno"] .running-bar {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-head .btn.ghost:hover { background: rgba(121, 231, 255, .10); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .running-bar {
   background:
     radial-gradient(ellipse 200px 30px at 12% 20%, rgba(255, 255, 255, .48), transparent 70%),
     linear-gradient(180deg, #e4f1f6 0%, #a9bdc7 16%, #627680 54%, #26343d 100%);
@@ -3868,9 +3868,9 @@ html[data-theme^="xeno"] .running-bar {
   text-shadow: 0 1px 0 rgba(255, 255, 255, .62);
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, .78), inset 0 -2px 0 rgba(0, 0, 0, .50);
 }
-html[data-theme^="xeno"] .running-bar .muted,
-html[data-theme^="xeno"] .running-bar .small { color: #18303a; }
-html[data-theme^="xeno"] .sidebar-directory-block.lcd {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .running-bar .muted,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .running-bar .small { color: #18303a; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar-directory-block.lcd {
   margin: 7px -1px 0;
   padding: 6px;
   max-height: 43vh;
@@ -3887,8 +3887,8 @@ html[data-theme^="xeno"] .sidebar-directory-block.lcd {
     inset 0 0 18px rgba(255, 255, 255, .14),
     0 1px 0 rgba(255, 255, 255, .26);
 }
-html[data-theme^="xeno"] .sidebar-directory-block.lcd .section-title { color: #182018; text-shadow: none; }
-html[data-theme^="xeno"] .sidebar-directory-block.lcd .nav-item {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar-directory-block.lcd .section-title { color: #182018; text-shadow: none; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar-directory-block.lcd .nav-item {
   color: #111811;
   font-family: var(--mono);
   font-size: 11px;
@@ -3896,24 +3896,24 @@ html[data-theme^="xeno"] .sidebar-directory-block.lcd .nav-item {
   border-radius: 5px;
   padding: 3px 7px;
 }
-html[data-theme^="xeno"] .sidebar-directory-block.lcd .nav-item:hover {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar-directory-block.lcd .nav-item:hover {
   background: rgba(10, 32, 38, .12);
   border-color: rgba(9, 42, 52, .30);
 }
-html[data-theme^="xeno"] .sidebar-directory-block.lcd .nav-item.active {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar-directory-block.lcd .nav-item.active {
   color: #dffcff;
   background: #0d3a48;
   border-color: #1b7f96;
   box-shadow: 0 0 10px rgba(0, 0, 0, .30);
 }
-html[data-theme^="xeno"] .sidebar-directory-block.lcd .count { color: #17231a; }
-html[data-theme^="xeno"] .sidebar-directory-block.lcd .nav-item.active .count { color: #9ff4ff; }
-html[data-theme^="xeno"] .sidebar-directory-block.lcd .dir-sort {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar-directory-block.lcd .count { color: #17231a; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar-directory-block.lcd .nav-item.active .count { color: #9ff4ff; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar-directory-block.lcd .dir-sort {
   color: #111811;
   background: rgba(255, 255, 255, .22);
   border-color: #4f5c4b;
 }
-html[data-theme^="xeno"] .composer-row .btn:not(.primary) {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer-row .btn:not(.primary) {
   color: #dff8ff;
   text-shadow: 0 1px 2px #000;
   border-color: rgba(168, 206, 220, .48);
@@ -3924,7 +3924,7 @@ html[data-theme^="xeno"] .composer-row .btn:not(.primary) {
     linear-gradient(158deg, #718690 0%, #34454f 22%, #162129 62%, #070d12 100%);
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, .28), inset 0 -4px 8px rgba(0, 0, 0, .48), 0 4px 10px rgba(0, 0, 0, .38);
 }
-html[data-theme^="xeno"] .app::after {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .app::after {
   content: "HULL INTEGRITY: 100%   //   K-JOFOL LCD MATRIX   //   XENO-ENHANCER v3.1";
   position: absolute;
   left: 42px;
@@ -3948,23 +3948,23 @@ html[data-theme^="xeno"] .app::after {
   box-shadow: inset 0 1px 0 rgba(225, 251, 255, .12), 0 0 12px rgba(121, 231, 255, .10);
 }
 @media (max-width: 760px) {
-  html[data-theme^="xeno"] .app::after { display: none; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .app::after { display: none; }
 }
 /* Xeno bridge micro-strip, spectrum pod and skin variants. */
-html[data-theme^="xeno"] .xeno-topbar {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-topbar {
   flex-direction: column;
   align-items: stretch;
   gap: 0;
   padding: 2px 18px 0;
 }
-html[data-theme^="xeno"] .xeno-topbar-main {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-topbar-main {
   display: flex;
   align-items: center;
   gap: 8px;
   flex: 1 1 auto;
   min-width: 0;
 }
-html[data-theme^="xeno"] .xeno-microbar {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-microbar {
   height: 17px;
   display: flex;
   align-items: center;
@@ -3979,16 +3979,16 @@ html[data-theme^="xeno"] .xeno-microbar {
   letter-spacing: .055em;
   text-shadow: 0 1px 2px #000;
 }
-html[data-theme^="xeno"] .xeno-micro-left,
-html[data-theme^="xeno"] .xeno-micro-right {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-micro-left,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-micro-right {
   display: flex;
   align-items: center;
   gap: 5px;
   min-width: 0;
 }
-html[data-theme^="xeno"] .xeno-micro-left b { color: #c9f8ff; font-weight: 700; }
-html[data-theme^="xeno"] .xeno-sep { color: #476e7c; }
-html[data-theme^="xeno"] .xeno-ping {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-micro-left b { color: #c9f8ff; font-weight: 700; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-sep { color: #476e7c; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-ping {
   width: 5px;
   height: 5px;
   border-radius: 50%;
@@ -3996,15 +3996,15 @@ html[data-theme^="xeno"] .xeno-ping {
   box-shadow: 0 0 8px #ff9d2e;
   flex: none;
 }
-html[data-theme^="xeno"] .xeno-micro-label { color: #6c96a5; }
-html[data-theme^="xeno"] .xeno-micro-status {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-micro-label { color: #6c96a5; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-micro-status {
   padding: 1px 6px;
   border: 1px solid rgba(132, 197, 216, .34);
   border-radius: 999px;
   background: rgba(3, 14, 20, .72);
   color: #8edceb;
 }
-html[data-theme^="xeno"] .xeno-skin-pill {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-skin-pill {
   padding: 1px 7px;
   border: 1px solid rgba(123, 183, 202, .36);
   border-radius: 999px;
@@ -4013,17 +4013,17 @@ html[data-theme^="xeno"] .xeno-skin-pill {
   font: 8px/1.4 var(--mono);
   cursor: pointer;
 }
-html[data-theme^="xeno"] .xeno-skin-pill:hover {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-skin-pill:hover {
   color: #e7fcff;
   border-color: rgba(155, 239, 255, .70);
 }
-html[data-theme^="xeno"] .xeno-skin-pill.active {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-skin-pill.active {
   color: #041018;
   border-color: #c9f8ff;
   background: radial-gradient(circle at 30% 20%, #fff, #9beeff 45%, #2998b8 100%);
   box-shadow: 0 0 10px rgba(121, 231, 255, .34);
 }
-html[data-theme^="xeno"] .xeno-visualizer {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-visualizer {
   flex: none;
   width: 106px;
   height: 38px;
@@ -4039,21 +4039,21 @@ html[data-theme^="xeno"] .xeno-visualizer {
   flex-direction: column;
   justify-content: space-between;
 }
-html[data-theme^="xeno"] .xeno-visualizer-top {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-visualizer-top {
   display: flex;
   justify-content: space-between;
   gap: 8px;
   font: 8px/1 var(--mono);
   letter-spacing: .04em;
 }
-html[data-theme^="xeno"] .xeno-visualizer canvas { display: block; width: 100%; height: 20px; }
-html[data-theme^="xeno"] .xeno-visualizer-label {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-visualizer canvas { display: block; width: 100%; height: 20px; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-visualizer-label {
   font: 7px/1 var(--mono);
   color: #5c93a2;
   letter-spacing: .08em;
   text-align: center;
 }
-html[data-theme^="xeno"] .xeno-led-pip {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-led-pip {
   width: 5px;
   height: 5px;
   border-radius: 50%;
@@ -4061,41 +4061,41 @@ html[data-theme^="xeno"] .xeno-led-pip {
   background: #29424d;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, .9);
 }
-html[data-theme^="xeno"] .tab.active .xeno-led-pip,
-html[data-theme^="xeno"] .tab:hover .xeno-led-pip {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .tab.active .xeno-led-pip,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .tab:hover .xeno-led-pip {
   background: #ffffff;
   box-shadow: 0 0 7px #fff, 0 0 12px #79e7ff;
 }
-html[data-theme^="xeno"] .tab.active .xeno-led-pip { box-shadow: 0 0 7px #fff, 0 0 14px #79e7ff; }
-html[data-theme^="xeno"] .tab.active .xeno-led-pip { background: #041018; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .tab.active .xeno-led-pip { box-shadow: 0 0 7px #fff, 0 0 14px #79e7ff; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .tab.active .xeno-led-pip { background: #041018; }
 @media (max-width: 1180px) {
-  html[data-theme^="xeno"] .xeno-micro-right .xeno-skin-pill:nth-of-type(3),
-  html[data-theme^="xeno"] .xeno-micro-right .xeno-skin-pill:nth-of-type(4) { display: none; }
-  html[data-theme^="xeno"] .xeno-visualizer { display: none; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-micro-right .xeno-skin-pill:nth-of-type(3),
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-micro-right .xeno-skin-pill:nth-of-type(4) { display: none; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-visualizer { display: none; }
 }
 @media (max-width: 900px) {
-  html[data-theme^="xeno"] .xeno-microbar { display: none; }
-  html[data-theme^="xeno"] .xeno-topbar { padding-top: 0; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-microbar { display: none; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-topbar { padding-top: 0; }
 }
 /* Cheap true palette morph: silver stays silver, cyan plasma rotates to the
    selected reactor colour. */
-html[data-theme^="xeno"][data-xeno-skin="amber"] .app { filter: hue-rotate(-155deg) saturate(1.18); }
-html[data-theme^="xeno"][data-xeno-skin="xeno"] .app { filter: hue-rotate(-80deg) saturate(1.20); }
-html[data-theme^="xeno"][data-xeno-skin="crimson"] .app { filter: hue-rotate(155deg) saturate(1.25); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"])[data-xeno-skin="amber"] .app { filter: hue-rotate(-155deg) saturate(1.18); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"])[data-xeno-skin="xeno"] .app { filter: hue-rotate(-80deg) saturate(1.20); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"])[data-xeno-skin="crimson"] .app { filter: hue-rotate(155deg) saturate(1.25); }
 /* Exact bio-pod geometry and stream cards. */
-html[data-theme^="xeno"] .app {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .app {
   border-radius: 54px 42px 58px 46px / 44px 52px 48px 56px;
 }
-html[data-theme^="xeno"] .topbar {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar {
   border-radius: 42px 34px 26px 36px;
 }
-html[data-theme^="xeno"] .sidebar {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar {
   border-radius: 36px 26px 36px 40px;
 }
-html[data-theme^="xeno"] .main {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .main {
   border-radius: 30px 38px 42px 28px;
 }
-html[data-theme^="xeno"] .composer {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer {
   border: 2px solid #849ba8;
   background:
     radial-gradient(ellipse 250px 60px at 12% 0%, rgba(255, 255, 255, .22), transparent 70%),
@@ -4105,9 +4105,9 @@ html[data-theme^="xeno"] .composer {
     inset 0 -10px 24px rgba(0, 0, 0, .52),
     0 16px 38px rgba(0, 0, 0, .38);
 }
-html[data-theme^="xeno"] .composer .muted,
-html[data-theme^="xeno"] .composer .small { color: #b9d9e3; }
-html[data-theme^="xeno"] .msg {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer .muted,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .composer .small { color: #b9d9e3; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .msg {
   background:
     radial-gradient(ellipse at 12% 0%, rgba(121, 231, 255, .055), transparent 58%),
     linear-gradient(180deg, rgba(19, 33, 43, .94) 0%, rgba(7, 13, 18, .97) 100%);
@@ -4118,17 +4118,17 @@ html[data-theme^="xeno"] .msg {
   box-shadow: 0 6px 18px rgba(0, 0, 0, .62), inset 0 1px 0 rgba(255, 255, 255, .12);
   transition: border-color .18s ease, box-shadow .18s ease;
 }
-html[data-theme^="xeno"] .msg:hover {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .msg:hover {
   border-color: rgba(121, 231, 255, .55);
   box-shadow: 0 7px 22px rgba(0, 0, 0, .72), 0 0 14px rgba(121, 231, 255, .10), inset 0 1px 0 rgba(255, 255, 255, .16);
 }
-html[data-theme^="xeno"] .msg.user {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .msg.user {
   border-left-color: #ff6b97;
   background:
     radial-gradient(ellipse at 88% 0%, rgba(255, 107, 151, .08), transparent 58%),
     linear-gradient(180deg, rgba(32, 21, 31, .95), rgba(12, 9, 15, .98));
 }
-html[data-theme^="xeno"] .msg.user .bubble {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .msg.user .bubble {
   background: transparent;
   border: 0;
   border-radius: 0;
@@ -4136,31 +4136,31 @@ html[data-theme^="xeno"] .msg.user .bubble {
   box-shadow: none;
   color: #ffeaf1;
 }
-html[data-theme^="xeno"] .msg.assistant {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .msg.assistant {
   box-shadow: 0 6px 18px rgba(0, 0, 0, .62), 0 0 0 1px rgba(121, 231, 255, .035), inset 0 1px 0 rgba(255, 255, 255, .10);
 }
-html[data-theme^="xeno"] .msg-head { margin-bottom: 7px; }
-html[data-theme^="xeno"] .msg-role { color: #8fe8f8; }
-html[data-theme^="xeno"] .msg-time { color: #6899a9; }
-html[data-theme^="xeno"] .msg .markdown { color: #dff8ff; }
-html[data-theme^="xeno"] .msg .markdown pre,
-html[data-theme^="xeno"] .msg .card-body pre {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .msg-head { margin-bottom: 7px; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .msg-role { color: #8fe8f8; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .msg-time { color: #6899a9; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .msg .markdown { color: #dff8ff; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .msg .markdown pre,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .msg .card-body pre {
   background: #050e14;
   border: 1px solid #23404e;
   color: #c9edf7;
 }
-html[data-theme^="xeno"] .msg.find-active { border-left-color: #ffd36b; background: rgba(255, 195, 70, .05); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .msg.find-active { border-left-color: #ffd36b; background: rgba(255, 195, 70, .05); }
 @media (max-width: 760px) {
-  html[data-theme^="xeno"] .app { border-radius: 34px 26px 38px 28px / 28px 32px 30px 34px; }
-  html[data-theme^="xeno"] .topbar { border-radius: 26px 20px 18px 24px; }
-  html[data-theme^="xeno"] .sidebar { border-radius: 26px 18px 26px 30px; }
-  html[data-theme^="xeno"] .main { border-radius: 22px 28px 30px 20px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .app { border-radius: 34px 26px 38px 28px / 28px 32px 30px 34px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar { border-radius: 26px 20px 18px 24px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar { border-radius: 26px 18px 26px 30px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .main { border-radius: 22px 28px 30px 20px; }
 }
-html[data-theme^="xeno"] .msg.assistant {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .msg.assistant {
   border-radius: 14px 20px 16px 14px;
 }
-html[data-theme^="xeno"] .topbar .btn,
-html[data-theme^="xeno"] .topbar .tab { white-space: nowrap; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .btn,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tab { white-space: nowrap; }
 @font-face {
   font-family: "Orbitron";
   src: url("/fonts/orbitron.woff2") format("woff2");
@@ -4175,45 +4175,45 @@ html[data-theme^="xeno"] .topbar .tab { white-space: nowrap; }
   font-style: normal;
   font-display: swap;
 }
-html[data-theme^="xeno"] h2,
-html[data-theme^="xeno"] h3,
-html[data-theme^="xeno"] .brand,
-html[data-theme^="xeno"] .chat-title,
-html[data-theme^="xeno"] .topbar .tabs .tab,
-html[data-theme^="xeno"] .settings-tabs .tab,
-html[data-theme^="xeno"] .ws-sidebar .tab,
-html[data-theme^="xeno"] .section-title,
-html[data-theme^="xeno"] .xeno-micro-left b,
-html[data-theme^="xeno"] .xeno-visualizer-top {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) h2,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) h3,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .brand,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .chat-title,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .settings-tabs .tab,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-sidebar .tab,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .section-title,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-micro-left b,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-visualizer-top {
   font-family: "Orbitron", "Share Tech Mono", monospace;
 }
-html[data-theme^="xeno"] .topbar .tabs .tab,
-html[data-theme^="xeno"] .settings-tabs .tab,
-html[data-theme^="xeno"] .ws-sidebar .tab,
-html[data-theme^="xeno"] .brand { letter-spacing: .07em; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .settings-tabs .tab,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .ws-sidebar .tab,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .brand { letter-spacing: .07em; }
 /* Fit the full bridge at desktop widths without cropping the live/log-out pod. */
-html[data-theme^="xeno"] .topbar .tabs .tab {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab {
   font-size: 8.5px;
   padding: 4px 7px;
   gap: 3px;
   letter-spacing: .025em;
 }
-html[data-theme^="xeno"] .topbar .tabs { gap: 0; margin-left: 8px; }
-html[data-theme^="xeno"] .xeno-topbar-main > .live-status,
-html[data-theme^="xeno"] .xeno-topbar-main > .user-name,
-html[data-theme^="xeno"] .xeno-topbar-main > .btn {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs { gap: 0; margin-left: 8px; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-topbar-main > .live-status,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-topbar-main > .user-name,
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-topbar-main > .btn {
   flex: none;
   white-space: nowrap;
 }
 @media (max-width: 1500px) {
-  html[data-theme^="xeno"] .xeno-topbar-main > .user-name { display: none; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-topbar-main > .user-name { display: none; }
 }
 @media (max-width: 1280px) {
-  html[data-theme^="xeno"] .topbar .tabs .tab { font-size: 8px; padding: 4px 5px; }
-  html[data-theme^="xeno"] .topbar .tabs .tab .ic { width: 12px; height: 12px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab { font-size: 8px; padding: 4px 5px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab .ic { width: 12px; height: 12px; }
 }
 /* Xeno app shell: the HTML mock's outer chassis, bridge, pods and footer. */
-html[data-theme^="xeno"] .app.xeno-shell {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .app.xeno-shell {
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -4226,8 +4226,8 @@ html[data-theme^="xeno"] .app.xeno-shell {
   box-shadow: none;
   overflow: hidden;
 }
-html[data-theme^="xeno"] .xeno-shell > .desktop-titlebar { flex: none; }
-html[data-theme^="xeno"] .xeno-shell > .xeno-microbar {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-shell > .desktop-titlebar { flex: none; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-shell > .xeno-microbar {
   flex: none;
   align-self: center;
   width: calc(100% - 56px);
@@ -4242,8 +4242,8 @@ html[data-theme^="xeno"] .xeno-shell > .xeno-microbar {
     linear-gradient(180deg, rgba(7, 18, 24, .94), rgba(2, 7, 11, .97));
   box-shadow: inset 0 1px 0 rgba(229, 252, 255, .10), 0 5px 14px rgba(0, 0, 0, .34);
 }
-html[data-theme^="xeno"] .app.xeno-shell::after { display: none; }
-html[data-theme^="xeno"] .alien-hull-chassis {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .app.xeno-shell::after { display: none; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .alien-hull-chassis {
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
@@ -4270,7 +4270,7 @@ html[data-theme^="xeno"] .alien-hull-chassis {
     inset 4px 0 8px rgba(255, 255, 255, .20),
     inset -4px 0 8px rgba(0, 0, 0, .82);
 }
-html[data-theme^="xeno"] .alien-hull-chassis::before {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .alien-hull-chassis::before {
   content: "";
   position: absolute;
   inset: 5px;
@@ -4280,8 +4280,8 @@ html[data-theme^="xeno"] .alien-hull-chassis::before {
   pointer-events: none;
   z-index: 0;
 }
-html[data-theme^="xeno"] .alien-hull-chassis > * { position: relative; z-index: 1; }
-html[data-theme^="xeno"] .alien-hull-chassis > .topbar {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .alien-hull-chassis > * { position: relative; z-index: 1; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .alien-hull-chassis > .topbar {
   flex: none;
   border: 2px solid #202a30;
   box-shadow:
@@ -4289,7 +4289,7 @@ html[data-theme^="xeno"] .alien-hull-chassis > .topbar {
     inset 0 2px 3px rgba(255, 255, 255, .70),
     inset 0 -3px 6px rgba(0, 0, 0, .80);
 }
-html[data-theme^="xeno"] .plasma-conduit {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .plasma-conduit {
   flex: none;
   height: 5px;
   margin: 0 30px;
@@ -4303,7 +4303,7 @@ html[data-theme^="xeno"] .plasma-conduit {
   from { background-position: 200% 0; }
   to { background-position: -200% 0; }
 }
-html[data-theme^="xeno"] .xeno-workspace-grid {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-workspace-grid {
   flex: 1 1 auto;
   min-height: 0;
   display: grid;
@@ -4311,7 +4311,7 @@ html[data-theme^="xeno"] .xeno-workspace-grid {
   gap: 10px;
   padding: 0 3px;
 }
-html[data-theme^="xeno"] .left-biopod {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .left-biopod {
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -4327,7 +4327,7 @@ html[data-theme^="xeno"] .left-biopod {
     inset 0 -6px 14px rgba(0, 0, 0, .92),
     6px 0 20px rgba(0, 0, 0, .65);
 }
-html[data-theme^="xeno"] .xeno-left-pod > .sidebar {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-left-pod > .sidebar {
   flex: 1 1 auto;
   min-height: 0;
   margin: 0;
@@ -4336,7 +4336,7 @@ html[data-theme^="xeno"] .xeno-left-pod > .sidebar {
   background: transparent;
   box-shadow: none;
 }
-html[data-theme^="xeno"] .xeno-pod-decor {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-pod-decor {
   flex: none;
   display: flex;
   align-items: center;
@@ -4347,10 +4347,10 @@ html[data-theme^="xeno"] .xeno-pod-decor {
   letter-spacing: .13em;
   text-transform: uppercase;
 }
-html[data-theme^="xeno"] .xeno-pod-top { padding: 0 2px 3px; }
-html[data-theme^="xeno"] .xeno-pod-bottom { padding: 4px 2px 0; }
-html[data-theme^="xeno"] .xeno-pod-label { white-space: nowrap; color: #a8b8c1; }
-html[data-theme^="xeno"] .xeno-rivet {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-pod-top { padding: 0 2px 3px; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-pod-bottom { padding: 4px 2px 0; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-pod-label { white-space: nowrap; color: #a8b8c1; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-rivet {
   width: 10px;
   height: 10px;
   flex: none;
@@ -4359,15 +4359,15 @@ html[data-theme^="xeno"] .xeno-rivet {
   border: 1px solid #0e1317;
   box-shadow: 0 1px 1px rgba(255, 255, 255, .38), inset 0 1px 2px rgba(0, 0, 0, .80);
 }
-html[data-theme^="xeno"] .xeno-heatsink {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-heatsink {
   flex: 1 1 auto;
   height: 5px;
   border-radius: 999px;
   background: repeating-linear-gradient(90deg, #11171c 0 4px, #5e717d 5px, #2b3740 7px, #0c1014 9px);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, .9), 0 1px 0 rgba(255, 255, 255, .25);
 }
-html[data-theme^="xeno"] .xeno-heatsink.short { flex: 0 0 34px; }
-html[data-theme^="xeno"] .xeno-speaker {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-heatsink.short { flex: 0 0 34px; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-speaker {
   flex: 1 1 auto;
   height: 8px;
   border-radius: 999px;
@@ -4377,7 +4377,7 @@ html[data-theme^="xeno"] .xeno-speaker {
   background-size: 8px 8px;
   box-shadow: inset 0 2px 6px rgba(0, 0, 0, .9), 0 1px 1px rgba(255, 255, 255, .28);
 }
-html[data-theme^="xeno"] .main-command-cavity {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .main-command-cavity {
   min-height: 0;
   display: flex;
   overflow: hidden;
@@ -4390,7 +4390,7 @@ html[data-theme^="xeno"] .main-command-cavity {
   border-radius: 30px 38px 42px 28px;
   box-shadow: inset 0 4px 16px rgba(0, 0, 0, .92), 0 2px 0 rgba(255, 255, 255, .20);
 }
-html[data-theme^="xeno"] .main-command-cavity > .main {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .main-command-cavity > .main {
   flex: 1;
   min-width: 0;
   min-height: 0;
@@ -4400,7 +4400,7 @@ html[data-theme^="xeno"] .main-command-cavity > .main {
   background: transparent;
   box-shadow: none;
 }
-html[data-theme^="xeno"] .xeno-footer {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-footer {
   flex: none;
   height: 22px;
   display: flex;
@@ -4417,26 +4417,26 @@ html[data-theme^="xeno"] .xeno-footer {
   white-space: nowrap;
   box-shadow: inset 0 1px 0 rgba(225, 251, 255, .10), 0 0 14px rgba(121, 231, 255, .08);
 }
-html[data-theme^="xeno"] .xeno-footer b { color: #d6f8ff; }
-html[data-theme^="xeno"] .xeno-footer-sep { color: #3d7686; }
-html[data-theme^="xeno"] .xeno-spacer { flex: 1; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-footer b { color: #d6f8ff; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-footer-sep { color: #3d7686; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-spacer { flex: 1; }
 @media (max-width: 1100px) {
-  html[data-theme^="xeno"] .xeno-workspace-grid { grid-template-columns: 260px minmax(0, 1fr); }
-  html[data-theme^="xeno"] .xeno-microbar { width: calc(100% - 24px); margin-left: 12px; margin-right: 12px; }
-  html[data-theme^="xeno"] .alien-hull-chassis { width: calc(100% - 16px); border-radius: 38px 28px 40px 30px / 30px 38px 34px 40px; }
-  html[data-theme^="xeno"] .xeno-footer span:nth-of-type(n+4) { display: none; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-workspace-grid { grid-template-columns: 260px minmax(0, 1fr); }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-microbar { width: calc(100% - 24px); margin-left: 12px; margin-right: 12px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .alien-hull-chassis { width: calc(100% - 16px); border-radius: 38px 28px 40px 30px / 30px 38px 34px 40px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-footer span:nth-of-type(n+4) { display: none; }
 }
 @media (max-width: 760px) {
-  html[data-theme^="xeno"] .xeno-shell > .xeno-microbar { display: none; }
-  html[data-theme^="xeno"] .xeno-workspace-grid { grid-template-columns: 1fr; }
-  html[data-theme^="xeno"] .left-biopod { display: none; }
-  html[data-theme^="xeno"] .alien-hull-chassis { padding: 7px; }
-  html[data-theme^="xeno"] .xeno-footer { display: none; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-shell > .xeno-microbar { display: none; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-workspace-grid { grid-template-columns: 1fr; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .left-biopod { display: none; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .alien-hull-chassis { padding: 7px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-footer { display: none; }
 }
-html[data-theme^="xeno"] .xeno-shell .topbar { min-height: 64px; }
-html[data-theme^="xeno"] .xeno-workspace-grid { grid-template-columns: 310px minmax(0, 1fr); }
-@media (max-width: 1100px) { html[data-theme^="xeno"] .xeno-workspace-grid { grid-template-columns: 260px minmax(0, 1fr); } }
-html[data-theme^="xeno"] .xeno-agent-label {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-shell .topbar { min-height: 64px; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-workspace-grid { grid-template-columns: 310px minmax(0, 1fr); }
+@media (max-width: 1100px) { html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-workspace-grid { grid-template-columns: 260px minmax(0, 1fr); } }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-agent-label {
   position: absolute;
   left: 19px;
   top: 5px;
@@ -4448,29 +4448,29 @@ html[data-theme^="xeno"] .xeno-agent-label {
   pointer-events: none;
 }
 @media (min-width: 1700px) {
-  html[data-theme^="xeno"] .alien-hull-chassis,
-  html[data-theme^="xeno"] .xeno-shell > .xeno-microbar { max-width: 1640px; }
-  html[data-theme^="xeno"] .xeno-shell .topbar { min-height: 76px; }
-  html[data-theme^="xeno"] .topbar .tabs .tab {
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .alien-hull-chassis,
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-shell > .xeno-microbar { max-width: 1640px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-shell .topbar { min-height: 76px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab {
     font-size: 10px;
     padding: 6px 12px;
     gap: 4px;
     letter-spacing: .055em;
   }
-  html[data-theme^="xeno"] .xeno-visualizer { width: 120px; height: 42px; }
-  html[data-theme^="xeno"] .brand {
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-visualizer { width: 120px; height: 42px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .brand {
     width: 210px;
     height: 56px;
     padding-right: 72px;
     padding-left: 20px;
     font-size: 13px;
   }
-  html[data-theme^="xeno"] .brand::after { width: 48px; height: 48px; }
-  html[data-theme^="xeno"] .brand::before { width: 56px; height: 56px; right: 4px; }
-  html[data-theme^="xeno"] .xeno-workspace-grid { grid-template-columns: 340px minmax(0, 1fr); }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .brand::after { width: 48px; height: 48px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .brand::before { width: 56px; height: 56px; right: 4px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-workspace-grid { grid-template-columns: 340px minmax(0, 1fr); }
 }
 /* Match the source's silver Winamp pill buttons on the bridge. */
-html[data-theme^="xeno"] .topbar .tabs .tab:not(.active) {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:not(.active) {
   color: #e5f4fb;
   text-shadow: 0 1px 2px #000;
   border-color: #12181d;
@@ -4484,15 +4484,15 @@ html[data-theme^="xeno"] .topbar .tabs .tab:not(.active) {
     inset 0 1px 2px rgba(255, 255, 255, .60),
     inset 0 -2px 3px rgba(0, 0, 0, .70);
 }
-html[data-theme^="xeno"] .topbar .tabs .tab:not(.active):hover {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab:not(.active):hover {
   border-color: #79e7ff;
   color: #ffffff;
   box-shadow: 0 0 12px rgba(121, 231, 255, .45), inset 0 1px 3px rgba(255, 255, 255, .75);
 }
-html[data-theme^="xeno"] .msg { max-width: none; }
-html[data-theme^="xeno"] .msg.user { max-width: min(860px, 76%); }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .msg { max-width: none; }
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .msg.user { max-width: min(860px, 76%); }
 @media (min-width: 1700px) {
-  html[data-theme^="xeno"] .topbar .tabs .tab {
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab {
     font-size: 10.5px;
     padding: 6px 14px;
     letter-spacing: .06em;
@@ -4500,22 +4500,22 @@ html[data-theme^="xeno"] .msg.user { max-width: min(860px, 76%); }
 }
 
 @media (min-width: 1700px) {
-  html[data-theme^="xeno"] .xeno-shell .topbar { min-height: 86px; }
-  html[data-theme^="xeno"] .topbar .tabs .tab {
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-shell .topbar { min-height: 86px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .topbar .tabs .tab {
     font-size: 11.5px;
     padding: 7px 16px;
     letter-spacing: .06em;
   }
-  html[data-theme^="xeno"] .xeno-visualizer { width: 130px; height: 46px; }
-  html[data-theme^="xeno"] .brand {
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .xeno-visualizer { width: 130px; height: 46px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .brand {
     width: 220px;
     height: 60px;
     padding-right: 76px;
     padding-left: 21px;
     font-size: 14px;
   }
-  html[data-theme^="xeno"] .brand::after { width: 52px; height: 52px; }
-  html[data-theme^="xeno"] .brand::before { width: 60px; height: 60px; right: 5px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .brand::after { width: 52px; height: 52px; }
+  html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .brand::before { width: 60px; height: 60px; right: 5px; }
 }
 @font-face {
   font-family: "VT323";
@@ -4524,8 +4524,9 @@ html[data-theme^="xeno"] .msg.user { max-width: min(860px, 76%); }
   font-style: normal;
   font-display: swap;
 }
-html[data-theme^="xeno"] .sidebar-directory-block.lcd .nav-item {
+html[data-theme^="xeno"]:not([data-theme="xeno3000"]) .sidebar-directory-block.lcd .nav-item {
   font-family: "VT323", var(--mono);
   font-size: 14px;
   line-height: 1.25;
 }
+

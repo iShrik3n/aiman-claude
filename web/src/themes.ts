@@ -534,6 +534,13 @@ if (xenoSourceTheme) {
     name: "K-Jöfol Xeno4",
     description: "Source-matched alien cockpit: chrome, cyan dot-matrix and microbar.",
   });
+  THEMES.splice(THEMES.indexOf(xenoSourceTheme) + 2, 0, {
+    ...xenoSourceTheme,
+    id: "xeno3000",
+    name: "Xeno 3000",
+    description: "Exact Xeno3 HTML cockpit with bundled skins and paper LCD.",
+    css: "/xeno3000.css",
+  });
 }
 
 export const DEFAULT_THEME = "dark";

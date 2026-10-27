@@ -599,6 +599,7 @@ export default function Composer({
 
       <textarea
         ref={taRef}
+        className="kjofol-lcd-screen xeno3000-composer-input"
         value={text}
         placeholder="Message opencode…  (Enter to send · Shift+Enter newline · AltGr+Enter to queue · / for commands · paste or drop files)"
         onChange={(e) => setText(e.target.value)}
@@ -750,14 +751,14 @@ export default function Composer({
         )}
         <div className="spacer" />
         {busy && (
-          <button className="btn danger" onClick={() => abortSession(sessionId)}>
+          <button className="btn danger kill-switch-btn" onClick={() => abortSession(sessionId)}>
             <Icon name="stop" /> Stop
           </button>
         )}
         {s.queueEnabled && s.opencodeV2 && (
           <button
             type="button"
-            className="btn"
+            className="btn micro-deck-btn"
             disabled={!canSend}
             onClick={() => void queue()}
             title="Queue for after the current task is fully done (AltGr+Enter)"
@@ -765,7 +766,11 @@ export default function Composer({
             <Icon name="clock" /> Queue
           </button>
         )}
-        <button className="btn primary" disabled={!canSend} onClick={send}>
+        <button
+          className="btn primary xeno3000-send plasma-orb"
+          disabled={!canSend}
+          onClick={send}
+        >
           <Icon name={sending ? "refresh" : "send"} /> {sending ? "Sending…" : "Send"}
         </button>
       </div>

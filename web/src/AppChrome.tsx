@@ -43,15 +43,19 @@ export function AppTabs({ compact = false }: { compact?: boolean }) {
           )}
           <button
             type="button"
-            className={"tab" + (s.view === item.view ? " active" : "")}
+            className={
+              "tab" +
+              (s.theme === "xeno3000" ? " winamp-pill-btn" : "") +
+              (s.view === item.view ? " active" : "")
+            }
             onClick={() => {
               if (!confirmDiscardWorkspace("Discard unsaved OpenCode changes?")) return;
               store.set({ view: item.view });
             }}
             title={t(item.key)}
           >
-            {(s.theme === "xeno" || s.theme === "xeno4") && (
-              <span className="xeno-led-pip" aria-hidden="true" />
+            {(s.theme === "xeno" || s.theme === "xeno4" || s.theme === "xeno3000") && (
+              <span className={s.theme === "xeno3000" ? "led-pip" : "xeno-led-pip"} aria-hidden="true" />
             )}
             <Icon name={item.icon} />
             <span className="tab-label">{t(item.key)}</span>

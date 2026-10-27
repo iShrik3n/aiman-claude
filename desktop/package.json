@@ -1,8 +1,9 @@
 {
   "name": "aiman",
-  "version": "1.10.3",
+  "version": "1.11.0",
   "description": "AiMAN desktop shell",
   "main": "main.cjs",
   "author": "spacewalkingninja",
   "license": "MIT"
 }
+

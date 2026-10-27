@@ -523,7 +523,7 @@ export default function ChatView({
   if (s.chatMode === "terminal" && !s.opencodeV2) {
     return (
       <div className="chat">
-        <div className={"chat-head" + (popout && compact ? " popout-header" : "")}>
+        <div className={"chat-head transport-ribbon" + (popout && compact ? " popout-header" : "")}>
           {!popout && (
             <button
               className="btn ghost sm"
@@ -639,7 +639,7 @@ export default function ChatView({
 
   return (
     <div className="chat">
-      <div className={"chat-head" + (popout && compact ? " popout-header" : "")}>
+      <div className={"chat-head transport-ribbon" + (popout && compact ? " popout-header" : "")}>
         {!popout && (
           <button className="btn ghost sm" onClick={() => store.set({ activeSessionId: null })} title="Back to list">
             <Icon name="back" />
@@ -751,7 +751,7 @@ export default function ChatView({
       </div>
 
       {runningTools.length > 0 && (
-        <div className="running-bar">
+        <div className="running-bar sub-transport-bar">
           <span className="running-dot" />
           <span className="small">
             <b>{runningTools.length}</b> running
@@ -1474,7 +1474,7 @@ const MessageRow = memo(function MessageRow({
       : undefined;
   return (
     <div
-      className={"msg " + role + (hit ? " find-hit" : "") + (active ? " find-active" : "")}
+      className={"msg stream-biopod " + role + (hit ? " find-hit" : "") + (active ? " find-active" : "")}
       data-entry-index={index}
       style={accentStyle}
     >

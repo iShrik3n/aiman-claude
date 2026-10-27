@@ -294,7 +294,8 @@ function createWindow() {
     minHeight: 620,
     frame: false,
     show: false,
-    backgroundColor: "#0e1013",
+    transparent: true,
+    backgroundColor: "#00000000",
     title: "AiMAN",
     autoHideMenuBar: true,
     webPreferences: {
@@ -412,6 +413,12 @@ ipcMain.handle("aiman:window", (event, action) => {
 ipcMain.on("aiman:theme", (event, theme) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win || !theme || typeof theme.bg !== "string") return;
+  if (theme.id === "xeno3000") {
+    try {
+      win.setBackgroundColor("#00000000");
+    } catch {}
+    return;
+  }
   if (/^#[0-9a-f]{3,8}$/i.test(theme.bg)) {
     try {
       win.setBackgroundColor(theme.bg);

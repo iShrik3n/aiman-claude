@@ -82,13 +82,12 @@ opencode is working.
 - **Deep links** — every view has a URL (`/sessions`, `/search`, `/stats`,
   `/integrations`, `/workspace`, …) and each session has its own handle
   (`/sessions/<id>`).
-- **Themes & typography** - twelve app-wide skins including Windows XP and
-  Windows 98 (and dark variants of both, via xp.css / 98.css), three alien
-  skins (Y2K Winamp chrome, **Alien Grotesque**, and the source-matched
-  **K-Jöfol Xeno4** cockpit with outside skin strip, animated spectrum pod,
-  paper-LCD directory matrix, riveted hull and hull-integrity footer), macOS
-  Aqua, Nord and a CRT. Choose custom UI and code/terminal font families, set
-  a base font size, or reset to the theme.
+- **Themes & typography** - thirteen app-wide skins including Windows XP and
+  Windows 98 (and dark variants of both, via xp.css / 98.css), four alien skins
+  (Y2K Winamp chrome, **Alien Grotesque**, **K-Jöfol Xeno4**, and **Xeno 3000**
+  with the supplied cockpit stylesheet, reactor palettes, spectrum pod and
+  paper-LCD directory matrix), macOS Aqua, Nord and a CRT. Choose custom UI and
+  code/terminal font families, set a base font size, or reset to the theme.
 - **Switchable opencode servers** - keep multiple opencode URLs with their own
   password, database and auth path, then activate one and restart. Environment
   variables remain the highest-priority override.

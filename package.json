@@ -1,7 +1,7 @@
 {
   "name": "aiman",
-  "version": "1.10.3",
-  "description": "AiMAN — self-hosted web UI and session manager for opencode.",
+  "version": "1.11.0",
+  "description": "AiMAN â€” self-hosted web UI and session manager for opencode.",
   "type": "module",
   "main": "desktop/main.cjs",
   "bin": {
@@ -105,3 +105,4 @@
     "electron-builder": "^26.18.0"
   }
 }
+

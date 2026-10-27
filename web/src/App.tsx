@@ -13,6 +13,7 @@ import Workspace from "./Workspace";
 import DesktopTitlebar from "./DesktopTitlebar";
 import { AppTopbar, CompactTitlebarNav } from "./AppChrome";
 import { XenoFooter, XenoMicrobar, XenoPodBottom, XenoPodTop } from "./XenoChrome";
+import Xeno3000 from "./Xeno3000";
 import Overlays from "./Overlays";
 import Login from "./Login";
 import Onboarding from "./Onboarding";
@@ -107,6 +108,23 @@ export default function App() {
         {s.toast && <div className="toast">{s.toast}</div>}
         <Overlays />
       </div>
+    );
+  }
+
+  if (s.theme === "xeno3000" && !compact) {
+    return (
+      <Xeno3000
+        titlebar={<DesktopTitlebar />}
+        sidebar={<Sidebar />}
+        main={mainContent}
+        overlays={
+          <>
+            {s.toast && <div className="toast">{s.toast}</div>}
+            <Overlays />
+            <DeepLinkHandler />
+          </>
+        }
+      />
     );
   }
 

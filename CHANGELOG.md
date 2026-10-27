@@ -5,6 +5,21 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2026-10-27
+
+### Added
+- **Xeno 3000 theme** — a new, isolated implementation of the supplied Xeno3
+  HTML skin. It loads the source stylesheet as its own theme asset, renders the
+  exact cockpit class structure (microbar, bridge, plasma orb, spectrum pod,
+  biomech left pod, command cavity, transport ribbon, composer and hull
+  footer), and maps AiMAN's real Sidebar/Chat/Composer components into those
+  surfaces.
+- Four functional reactor palettes (Cryo-Cyan, K-Jöfol Amber, Xeno Bio-Green,
+  Crimson Pod), paper/K-Jöfol LCD toggle, SFX toggle, and animated spectrum.
+- Bundle Orbitron, Share Tech Mono and VT323 locally.
+- Desktop windows are now transparent so the rounded Xeno 3000 hull has no
+  black square corners behind it.
+
 ## [1.10.3] - 2026-10-27
 
 ### Added
