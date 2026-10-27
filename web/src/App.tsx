@@ -7,7 +7,6 @@ import SearchView from "./SearchView";
 import TerminalView from "./TerminalView";
 import Users from "./Users";
 import StatsView from "./StatsView";
-import Profiles from "./Profiles";
 import SettingsView from "./SettingsView";
 import ExtensionsView from "./ExtensionsView";
 import Workspace from "./Workspace";
@@ -77,13 +76,12 @@ export default function App() {
       {s.view === "users" && isAdmin && <Users />}
       {s.view === "extensions" && isAdmin && <ExtensionsView />}
       {s.view === "extensions" && !isAdmin && (
-        <div className="empty">Extensions are only available to administrators.</div>
+        <div className="empty">Integrations are only available to administrators.</div>
       )}
       {s.view === "workspace" && isAdmin && <Workspace />}
       {s.view === "workspace" && !isAdmin && (
-        <div className="empty">Workspace is only available to administrators.</div>
+        <div className="empty">OpenCode configuration is only available to administrators.</div>
       )}
-      {s.view === "profiles" && <Profiles />}
       {s.view === "settings" && <SettingsView />}
     </div>
   );

@@ -5,6 +5,37 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.1] - 2026-10-27
+
+### Changed
+- **Consolidated provider credentials.** Live provider auth and saved API-key
+  sets now live together under **OpenCode → Providers → Credentials**. The
+  top-level Profiles page and the unprotected top-bar credential switcher were
+  removed. Saved sets can detect drift from the live auth store and capture the
+  current live API keys.
+- **Clearer snapshot model.** Workspace config profiles were renamed to
+  **Snapshots** and merged with file/GitHub backup into **Snapshots & backups**.
+  Snapshots exclude sessions, chat history and credentials.
+- **One plugin surface.** Local plugin files moved from OpenCode into
+  **Integrations → Plugins**, alongside package plugins.
+- **Settings tabs.** Appearance, Chat, Servers, System and About are now
+  separate tabs instead of one long scroll. Live logs moved to
+  **Settings → System**.
+- **OpenCode navigation.** The admin configuration area is now **OpenCode** with
+  a grouped sidebar instead of a long tab strip. Extensions is now
+  **Integrations**.
+- **Credential and server safety.** Credential-set activation now requires
+  admin, shows the providers being applied/removed, and warns that OAuth is
+  unchanged. Server profiles have a connection test and database-path check.
+- Provider ID fields now offer a known-provider dropdown.
+- Workspace forms show an **unsaved** badge and confirm before switching
+  sections or configuration scope.
+
+### Fixed
+- Old `/profiles` bookmarks redirect to the OpenCode credentials area.
+- `/integrations` is the canonical Integrations URL; `/extensions` remains an
+  alias.
+
 ## [1.10.0] - 2026-10-26
 
 ### Added

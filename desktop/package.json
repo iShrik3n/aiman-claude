@@ -1,6 +1,6 @@
 {
   "name": "aiman",
-  "version": "1.10.0",
+  "version": "1.10.1",
   "description": "AiMAN desktop shell",
   "main": "main.cjs",
   "author": "spacewalkingninja",

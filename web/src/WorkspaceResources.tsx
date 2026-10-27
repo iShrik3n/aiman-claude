@@ -32,7 +32,7 @@ const LABELS: Record<Kind, { title: string; singular: string; plural: string; te
     singular: "plugin",
     plural: "plugins",
     template: "// Local opencode plugin\nexport default async function plugin() {\n  return {};\n}\n",
-    help: "Local JavaScript/TypeScript plugin files. Package plugins are still managed from Extensions.",
+    help: "Local JavaScript/TypeScript plugin files. Package plugins are managed from Integrations → Plugins.",
   },
 };
 
@@ -45,9 +45,11 @@ function scopeLabel(scope: string): string {
 export default function WorkspaceResources({
   kind,
   directory,
+  embedded = false,
 }: {
   kind: Kind;
   directory: string;
+  embedded?: boolean;
 }) {
   const labels = LABELS[kind];
   const [items, setItems] = useState<WorkspaceResource[]>([]);
@@ -210,8 +212,12 @@ export default function WorkspaceResources({
     <div className="ws-section ws-resource-section">
       <div className="ws-section-head">
         <div>
-          <h3>{labels.title}</h3>
-          <p className="muted small">{labels.help}</p>
+          <h3>{embedded && kind === "plugins" ? "Local plugin files" : labels.title}</h3>
+          <p className="muted small">
+            {embedded && kind === "plugins"
+              ? "Create, edit, import or disable local plugin files for the selected scope."
+              : labels.help}
+          </p>
         </div>
         <div className="ws-actions">
           <button className="btn sm primary" onClick={startNew}>

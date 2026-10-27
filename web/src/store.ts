@@ -12,6 +12,7 @@ import {
   type Todo,
 } from "./api";
 import { applyTheme, DEFAULT_THEME, getTheme } from "./themes";
+import { confirmDiscardWorkspace } from "./workspaceDirty";
 import { translate, type Language } from "./i18n";
 import {
   DEFAULT_MAX_IMAGE_MB,
@@ -25,7 +26,6 @@ export type View =
   | "terminal"
   | "users"
   | "stats"
-  | "profiles"
   | "settings"
   | "extensions"
   | "workspace";
@@ -483,6 +483,7 @@ export function closeMenu() {
 }
 
 export async function newSession() {
+  if (!confirmDiscardWorkspace("Discard unsaved OpenCode changes?")) return;
   closeMenu();
   set({ activeSessionId: "__new__", view: "chat" });
 }
@@ -715,9 +716,8 @@ const VIEW_PATHS: Record<View, string> = {
   stats: "/stats",
   terminal: "/terminal",
   users: "/users",
-  profiles: "/profiles",
   settings: "/settings",
-  extensions: "/extensions",
+  extensions: "/integrations",
   workspace: "/workspace",
 };
 
@@ -751,11 +751,14 @@ export async function applyLocation() {
     "stats",
     "terminal",
     "users",
-    "profiles",
     "settings",
     "extensions",
     "workspace",
   ];
+  // Profiles were merged into OpenCode → Providers → Credentials. Keep old
+  // bookmarks working instead of landing on a blank screen.
+  if (first === "profiles") return set({ view: "workspace" });
+  if (first === "integrations") return set({ view: "extensions" });
   const view = views.find((v) => v === first);
   if (view) return set({ view });
   return set({ view: "chat" });
@@ -764,6 +767,7 @@ export async function applyLocation() {
 // ---------------- session actions ----------------
 
 export async function openSession(id: string) {
+  if (!confirmDiscardWorkspace("Discard unsaved OpenCode changes?")) return;
   set({ activeSessionId: id, view: "chat" });
   if (!state.entries[id]) {
     try {
@@ -847,6 +851,7 @@ export async function redoSession(sessionId?: string | null) {
 }
 
 export async function createSession(directory: string, title?: string) {
+  if (!confirmDiscardWorkspace("Discard unsaved OpenCode changes?")) return;
   const s = await api.createSession(directory, title);
   await refreshSessions();
   await refreshMeta();

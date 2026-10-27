@@ -21,6 +21,7 @@ import {
   createServer,
   deleteServer,
   listServers,
+  testServer,
   updateServer,
 } from "./servers";
 import {
@@ -38,6 +39,7 @@ import { askBtw, deleteBtw, listBtw, startBtwWorker } from "./btw";
 import { locationParams, ocData, ocFetch } from "./ocClient";
 import {
   activateProfileForUser,
+  captureProfileAuth,
   createProfile,
   deleteProfile,
   ensureDefaultProfile,
@@ -796,10 +798,22 @@ async function handle(req: Request): Promise<Response> {
 
   pm = p.match(/^\/api\/profiles\/([^/]+)\/activate$/);
   if (pm && method === "POST") {
+    // Activating a credential set changes the single server-wide auth store.
+    // That is an administrative action, even though the active-set marker is
+    // stored per user for historical/stats context.
+    if (!user!.is_admin) return json({ error: "forbidden" }, 403);
     const id = pm[1]!;
     if (!getProfile(id)) return json({ error: "not found" }, 404);
     const res = await activateProfileForUser(user!.id, id);
     return json({ ok: true, ...res });
+  }
+
+  pm = p.match(/^\/api\/profiles\/([^/]+)\/capture$/);
+  if (pm && method === "POST") {
+    if (!user!.is_admin) return json({ error: "forbidden" }, 403);
+    const id = pm[1]!;
+    if (!getProfile(id)) return json({ error: "not found" }, 404);
+    return json({ ok: true, ...captureProfileAuth(id) });
   }
 
   pm = p.match(/^\/api\/profiles\/([^/]+)\/auth$/);
@@ -859,6 +873,14 @@ async function handle(req: Request): Promise<Response> {
       return json({ ok: true, server: createServer(await readBody(req)) }, 201);
     } catch (e) {
       return json({ error: String((e as any)?.message ?? e) }, 400);
+    }
+  }
+  if (p === "/api/servers/test" && method === "POST") {
+    if (!user!.is_admin) return json({ error: "forbidden" }, 403);
+    try {
+      return json(await testServer(await readBody(req)));
+    } catch (e) {
+      return json({ ok: false, error: String((e as any)?.message ?? e) }, 400);
     }
   }
   let serverMatch = p.match(/^\/api\/servers\/([^/]+)$/);

@@ -10,7 +10,24 @@ import {
 import Icon from "./Icon";
 import { toast } from "./store";
 
-type Mode = "presets" | "backup" | "auth" | "profiles";
+type Mode = "presets" | "backup" | "auth" | "profiles" | "snapshots";
+
+const COMMON_PROVIDERS = [
+  "anthropic",
+  "azure",
+  "cerebras",
+  "deepseek",
+  "fireworks",
+  "google",
+  "groq",
+  "github",
+  "mistral",
+  "openai",
+  "openrouter",
+  "perplexity",
+  "togetherai",
+  "xai",
+];
 
 const RESOURCE_KINDS: WorkspaceResource["kind"][] = ["skills", "commands", "agents", "plugins"];
 const TerminalPane = lazy(() => import("./TerminalPane"));
@@ -25,6 +42,9 @@ export default function WorkspaceOps({
   onChanged?: () => void;
 }) {
   if (mode === "presets") return <Presets directory={directory} onChanged={onChanged} />;
+  if (mode === "snapshots") {
+    return <Snapshots directory={directory} onChanged={onChanged} />;
+  }
   if (mode === "backup") return <Backup directory={directory} onChanged={onChanged} />;
   if (mode === "profiles") {
     return <WorkspaceProfiles directory={directory} onChanged={onChanged} />;
@@ -477,6 +497,36 @@ function Backup({ directory, onChanged }: { directory: string; onChanged?: () =>
   );
 }
 
+function Snapshots({ directory, onChanged }: { directory: string; onChanged?: () => void }) {
+  const [tab, setTab] = useState<"local" | "backup">("local");
+  return (
+    <div>
+      <div className="ws-section-head">
+        <div>
+          <h3>Snapshots & backups</h3>
+          <p className="muted small">
+            Restore points for opencode config documents, resources and presets. Sessions,
+            provider credentials and chat history are not included.
+          </p>
+        </div>
+      </div>
+      <div className="ext-subtabs">
+        <button className={"tab" + (tab === "local" ? " active" : "")} onClick={() => setTab("local")}>
+          Local snapshots
+        </button>
+        <button className={"tab" + (tab === "backup" ? " active" : "")} onClick={() => setTab("backup")}>
+          File & GitHub
+        </button>
+      </div>
+      {tab === "local" ? (
+        <WorkspaceProfiles directory={directory} onChanged={onChanged} />
+      ) : (
+        <Backup directory={directory} onChanged={onChanged} />
+      )}
+    </div>
+  );
+}
+
 function WorkspaceProfiles({
   directory,
   onChanged,
@@ -495,7 +545,7 @@ function WorkspaceProfiles({
       const data = await api.workspaceProfiles();
       setProfiles(data.profiles);
     } catch (e) {
-      toast(`Failed to load profiles: ${e}`);
+      toast(`Failed to load snapshots: ${e}`);
     }
   }
 
@@ -504,12 +554,12 @@ function WorkspaceProfiles({
   }, []);
 
   async function create() {
-    if (!name.trim()) return toast("profile name is required");
+    if (!name.trim()) return toast("snapshot name is required");
     setBusy(true);
     try {
       await api.createWorkspaceProfile(name.trim(), directory || null);
       setName("");
-      toast("profile snapshot created");
+      toast("snapshot created");
       await load();
     } catch (e) {
       toast(`Create failed: ${e}`);
@@ -518,17 +568,20 @@ function WorkspaceProfiles({
     }
   }
 
-  async function apply(id: string, profileName: string) {
+  async function apply(id: string, profileName: string, counts?: { configs: number; resources: number }) {
+    const scope = counts
+      ? `\n\nThis restores ${counts.configs} config document${counts.configs === 1 ? "" : "s"} and ${counts.resources} resource${counts.resources === 1 ? "" : "s"}.`
+      : "";
     if (
       !confirm(
-        `Apply "${profileName}"? This restores its config documents, resources and presets over the current workspace.`,
+        `Apply snapshot "${profileName}"?${scope}\n\nSessions, chat history and provider credentials are not changed. A backup of affected files is written first.`,
       )
     )
       return;
     setBusy(true);
     try {
       const result = await api.applyWorkspaceProfile(id, directory || null);
-      toast(`Applied profile · ${result.restored} items restored`);
+      toast(`Snapshot applied · ${result.restored} items restored`);
       if (result.skipped.length) console.warn(result.skipped);
       onChanged?.();
     } catch (e) {
@@ -539,7 +592,7 @@ function WorkspaceProfiles({
   }
 
   async function remove(id: string, profileName: string) {
-    if (!confirm(`Delete profile snapshot "${profileName}"?`)) return;
+    if (!confirm(`Delete snapshot "${profileName}"?`)) return;
     try {
       await api.deleteWorkspaceProfile(id);
       await load();
@@ -552,10 +605,10 @@ function WorkspaceProfiles({
     <div className="ws-section">
       <div className="ws-section-head">
         <div>
-          <h3>Config profiles</h3>
+          <h3>Local snapshots</h3>
           <p className="muted small">
-            Named snapshots of config documents, skills, commands, agents, plugins and presets.
-            Sessions and chat history are shared by the server and are not duplicated per profile.
+            Named restore points of config documents, skills, commands, agents, plugins and presets.
+            Sessions, chat history and provider credentials are not included.
           </p>
         </div>
         <button className="btn sm ghost" onClick={() => void load()}>
@@ -564,11 +617,11 @@ function WorkspaceProfiles({
       </div>
       <div className="ws-card">
         <div className="ws-card-head">
-          <b>Save current workspace</b>
+          <b>Save current configuration</b>
           <div className="ws-actions">
             <input
               className="input"
-              placeholder="Profile name"
+              placeholder="Snapshot name"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
@@ -578,8 +631,8 @@ function WorkspaceProfiles({
           </div>
         </div>
         <p className="muted small">
-          Applying a profile restores configuration and resources. Provider credentials are not
-          included in this snapshot.
+          Applying a snapshot restores configuration and resources. Provider credentials and chat
+          history are not included. A backup of the affected files is written first.
         </p>
       </div>
       <div className="ws-provider-list">
@@ -594,7 +647,11 @@ function WorkspaceProfiles({
                 </div>
               </div>
               <div className="ws-actions">
-                <button className="btn sm" onClick={() => apply(profile.id, profile.name)} disabled={busy}>
+                <button
+                  className="btn sm"
+                  onClick={() => apply(profile.id, profile.name, profile.counts)}
+                  disabled={busy}
+                >
                   Apply
                 </button>
                 <button className="btn sm danger" onClick={() => remove(profile.id, profile.name)}>
@@ -604,7 +661,7 @@ function WorkspaceProfiles({
             </div>
           </div>
         ))}
-        {!profiles.length && <div className="ext-empty">No profile snapshots saved yet.</div>}
+        {!profiles.length && <div className="ext-empty">No snapshots saved yet.</div>}
       </div>
     </div>
   );
@@ -708,10 +765,10 @@ function ProviderAuth({ onChanged }: { onChanged?: () => void }) {
     <div className="ws-section">
       <div className="ws-section-head">
         <div>
-          <h3>Provider credentials</h3>
+          <h3>Live credentials</h3>
           <p className="muted small">
-            Direct access to the active opencode auth store. For OAuth providers, run{" "}
-            <code>opencode auth login &lt;provider&gt;</code> on the host or use the Terminal tab.
+            The active, server-wide opencode auth store. API keys added here are live immediately.
+            OAuth credentials are live-only and are not saved into credential sets.
           </p>
         </div>
         <button className="btn sm ghost" onClick={() => void load()}>
@@ -728,6 +785,7 @@ function ProviderAuth({ onChanged }: { onChanged?: () => void }) {
             Provider id
             <input
               className="input"
+              list="aiman-live-providers"
               value={provider}
               onChange={(e) => setProvider(e.target.value)}
               placeholder="deepseek, openai, anthropic…"
@@ -751,6 +809,7 @@ function ProviderAuth({ onChanged }: { onChanged?: () => void }) {
             OAuth login
             <input
               className="input"
+              list="aiman-live-providers"
               value={loginProvider}
               onChange={(e) => setLoginProvider(e.target.value)}
               placeholder="github, google, anthropic…"
@@ -791,6 +850,11 @@ function ProviderAuth({ onChanged }: { onChanged?: () => void }) {
         {!providers.length && <div className="ext-empty">No provider credentials found.</div>}
       </div>
       <div className="ws-mono">{authPath}</div>
+      <datalist id="aiman-live-providers">
+        {COMMON_PROVIDERS.map((provider) => (
+          <option key={provider} value={provider} />
+        ))}
+      </datalist>
 
       {loginSession && (
         <div className="overlay" onClick={() => setLoginSession(null)}>

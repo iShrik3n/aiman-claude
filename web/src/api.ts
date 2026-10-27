@@ -472,6 +472,10 @@ export const api = {
     }).then(j),
   removeProfileAuth: (id: string, providerID: string) =>
     fetch(`/api/profiles/${id}/auth/${encodeURIComponent(providerID)}`, { method: "DELETE" }).then(j),
+  captureProfileAuth: (id: string) =>
+    fetch(`/api/profiles/${id}/capture`, { method: "POST" }).then(
+      j<{ ok: boolean; captured: string[] }>,
+    ),
   activateProfile: (id: string) =>
     fetch(`/api/profiles/${id}/activate`, { method: "POST" }).then(
       j<{ ok: boolean; applied: string[]; removed: string[] }>,
@@ -894,6 +898,14 @@ export const api = {
     }).then(j<{ ok: boolean; server: OpenCodeServer }>),
   deleteServer: (id: string) =>
     fetch(`/api/servers/${encodeURIComponent(id)}`, { method: "DELETE" }).then(j),
+  testServer: (body: { id?: string; url?: string; password?: string; db?: string }) =>
+    fetch("/api/servers/test", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(
+      j<{ ok: boolean; url: string; status: number; db: string | null; dbExists: boolean | null }>,
+    ),
   activateServer: (id: string) =>
     fetch(`/api/servers/${encodeURIComponent(id)}/activate`, { method: "POST" }).then(
       j<{ ok: boolean; server: OpenCodeServer; restarting: boolean }>,

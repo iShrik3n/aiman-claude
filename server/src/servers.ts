@@ -210,6 +210,47 @@ function toView(server: OpenCodeServerProfile, active: boolean): ServerView {
   };
 }
 
+export async function testServer(body: any): Promise<{
+  ok: boolean;
+  url: string;
+  status: number;
+  db: string | null;
+  dbExists: boolean | null;
+}> {
+  const data = resolvedServers();
+  const saved = body?.id ? data.servers.find((item) => item.id === String(body.id)) : undefined;
+  const url = validateUrl(String(body?.url || saved?.url || OPENCODE_URL));
+  const password = String(body?.password ?? "") || saved?.password || OPENCODE_PASSWORD || "";
+  const db = String(body?.db ?? "") || saved?.db || "";
+  const headers: Record<string, string> = password
+    ? { authorization: "Basic " + Buffer.from(`opencode:${password}`).toString("base64") }
+    : {};
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 4000);
+  try {
+    const res = await fetch(url + "/api/config", { headers, signal: controller.signal });
+    if (!res.ok) {
+      throw new Error(
+        res.status === 401
+          ? "authentication failed (check the server password)"
+          : `opencode returned HTTP ${res.status}`,
+      );
+    }
+    return {
+      ok: true,
+      url,
+      status: res.status,
+      db: db || null,
+      dbExists: db ? existsSync(db) : null,
+    };
+  } catch (e) {
+    if ((e as any)?.name === "AbortError") throw new Error("connection timed out");
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export function serversFilePath(): string {
   return SERVERS_FILE;
 }

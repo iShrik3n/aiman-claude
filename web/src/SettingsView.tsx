@@ -29,8 +29,19 @@ import {
 import { THEMES } from "./themes";
 import { LANGUAGES, type Language } from "./i18n";
 import Icon from "./Icon";
+import LogsView from "./LogsView";
 import ServerSettings from "./ServerSettings";
 import desotaLogo from "./assets/desota-logo.png";
+
+type SettingsTab = "appearance" | "chat" | "servers" | "system" | "about";
+
+const SETTINGS_TABS: { id: SettingsTab; label: string; admin?: boolean }[] = [
+  { id: "appearance", label: "Appearance" },
+  { id: "chat", label: "Chat" },
+  { id: "servers", label: "Servers" },
+  { id: "system", label: "System" },
+  { id: "about", label: "About" },
+];
 
 export default function SettingsView() {
   const s = useStore();
@@ -43,6 +54,7 @@ export default function SettingsView() {
   const [applying, setApplying] = useState(false);
   const [svc, setSvc] = useState<ServiceStatus | null>(null);
   const [svcBusy, setSvcBusy] = useState(false);
+  const [tab, setTab] = useState<SettingsTab>("appearance");
 
   useEffect(() => {
     api
@@ -138,7 +150,19 @@ export default function SettingsView() {
   return (
     <div className="search-wrap settings-page">
       <h2 style={{ marginTop: 0 }}>Settings</h2>
+      <div className="settings-tabs">
+        {SETTINGS_TABS.map((item) => (
+          <button
+            key={item.id}
+            className={"tab" + (tab === item.id ? " active" : "")}
+            onClick={() => setTab(item.id)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
 
+      <div className={tab === "appearance" ? "settings-section" : "hidden"}>
       <h3>Appearance</h3>
       <p className="muted small">
         Pick a theme — it applies to the whole app (sessions, chat, terminal and
@@ -260,8 +284,8 @@ export default function SettingsView() {
           <b>Compact toolbar</b>
           <span className="muted">
             {" "}
-            — put Sessions, Search, Stats, Terminal, Settings, Users, Extensions,
-            Profiles and the live status inside the title bar. Pop-out session
+            - put Sessions, Search, Stats, Terminal, Settings, Users, Integrations,
+            OpenCode and the live status inside the title bar. Pop-out session
             windows drop the app toolbar and keep only the window controls in
             their header.
           </span>
@@ -366,6 +390,9 @@ export default function SettingsView() {
         </label>
       </div>
 
+      </div>
+
+      <div className={tab === "chat" ? "settings-section" : "hidden"}>
       <h3 style={{ marginTop: 24 }}>Chat mode</h3>
       <p className="muted small">
         How sessions open. <b>Terminal chat</b> embeds the opencode TUI using
@@ -577,7 +604,10 @@ export default function SettingsView() {
         </label>
       </div>
 
-      <h3 style={{ marginTop: 24 }}>Backend</h3>
+      </div>
+
+      <div className={tab === "servers" ? "settings-section" : "hidden"}>
+      <h3 style={{ marginTop: 24 }}>Servers</h3>
       <table className="markdown" style={{ width: "100%" }}>
         <tbody>
           <tr>
@@ -603,8 +633,14 @@ export default function SettingsView() {
         </tbody>
       </table>
 
-      <ServerSettings />
+      {me?.is_admin ? (
+        <ServerSettings />
+      ) : (
+        <p className="muted small">Server profiles are managed by administrators.</p>
+      )}
+      </div>
 
+      <div className={tab === "system" ? "settings-section" : "hidden"}>
       <h3 style={{ marginTop: 24 }}>Updates</h3>
       <table className="markdown" style={{ width: "100%" }}>
         <tbody>
@@ -691,6 +727,17 @@ export default function SettingsView() {
         </button>
       </div>
 
+      <h3 style={{ marginTop: 24 }}>Logs</h3>
+      {me?.is_admin ? (
+        tab === "system" ? (
+          <LogsView />
+        ) : null
+      ) : (
+        <p className="muted small">Live logs are available to administrators.</p>
+      )}
+      </div>
+
+      <div className={tab === "about" ? "settings-section" : "hidden"}>
       <h3 style={{ marginTop: 24 }}>About</h3>
       <div className="about-card">
         <a
@@ -732,6 +779,9 @@ export default function SettingsView() {
             >
               GitHub
             </a>
+            <button className="btn sm ghost" onClick={() => location.reload()}>
+              Reload UI
+            </button>
           </div>
         </div>
       </div>
@@ -740,6 +790,7 @@ export default function SettingsView() {
         <button className="btn ghost" onClick={() => store.set({ view: "chat" })}>
           <Icon name="back" /> Back
         </button>
+      </div>
       </div>
     </div>
   );

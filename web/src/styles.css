@@ -2286,3 +2286,100 @@ html[data-theme="winxp-dark"] .tab.active {
 .ws-login-modal .terminal-pane { flex: 1; min-height: 420px; margin-top: 8px; }
 .ws-login-modal .overlay-title { display: flex; align-items: center; }
 .ws-form-grid label.full { grid-column: 1 / -1; }
+/* ------------------------------------------------------------------ */
+/* Settings tabs                                                      */
+/* ------------------------------------------------------------------ */
+.settings-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  margin: 2px 0 18px;
+  padding-bottom: 8px;
+}
+.settings-tabs .tab {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  border-radius: var(--pill-radius);
+  padding: 6px 12px;
+  font-size: 13px;
+}
+.settings-tabs .tab:hover { color: var(--text); background: var(--bg-3); }
+.settings-tabs .tab.active {
+  color: var(--text);
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.hidden { display: none !important; }
+.settings-section { min-width: 0; }
+
+/* ------------------------------------------------------------------ */
+/* Workspace sidebar                                                  */
+/* ------------------------------------------------------------------ */
+.ws-shell {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+  padding-top: 4px;
+}
+.ws-sidebar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-right: 1px solid var(--border);
+  padding-right: 12px;
+}
+.ws-nav-group { display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px; }
+.ws-nav-group-title {
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  padding: 4px 8px 2px;
+}
+.ws-sidebar .tab {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  border-radius: var(--pill-radius);
+  padding: 6px 9px;
+  font-size: 13px;
+  text-align: left;
+}
+.ws-sidebar .tab:hover { color: var(--text); background: var(--bg-3); }
+.ws-sidebar .tab.active {
+  color: var(--text);
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.ws-content { min-width: 0; }
+@media (max-width: 760px) {
+  .ws-shell { grid-template-columns: 1fr; gap: 10px; }
+  .ws-sidebar {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 0 0 8px;
+  }
+  .ws-nav-group { flex-direction: row; flex-wrap: wrap; margin-bottom: 4px; align-items: center; }
+  .ws-nav-group-title { padding: 2px 4px; }
+}
+.nav-admin-sep {
+  width: 1px;
+  height: 18px;
+  flex: none;
+  align-self: center;
+  margin: 0 4px;
+  background: var(--border);
+  opacity: .8;
+}

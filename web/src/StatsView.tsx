@@ -180,14 +180,14 @@ export default function StatsView() {
           </select>
         </label>
         <label className="small muted">
-          Profile
+          Credential set
           <select
             className="input"
             style={{ marginLeft: 6 }}
             value={profileId}
             onChange={(e) => setProfileId(e.target.value)}
           >
-            <option value="">All profiles</option>
+            <option value="">All credential sets</option>
             {profiles.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}

@@ -7,6 +7,7 @@ import {
   type PluginInfo,
 } from "./api";
 import { toast, useStore } from "./store";
+import WorkspaceResources from "./WorkspaceResources";
 
 type McpForm = {
   mode: "add" | "edit";
@@ -200,7 +201,7 @@ export default function ExtensionsView() {
       const message = String(e);
       setError(
         /(^|\D)404(\D|$)|not found/i.test(message)
-          ? "The Extensions API is not available yet. Restart aiman to load the new server routes."
+          ? "The Integrations API is not available yet. Restart aiman to load the new server routes."
           : message,
       );
     } finally {
@@ -480,9 +481,9 @@ export default function ExtensionsView() {
   return (
     <div className="extensions">
       <div className="ext-head">
-        <h2 style={{ margin: 0 }}>Extensions</h2>
+        <h2 style={{ margin: 0 }}>Integrations</h2>
         <span className="muted small">
-          MCP servers and plugins for opencode. Changes are written to the opencode config file;
+          MCP servers and all plugins for opencode. Changes are written to the opencode config file;
           formatting inside the edited MCP/plugins block may be normalized.
         </span>
         <div className="spacer" />
@@ -811,6 +812,10 @@ export default function ExtensionsView() {
               })}
             </div>
           )}
+
+          <div style={{ marginTop: 26 }}>
+            <WorkspaceResources kind="plugins" directory={dir} embedded />
+          </div>
         </>
       )}
 

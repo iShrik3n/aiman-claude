@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
 import { api, type WorkspaceSummary } from "./api";
 import Icon from "./Icon";
-import LogsView from "./LogsView";
 import { store, t, toast, useStore } from "./store";
+import {
+  confirmDiscardWorkspace,
+  isWorkspaceDirty,
+  subscribeWorkspaceDirty,
+} from "./workspaceDirty";
 import WorkspaceConfig from "./WorkspaceConfig";
 import WorkspaceOps from "./WorkspaceOps";
+import WorkspaceProviders from "./WorkspaceProviders";
 import WorkspaceResources from "./WorkspaceResources";
 
 type Tab =
@@ -17,29 +22,21 @@ type Tab =
   | "skills"
   | "commands"
   | "agents"
-  | "plugins"
   | "presets"
-  | "profiles"
-  | "backup"
-  | "auth"
-  | "logs";
+  | "snapshots";
 
 const TABS: { id: Tab; key: string; label: string; group: string }[] = [
-  { id: "overview", key: "ws.overview", label: "Overview", group: "Workspace" },
-  { id: "config", key: "ws.raw", label: "Raw config", group: "OpenCode" },
-  { id: "providers", key: "ws.providers", label: "Providers & models", group: "OpenCode" },
-  { id: "permissions", key: "ws.permissions", label: "Permissions", group: "OpenCode" },
-  { id: "prompt", key: "ws.prompt", label: "Prompt & rules", group: "OpenCode" },
-  { id: "code", key: "ws.code", label: "LSP & CLI", group: "OpenCode" },
+  { id: "overview", key: "ws.overview", label: "Overview", group: "OpenCode" },
+  { id: "config", key: "ws.raw", label: "Raw config", group: "Configuration" },
+  { id: "providers", key: "ws.providers", label: "Providers", group: "Configuration" },
+  { id: "permissions", key: "ws.permissions", label: "Permissions", group: "Configuration" },
+  { id: "prompt", key: "ws.prompt", label: "Prompt & rules", group: "Configuration" },
+  { id: "code", key: "ws.code", label: "LSP & CLI", group: "Configuration" },
   { id: "skills", key: "ws.skills", label: "Skills", group: "Resources" },
   { id: "commands", key: "ws.commands", label: "Commands", group: "Resources" },
   { id: "agents", key: "ws.agents", label: "Agents", group: "Resources" },
-  { id: "plugins", key: "ws.plugins", label: "Plugin files", group: "Resources" },
-  { id: "presets", key: "ws.presets", label: "Presets", group: "Workspace" },
-  { id: "profiles", key: "ws.profiles", label: "Config profiles", group: "Workspace" },
-  { id: "backup", key: "ws.backup", label: "Backup & sync", group: "Workspace" },
-  { id: "auth", key: "ws.auth", label: "Provider auth", group: "Workspace" },
-  { id: "logs", key: "ws.logs", label: "Live logs", group: "Workspace" },
+  { id: "presets", key: "ws.presets", label: "Presets", group: "Automation" },
+  { id: "snapshots", key: "ws.snapshots", label: "Snapshots & backups", group: "Automation" },
 ];
 
 export default function Workspace() {
@@ -52,6 +49,31 @@ export default function Workspace() {
   const [summary, setSummary] = useState<WorkspaceSummary | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => subscribeWorkspaceDirty(setDirty), []);
+
+  useEffect(() => {
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      if (!isWorkspaceDirty()) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", beforeUnload);
+    return () => window.removeEventListener("beforeunload", beforeUnload);
+  }, []);
+
+  function switchTab(next: Tab) {
+    if (next === tab) return;
+    if (!confirmDiscardWorkspace()) return;
+    setTab(next);
+  }
+
+  function changeScope(next: string) {
+    if (next === directory) return;
+    if (!confirmDiscardWorkspace("Discard unsaved changes before changing scope?")) return;
+    setDirectory(next);
+  }
 
   async function load() {
     setBusy(true);
@@ -76,16 +98,23 @@ export default function Workspace() {
     <div className="workspace-page">
       <div className="ws-head">
         <div>
-          <h2>{t("ws.title")}</h2>
+          <h2>
+            {t("ws.opencode")}
+            {dirty && (
+              <span className="badge ran" style={{ marginLeft: 8, verticalAlign: "middle" }}>
+                unsaved
+              </span>
+            )}
+          </h2>
           <p className="muted small">{t("ws.subtitle")}</p>
         </div>
         <div className="ws-head-actions">
           <label className="ws-dir">
-            <span className="muted small">{t("ws.project")}</span>
+            <span className="muted small">{t("ws.scope")}</span>
             <select
               className="input"
               value={directory}
-              onChange={(e) => setDirectory(e.target.value)}
+              onChange={(e) => changeScope(e.target.value)}
             >
               <option value="">{t("ws.globalOnly")}</option>
               {s.directories.map((dir) => (
@@ -101,62 +130,61 @@ export default function Workspace() {
         </div>
       </div>
 
-      <div className="ws-tabs">
-        {groups.map((group) => (
-          <div className="ws-tab-group" key={group}>
-            <span className="ws-tab-group-label">{group}</span>
-            {TABS.filter((item) => item.group === group).map((item) => (
-              <button
-                key={item.id}
-                className={"tab" + (tab === item.id ? " active" : "")}
-                onClick={() => setTab(item.id)}
-              >
-                {t(item.key)}
-              </button>
-            ))}
-          </div>
-        ))}
-      </div>
-
       {error && <div className="ws-error">{error}</div>}
 
-      {tab === "overview" && (
-        <Overview
-          summary={summary}
-          busy={busy}
-          directory={directory}
-          onNavigate={setTab}
-          onRefresh={load}
-        />
-      )}
-      {tab === "config" && (
-        <WorkspaceConfig directory={directory} mode="raw" onChanged={load} />
-      )}
-      {tab === "providers" && (
-        <WorkspaceConfig directory={directory} mode="providers" onChanged={load} />
-      )}
-      {tab === "permissions" && (
-        <WorkspaceConfig directory={directory} mode="permissions" onChanged={load} />
-      )}
-      {tab === "prompt" && (
-        <WorkspaceConfig directory={directory} mode="prompt" onChanged={load} />
-      )}
-      {tab === "code" && <WorkspaceConfig directory={directory} mode="code" onChanged={load} />}
-      {tab === "skills" && <WorkspaceResources kind="skills" directory={directory} />}
-      {tab === "commands" && <WorkspaceResources kind="commands" directory={directory} />}
-      {tab === "agents" && <WorkspaceResources kind="agents" directory={directory} />}
-      {tab === "plugins" && <WorkspaceResources kind="plugins" directory={directory} />}
-      {tab === "presets" && (
-        <WorkspaceOps mode="presets" directory={directory} onChanged={load} />
-      )}
-      {tab === "profiles" && (
-        <WorkspaceOps mode="profiles" directory={directory} onChanged={load} />
-      )}
-      {tab === "backup" && <WorkspaceOps mode="backup" directory={directory} onChanged={load} />}
-      {tab === "auth" && (
-        <WorkspaceOps mode="auth" directory={directory} onChanged={load} />
-      )}
-      {tab === "logs" && <LogsView />}
+      <div className="ws-shell">
+        <nav className="ws-sidebar">
+          {groups.map((group) => (
+            <div className="ws-nav-group" key={group}>
+              <span className="ws-nav-group-title">{group}</span>
+              {TABS.filter((item) => item.group === group).map((item) => (
+                <button
+                  key={item.id}
+                  className={"tab" + (tab === item.id ? " active" : "")}
+                  onClick={() => switchTab(item.id)}
+                  title={t(item.key)}
+                >
+                  <span>{t(item.key)}</span>
+                </button>
+              ))}
+            </div>
+          ))}
+        </nav>
+
+        <div className="ws-content">
+          {tab === "overview" && (
+            <Overview
+              summary={summary}
+              busy={busy}
+              directory={directory}
+              onNavigate={setTab}
+              onRefresh={load}
+            />
+          )}
+          {tab === "config" && (
+            <WorkspaceConfig directory={directory} mode="raw" onChanged={load} />
+          )}
+          {tab === "providers" && (
+            <WorkspaceProviders directory={directory} onChanged={load} />
+          )}
+          {tab === "permissions" && (
+            <WorkspaceConfig directory={directory} mode="permissions" onChanged={load} />
+          )}
+          {tab === "prompt" && (
+            <WorkspaceConfig directory={directory} mode="prompt" onChanged={load} />
+          )}
+          {tab === "code" && <WorkspaceConfig directory={directory} mode="code" onChanged={load} />}
+          {tab === "skills" && <WorkspaceResources kind="skills" directory={directory} />}
+          {tab === "commands" && <WorkspaceResources kind="commands" directory={directory} />}
+          {tab === "agents" && <WorkspaceResources kind="agents" directory={directory} />}
+          {tab === "presets" && (
+            <WorkspaceOps mode="presets" directory={directory} onChanged={load} />
+          )}
+          {tab === "snapshots" && (
+            <WorkspaceOps mode="snapshots" directory={directory} onChanged={load} />
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -216,7 +244,7 @@ function Overview({
     <div className="ws-section">
       <div className="ws-section-head">
         <div>
-          <h3>Workspace overview</h3>
+          <h3>OpenCode overview</h3>
           <p className="muted small">
             {summary?.v2 ? "opencode v2" : "opencode v1"} · {summary?.configs.length ?? 0} config
             documents · {summary?.github.authenticated ? "GitHub connected" : "GitHub not connected"}
@@ -256,18 +284,18 @@ function Overview({
           <button className="btn sm" onClick={() => onNavigate("prompt")}>
             Edit global instructions
           </button>
-          <button className="btn sm" onClick={() => onNavigate("backup")}>
-            Back up or sync
+          <button className="btn sm" onClick={() => onNavigate("snapshots")}>
+            Back up or restore
           </button>
-          <button className="btn sm" onClick={() => onNavigate("logs")}>
-            Open live logs
+          <button className="btn sm" onClick={() => onNavigate("providers")}>
+            Manage credentials
           </button>
           <button
             className="btn sm"
             onClick={() => store.set({ view: "extensions" })}
-            title="MCP servers and package plugins"
+            title="MCP servers and all plugins"
           >
-            Open MCP & package extensions
+            Open Integrations
           </button>
         </div>
       </div>

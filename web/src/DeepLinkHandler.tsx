@@ -80,8 +80,9 @@ export default function DeepLinkHandler() {
       if (action.kind === "open" && action.path) {
         const path = action.path;
         if (path === "/workspace") store.set({ view: "workspace" });
-        else if (path === "/extensions") store.set({ view: "extensions" });
-        else if (path === "/stats") store.set({ view: "stats" });
+        else if (path === "/extensions" || path === "/integrations") {
+          store.set({ view: "extensions" });
+        } else if (path === "/stats") store.set({ view: "stats" });
         else if (path === "/settings") store.set({ view: "settings" });
       }
       setAction(null);

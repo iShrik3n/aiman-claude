@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, type WorkspaceConfig } from "./api";
 import { toast } from "./store";
+import { setWorkspaceDirty } from "./workspaceDirty";
 
 type Mode = "raw" | "providers" | "permissions" | "prompt" | "code";
 
@@ -64,6 +65,11 @@ export default function WorkspaceConfig({
   const [cli, setCli] = useState("");
   const [cliPath, setCliPath] = useState("");
   const [cliRevision, setCliRevision] = useState("");
+  const [savedDraft, setSavedDraft] = useState("");
+  const [savedPrompt, setSavedPrompt] = useState("");
+  const [savedRules, setSavedRules] = useState("");
+  const [savedCli, setSavedCli] = useState("");
+  const [savedSections, setSavedSections] = useState("");
 
   const docs = config?.docs ?? [];
 
@@ -76,6 +82,7 @@ export default function WorkspaceConfig({
       setPath(next.selected.path);
       setRevision(next.selected.revision);
       setDraft(next.selected.text);
+      setSavedDraft(next.selected.text);
       const data = next.selected.data ?? {};
       setProviders(clone(data.provider ?? {}));
       setDefaultModel(typeof data.model === "string" ? data.model : "");
@@ -87,6 +94,17 @@ export default function WorkspaceConfig({
       setPermissionText(JSON.stringify(permissionValue ?? {}, null, 2));
       setLspText(JSON.stringify(data.lsp ?? {}, null, 2));
       setFormatterText(JSON.stringify(data.formatter ?? {}, null, 2));
+      setSavedSections(
+        JSON.stringify({
+          providers: data.provider ?? {},
+          defaultModel: typeof data.model === "string" ? data.model : "",
+          smallModel: typeof data.small_model === "string" ? data.small_model : "",
+          permissionKey: nativePermissions ? "permissions" : "permission",
+          permissionText: JSON.stringify(permissionValue ?? {}, null, 2),
+          lspText: JSON.stringify(data.lsp ?? {}, null, 2),
+          formatterText: JSON.stringify(data.formatter ?? {}, null, 2),
+        }),
+      );
       if (next.selected.error) setError(next.selected.error);
     } catch (e) {
       setError(String(e));
@@ -102,9 +120,11 @@ export default function WorkspaceConfig({
         directory ? api.workspaceRules(directory) : Promise.resolve(null),
       ]);
       setPrompt(p.content);
+      setSavedPrompt(p.content);
       setPromptPath(p.path);
       if (r) {
         setRules(r.content);
+        setSavedRules(r.content);
         setRulesPath(r.path);
         setRulesSource(r.source);
       }
@@ -117,6 +137,7 @@ export default function WorkspaceConfig({
     try {
       const c = await api.workspaceCli();
       setCli(c.content);
+      setSavedCli(c.content);
       setCliPath(c.path);
       setCliRevision(c.revision);
     } catch (e) {
@@ -142,6 +163,27 @@ export default function WorkspaceConfig({
     if (mode === "code") void loadCli();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
+
+  const currentSections = JSON.stringify({
+    providers,
+    defaultModel,
+    smallModel,
+    permissionKey,
+    permissionText,
+    lspText,
+    formatterText,
+  });
+  const dirty =
+    draft !== savedDraft ||
+    prompt !== savedPrompt ||
+    rules !== savedRules ||
+    cli !== savedCli ||
+    (!!savedSections && currentSections !== savedSections);
+
+  useEffect(() => {
+    setWorkspaceDirty(dirty);
+    return () => setWorkspaceDirty(false);
+  }, [dirty]);
 
   async function saveRaw() {
     setSaving(true);
@@ -221,6 +263,7 @@ export default function WorkspaceConfig({
     setSaving(true);
     try {
       await api.saveWorkspacePrompt(prompt);
+      setSavedPrompt(prompt);
       toast("Global instructions saved");
       onChanged?.();
     } catch (e) {
@@ -236,6 +279,7 @@ export default function WorkspaceConfig({
     try {
       const result = await api.saveWorkspaceRules(directory, rules, rulesSource);
       setRulesPath(result.path);
+      setSavedRules(rules);
       toast("Project rules saved");
       onChanged?.();
     } catch (e) {
@@ -263,6 +307,7 @@ export default function WorkspaceConfig({
     try {
       const result = await api.saveWorkspaceCli(cli, cliRevision);
       setCliRevision(result.revision);
+      setSavedCli(cli);
       toast("cli.json saved");
       onChanged?.();
     } catch (e) {

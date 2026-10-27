@@ -25,6 +25,8 @@ export default function ServerSettings() {
   const [data, setData] = useState<OpenCodeServers | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [busy, setBusy] = useState(false);
+  const [testing, setTesting] = useState<string | null>(null);
+  const [restarting, setRestarting] = useState(false);
 
   async function load() {
     try {
@@ -81,6 +83,31 @@ export default function ServerSettings() {
     }
   }
 
+  async function test(server: OpenCodeServer | Draft) {
+    const id = server.id ?? undefined;
+    const key = id ?? server.url;
+    setTesting(key);
+    try {
+      const result = await api.testServer({
+        id,
+        url: server.url,
+        password: "password" in server ? server.password : undefined,
+        db: server.db,
+      });
+      const dbNote =
+        result.dbExists === false
+          ? ` · database not found: ${result.db}`
+          : result.dbExists === true
+            ? " · database found"
+            : "";
+      toast(`Connection OK${dbNote}`);
+    } catch (e) {
+      toast(`Connection test failed: ${e}`);
+    } finally {
+      setTesting(null);
+    }
+  }
+
   async function activate(server: OpenCodeServer) {
     if (
       !confirm(
@@ -91,6 +118,7 @@ export default function ServerSettings() {
     setBusy(true);
     try {
       await api.activateServer(server.id);
+      setRestarting(true);
       toast("Server activated — restarting AiMAN…");
       setData((prev) => (prev ? { ...prev, activeId: server.id } : prev));
     } catch (e) {
@@ -127,6 +155,12 @@ export default function ServerSettings() {
           precedence over the selected profile until removed from the service environment.
         </div>
       )}
+      {restarting && (
+        <div className="ws-note">
+          <b>Restart required.</b> The selected server is saved. AiMAN is restarting and will
+          reconnect when the new endpoint is ready.
+        </div>
+      )}
       <div className="ws-provider-list">
         {data?.servers.map((server) => (
           <div className="ws-card" key={server.id}>
@@ -139,6 +173,13 @@ export default function ServerSettings() {
                 {server.auth && <div className="ws-mono">auth: {server.auth}</div>}
               </div>
               <div className="ws-actions">
+                <button
+                  className="btn sm ghost"
+                  onClick={() => test(server)}
+                  disabled={testing === server.id}
+                >
+                  {testing === server.id ? "testing…" : "Test"}
+                </button>
                 {!server.active && (
                   <button className="btn sm primary" onClick={() => activate(server)} disabled={busy}>
                     Activate
@@ -223,6 +264,13 @@ export default function ServerSettings() {
               at a matching local copy of that server's opencode data.
             </p>
             <div className="ws-form-actions">
+              <button
+                className="btn ghost"
+                onClick={() => test(draft)}
+                disabled={busy || testing === (draft.id ?? draft.url)}
+              >
+                {testing === (draft.id ?? draft.url) ? "Testing…" : "Test connection"}
+              </button>
               <button className="btn" onClick={() => setDraft(null)} disabled={busy}>
                 Cancel
               </button>
