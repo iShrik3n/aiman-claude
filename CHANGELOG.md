@@ -5,6 +5,22 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.2] - 2026-10-27
+
+### Added
+- **Alien Grotesque theme** — a second alien skin built as a chrome/cyan
+  spaceship console: a floating asymmetric hull, liquid-metal panels, a cyan
+  glass LCD, reactor rings, hull seams, rivet-like textures, starfield
+  lighting, HUD corner brackets and side vents. Navigation sits on a coherent
+  console rail, while sidebar/workspace controls keep staggered organic
+  positions and Fibonacci-ish radii. Textures are applied to buttons, tabs and
+  chrome surfaces without reducing text contrast.
+- Theme preview cards and all admin panels use the same no-hard-edge language,
+  including inputs, toolbar strips, notices, diffs and modal shells.
+- Chat surfaces use a readable blue-glass HUD grid rather than clipping
+  message text behind oversized lobes; the composer and Send/Queue controls
+  stay fully visible.
+
 ## [1.10.1] - 2026-10-27
 
 ### Changed
