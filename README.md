@@ -180,6 +180,16 @@ GitHub release alongside the server/web archives.
   **Check for updates**, or `POST /api/update/apply` as an administrator. The
   updater downloads the latest GitHub release and overlays the runtime files.
   User data in `AIMAN_HOME` is left untouched.
+- **Any Linux / macOS server (even an old build)** — run the standalone updater;
+  it fetches the latest release and restarts the service:
+
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/spacewalkingninja/aiman/main/scripts/update.sh | bash
+  ```
+
+  Pin a version with `AIMAN_VERSION=1.9.0`, or target a non-default install with
+  `AIMAN_APP_DIR=/path/to/app`. Use `AIMAN_NO_RESTART=1` to skip the restart.
+  The same script is included in release archives as `scripts/update.sh`.
 - **Desktop app** — download and run the installer from the latest GitHub
   release. The in-app updater refreshes the bundled server and web UI, but it
   cannot replace the running Electron shell.
