@@ -1,61 +1,69 @@
 import { Database } from "bun:sqlite";
-import { existsSync, mkdirSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import {
-  MANAGER_DB as CFG_MANAGER_DB,
-  OPENCODE_DB as CFG_OPENCODE_DB,
-  OPENCODE_DATA_DIR,
-} from "./config";
+import { MANAGER_DB as CFG_MANAGER_DB, OPENCODE_DB as CFG_OPENCODE_DB } from "./config";
 
 export const OPENCODE_DB = CFG_OPENCODE_DB;
 export const MANAGER_DB = CFG_MANAGER_DB;
 
 mkdirSync(dirname(MANAGER_DB), { recursive: true });
+mkdirSync(dirname(OPENCODE_DB), { recursive: true });
 
-if (!existsSync(OPENCODE_DB)) {
-  console.error(
-    [
-      "",
-      "  aiman could not find opencode's database.",
-      "",
-      `    looked for: ${OPENCODE_DB}`,
-      `    data dir:   ${OPENCODE_DATA_DIR}`,
-      "",
-      "  Start opencode once (or set OPENCODE_DB) and try again.",
-      "",
-    ].join("\n"),
+/**
+ * The "opencode" database here is aiman-claude's derived index of Claude Code's
+ * JSONL transcripts (see claude.ts), laid out like opencode v1 so the queries
+ * elsewhere in the server keep working. Claude Code's own files are never
+ * written to; this database is.
+ */
+export const ocRW = new Database(OPENCODE_DB);
+ocRW.exec("PRAGMA journal_mode = WAL;");
+ocRW.exec("PRAGMA busy_timeout = 5000;");
+ocRW.exec(`
+  CREATE TABLE IF NOT EXISTS session (
+    id           TEXT PRIMARY KEY,
+    parent_id    TEXT,
+    slug         TEXT NOT NULL DEFAULT '',
+    directory    TEXT NOT NULL DEFAULT '',
+    title        TEXT NOT NULL DEFAULT '',
+    title_locked INTEGER NOT NULL DEFAULT 0,
+    revert       TEXT,
+    time_created INTEGER NOT NULL,
+    time_updated INTEGER NOT NULL,
+    time_archived INTEGER
   );
-  process.exit(1);
-}
+  CREATE TABLE IF NOT EXISTS message (
+    id           TEXT PRIMARY KEY,
+    session_id   TEXT NOT NULL,
+    time_created INTEGER NOT NULL,
+    data         TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_message_session ON message(session_id, time_created);
+  CREATE TABLE IF NOT EXISTS part (
+    id           TEXT PRIMARY KEY,
+    message_id   TEXT NOT NULL,
+    session_id   TEXT NOT NULL,
+    time_created INTEGER NOT NULL,
+    time_updated INTEGER NOT NULL,
+    data         TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_part_session ON part(session_id, time_created);
+  CREATE INDEX IF NOT EXISTS idx_part_updated ON part(time_updated);
+  CREATE TABLE IF NOT EXISTS source_file (
+    path       TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL,
+    size       INTEGER NOT NULL,
+    mtime_ms   INTEGER NOT NULL
+  );
+`);
 
-// Read-only connection to opencode's database.
+// Read-only handle for queries, so a stray write elsewhere fails loudly.
 export const ocRO = new Database(OPENCODE_DB, { readonly: true });
 ocRO.exec("PRAGMA busy_timeout = 5000;");
 ocRO.exec("PRAGMA query_only = true;");
 
-// Writable connection, used ONLY for the archive flag on session.time_archived.
-export const ocRW = new Database(OPENCODE_DB);
-ocRW.exec("PRAGMA busy_timeout = 5000;");
-
-/**
- * opencode v2 stores sessions/messages in `session_v2` / `session_message`
- * (with parts embedded in the message JSON). The v1 tables still exist for
- * databases that were migrated, so detect by schema rather than by app version.
- */
-let _isV2: boolean | null = null;
+/** Always the v1 (session / message / part) layout; kept for call sites. */
 export function isV2(): boolean {
-  if (_isV2 === null) {
-    try {
-      const has = (name: string) =>
-        !!ocRO
-          .query("SELECT 1 AS ok FROM sqlite_master WHERE type = 'table' AND name = ?")
-          .get(name);
-      _isV2 = has("session_v2") && has("session_message");
-    } catch {
-      _isV2 = false;
-    }
-  }
-  return _isV2;
+  return false;
 }
 
 // Our own database: folders, per-session metadata, search index, settings.

@@ -12,7 +12,8 @@ import { readdir, stat } from "node:fs/promises";
 import { ensureFtsMode, syncFts, pruneFts, search } from "./fts";
 import { aggregateStats, sessionStats, usageBySession } from "./stats";
 import { isV2 } from "./db";
-import { handleOcV2 } from "./ocv2";
+import { handleOcReadonly } from "./ocReadonly";
+import { syncTranscripts } from "./claude";
 import { handleExtensions } from "./extensions";
 import {
   autoOrganizeAll,
@@ -93,6 +94,7 @@ import {
   APP_ROOT,
   VERSION,
   UPDATE_REPO,
+  CLAUDE_PROJECTS_DIR,
   AIMAN_HOME,
 } from "./config";
 import {
@@ -541,6 +543,9 @@ async function fetchLatest(force = false): Promise<any> {
   if (!force && updateCache && Date.now() - updateCache.at < 60 * 60 * 1000) {
     return updateCache.data;
   }
+  if (!UPDATE_REPO) {
+    return { current: VERSION, latest: null, available: false, disabled: true };
+  }
   try {
     const res = await fetch(`https://api.github.com/repos/${UPDATE_REPO}/releases/latest`, {
       headers: { "user-agent": "aiman", accept: "application/vnd.github+json" },
@@ -812,6 +817,16 @@ async function handle(req: Request): Promise<Response> {
 
   // ---------- extensions (MCP servers + plugins) ----------
   if (p === "/api/extensions" || p.startsWith("/api/extensions/")) {
+    // Upstream edits opencode's config; never touch it from the Claude fork.
+    return json({ error: "Extensions are not available in the Claude Code fork yet" }, 501);
+  }
+
+  if (p === "/api/service/install" || p === "/api/service/uninstall") {
+    // The service unit is named "aiman" and would replace upstream's.
+    return json({ error: "Service install is disabled in the Claude Code fork" }, 501);
+  }
+
+  if (false) {
     if (!user!.is_admin) return json({ error: "forbidden" }, 403);
     return handleExtensions(req, url);
   }
@@ -833,16 +848,13 @@ async function handle(req: Request): Promise<Response> {
   }
 
   if (p === "/api/config") {
-    let terminal = false;
-    try {
-      const r = isV2() ? await ocFetch("/api/pty") : await fetch(OPENCODE_URL + "/pty", { method: "GET" });
-      terminal = r.ok;
-    } catch {}
     return json({
-      opencodeUrl: OPENCODE_URL,
-      opencodeBin: OPENCODE_BIN,
-      opencodeV2: isV2(),
-      terminal,
+      opencodeUrl: "",
+      opencodeBin: "",
+      // The structured web chat is the only mode that works without opencode.
+      opencodeV2: true,
+      readOnly: true,
+      terminal: false,
       platform: process.platform,
       onboarded: getUserOnboarded(user!.id),
       version: VERSION,
@@ -896,7 +908,6 @@ async function handle(req: Request): Promise<Response> {
 
   if (p === "/api/sessions" && method === "GET") {
     // Background filing for sessions that just reached their 10th user turn.
-    void scanForAutoOrganize();
     return json(listSessions(url));
   }
 
@@ -1123,6 +1134,7 @@ async function handle(req: Request): Promise<Response> {
 
   if (p === "/api/folders/auto-organize" && method === "POST") {
     if (!user!.is_admin) return json({ error: "forbidden" }, 403);
+    return json({ error: "Auto-organize is not available in the Claude Code fork yet" }, 501);
     const b = await readBody(req);
     const modelKey = typeof b.model === "string" ? b.model : "";
     const [providerID, ...rest] = modelKey.split("/");
@@ -1200,7 +1212,7 @@ async function handle(req: Request): Promise<Response> {
   if (p === "/terminal" || p.startsWith("/terminal/")) return proxyTerminal(req, url);
 
   if (p === "/oc" || p.startsWith("/oc/")) {
-    return isV2() ? handleOcV2(req, url) : proxyOpenCode(req, url);
+    return handleOcReadonly(req, url);
   }
 
   return serveStatic(url);
@@ -1214,22 +1226,33 @@ process.on("unhandledRejection", (reason) => {
   console.error("[unhandled]", reason);
 });
 
-// ---- background search indexing ----
+// ---- background indexing ----
+// Transcripts are indexed up front so the first page load already has data,
+// then rescanned for changes; the search index follows the part table.
+try {
+  const r = syncTranscripts();
+  console.log(`[claude] indexed ${r.changed}/${r.files} transcripts`);
+} catch (e) {
+  console.error("[claude] initial index failed:", e);
+}
+
 let syncing = false;
 function runSync() {
   if (syncing) return;
   syncing = true;
   try {
+    const t = syncTranscripts();
+    if (t.changed) console.log(`[claude] re-indexed ${t.changed} transcripts`);
     const { indexed, done } = syncFts(4000);
     if (indexed) console.log(`[fts] indexed ${indexed} parts${done ? " (caught up)" : ""}`);
   } catch (e) {
-    console.error("[fts] sync error:", e);
+    console.error("[sync] error:", e);
   } finally {
     syncing = false;
   }
 }
 
-// Defer indexing so the HTTP server starts accepting requests immediately.
+// Defer so the HTTP server starts accepting requests immediately.
 setTimeout(() => {
   try {
     if (ensureFtsMode()) console.log("[fts] schema changed — rebuilding the search index");
@@ -1239,31 +1262,13 @@ setTimeout(() => {
   }
   try {
     ensureDefaultProfile();
-    console.log("[profiles] ready");
   } catch (e) {
     console.error("[boot] profiles failed:", e);
   }
-  try {
-    ensureAutoOrganizeBaseline();
-  } catch (e) {
-    console.error("[boot] organizer baseline failed:", e);
-  }
-  try {
-    startQueueWorker();
-  } catch (e) {
-    console.error("[boot] queue worker failed:", e);
-  }
-  try {
-    startBtwWorker();
-  } catch (e) {
-    console.error("[boot] btw worker failed:", e);
-  }
   runSync();
 }, 500);
-const syncTimer = setInterval(runSync, 1500);
+const syncTimer = setInterval(runSync, 3000);
 if (typeof syncTimer.unref === "function") syncTimer.unref();
-const organizerTimer = setInterval(() => void scanForAutoOrganize(), 60_000);
-if (typeof organizerTimer.unref === "function") organizerTimer.unref();
 
 Bun.serve({
   port: PORT,
@@ -1294,4 +1299,4 @@ Bun.serve({
   },
 });
 
-console.log(`opencode-manager listening on http://${HOST}:${PORT}  (upstream ${OPENCODE_URL})`);
+console.log(`aiman-claude listening on http://${HOST}:${PORT}  (read-only; transcripts from ${CLAUDE_PROJECTS_DIR})`);

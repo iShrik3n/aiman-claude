@@ -1033,7 +1033,14 @@ export default function ChatView({
         </div>
       )}
 
-      <Composer sessionId={id} onBtw={openBtw} />
+      {s.readOnly ? (
+        <div className="muted small" style={{ padding: "10px 14px", textAlign: "center" }}>
+          Read-only view of a Claude Code transcript. Continue it in the terminal with{" "}
+          <code>claude --resume {id}</code>.
+        </div>
+      ) : (
+        <Composer sessionId={id} onBtw={openBtw} />
+      )}
     </div>
   );
 }

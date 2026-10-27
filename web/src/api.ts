@@ -562,6 +562,8 @@ export const api = {
         opencodeUrl: string;
         opencodeBin: string;
         opencodeV2?: boolean;
+        /** True when the server cannot drive a live agent (no prompting). */
+        readOnly?: boolean;
         terminal: boolean;
         platform: string;
         onboarded: boolean;

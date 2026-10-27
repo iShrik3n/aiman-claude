@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 
 /**
- * Central, cross-platform path/port configuration.
+ * Central, cross-platform path/port configuration (Claude Code fork).
  *
  * Everything can be overridden with environment variables so the same build
  * runs on Linux, macOS and Windows:
@@ -41,11 +41,11 @@ export function defaultHome(): string {
 
   if (isWindows) {
     const base = process.env.APPDATA || join(homedir(), "AppData", "Roaming");
-    return join(base, "aiman");
+    return join(base, "aiman-claude");
   }
-  if (isMac) return join(homedir(), "Library", "Application Support", "aiman");
+  if (isMac) return join(homedir(), "Library", "Application Support", "aiman-claude");
   const xdg = process.env.XDG_DATA_HOME || join(homedir(), ".local", "share");
-  return join(xdg, "aiman");
+  return join(xdg, "aiman-claude");
 }
 
 export const AIMAN_HOME = defaultHome();
@@ -61,7 +61,12 @@ export const VERSION = (() => {
   }
 })();
 
-export const UPDATE_REPO = process.env.AIMAN_REPO ?? "spacewalkingninja/aiman";
+/**
+ * Self-update is disabled in this fork: the upstream releases are built for
+ * opencode and would overwrite the Claude Code backend. Set AIMAN_REPO to a
+ * repository that publishes compatible release archives to re-enable it.
+ */
+export const UPDATE_REPO = process.env.AIMAN_REPO ?? "";
 
 export const DIST =
   ensureEnv("DIST") ?? resolve(import.meta.dir, "..", "..", "dist");
@@ -69,42 +74,26 @@ export const DIST =
 export const MANAGER_DB = ensureEnv("MANAGER_DB") ?? join(AIMAN_HOME, "manager.db");
 
 /**
- * Candidate opencode data directories.
- *
- * opencode moved its state between v1 and v2 (and Windows builds have used
- * %LOCALAPPDATA% and %APPDATA% over time), so a directory existing is not proof
- * that it holds the database. Prefer whichever candidate actually contains
- * `opencode.db`, then fall back to a directory that exists.
+ * Claude Code's config directory. Its session transcripts live under
+ * `<dir>/projects/<encoded cwd>/<session id>.jsonl`. We only ever read them.
  */
-function opencodeDataDir(): string {
-  const home = homedir();
-  const candidates: string[] = [];
-  if (isWindows) {
-    candidates.push(join(home, ".local", "share", "opencode"));
-    if (process.env.LOCALAPPDATA) candidates.push(join(process.env.LOCALAPPDATA, "opencode"));
-    if (process.env.APPDATA) candidates.push(join(process.env.APPDATA, "opencode"));
-  } else if (isMac) {
-    candidates.push(join(home, "Library", "Application Support", "opencode"));
-    candidates.push(join(home, ".local", "share", "opencode"));
-  } else {
-    if (process.env.XDG_DATA_HOME) candidates.push(join(process.env.XDG_DATA_HOME, "opencode"));
-    candidates.push(join(home, ".local", "share", "opencode"));
-  }
+export const CLAUDE_CONFIG_DIR = resolve(
+  ensureEnv("CLAUDE_CONFIG_DIR") ?? join(homedir(), ".claude"),
+);
+export const CLAUDE_PROJECTS_DIR = join(CLAUDE_CONFIG_DIR, "projects");
 
-  const withDb = candidates.find((c) => existsSync(join(c, "opencode.db")));
-  if (withDb) return withDb;
-
-  const withDir = candidates.find((c) => existsSync(c));
-  return withDir ?? candidates[candidates.length - 1]!;
-}
-
-export const OPENCODE_DATA_DIR = opencodeDataDir();
-
-export const OPENCODE_DB =
-  ensureEnv("OPENCODE_DB") ?? join(OPENCODE_DATA_DIR, "opencode.db");
-
-export const OPENCODE_AUTH =
-  ensureEnv("OPENCODE_AUTH") ?? join(OPENCODE_DATA_DIR, "auth.json");
+/**
+ * Derived index of the transcripts, stored in opencode's v1 table layout
+ * (session / message / part) so the rest of the server can query it as is.
+ * Mostly rebuildable from the JSONL files, but it also holds manual renames,
+ * archive flags and sessions whose transcript Claude Code has since pruned, so
+ * deleting it loses that data.
+ */
+export const INDEX_DB = ensureEnv("INDEX_DB") ?? join(AIMAN_HOME, "claude-index.db");
+export const OPENCODE_DB = INDEX_DB;
+export const OPENCODE_DATA_DIR = AIMAN_HOME;
+/** Profiles that swap provider keys are not wired up yet; keep the path inert. */
+export const OPENCODE_AUTH = join(AIMAN_HOME, "unused-auth.json");
 
 /**
  * Password for `opencode serve` (v2 requires HTTP basic auth for every /api
@@ -119,7 +108,7 @@ export const OPENCODE_PASSWORD =
 export const AUTH_BACKUP =
   ensureEnv("AUTH_BACKUP") ?? join(AIMAN_HOME, "opencode-auth-backup.json");
 
-export const PORT = Number(ensureEnv("PORT") ?? 4097);
+export const PORT = Number(ensureEnv("PORT") ?? 4197);
 export const HOST = ensureEnv("HOST") ?? "127.0.0.1";
 export const OPENCODE_URL = ensureEnv("OPENCODE_URL") ?? "http://127.0.0.1:4096";
 export const TERMINAL_URL = ensureEnv("TERMINAL_URL") ?? "http://127.0.0.1:4098";

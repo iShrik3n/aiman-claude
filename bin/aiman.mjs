@@ -31,16 +31,13 @@ const valueOf = (name, fallback) => {
 };
 
 if (has("-h", "--help")) {
-  console.log(`AiMAN — opencode session manager
+  console.log(`aiman-claude — Claude Code session manager (read-only preview)
 
 Usage: aiman [options]
 
 Options:
   --host <host>            bind host            (default 127.0.0.1)
-  --port <port>            http port            (default 4097)
-  --opencode-port <port>   opencode serve port  (default 4096)
-  --opencode-url <url>     use an existing opencode server (implies --no-opencode)
-  --no-opencode            do not start opencode serve
+  --port <port>            http port            (default 4197)
   --build                  rebuild the web UI before starting
   --open                   open the UI in the default browser
   --version                print version
@@ -48,9 +45,8 @@ Options:
 
 Environment:
   AIMAN_HOME        data directory (default: platform data dir /aiman)
-  OPENCODE_DB       opencode SQLite database
-  OPENCODE_AUTH     opencode auth.json
-  OPENCODE_PASSWORD password for an existing opencode server (v2)
+  CLAUDE_CONFIG_DIR Claude Code config dir (default ~/.claude)
+  INDEX_DB          derived transcript index (default $AIMAN_HOME/claude-index.db)
   DIST              built web UI directory
   TERMINAL_URL      optional pyxtermjs terminal backend
 `);
@@ -161,10 +157,11 @@ async function pickPort(start, skip) {
 }
 
 const host = valueOf("--host", process.env.HOST || "127.0.0.1");
-const port = String(valueOf("--port", process.env.PORT || "4097"));
+const port = String(valueOf("--port", process.env.PORT || "4197"));
 let opencodePort = String(valueOf("--opencode-port", process.env.OPENCODE_PORT || "4096"));
 let opencodeUrl = valueOf("--opencode-url", process.env.OPENCODE_URL || `http://127.0.0.1:${opencodePort}`);
-const startOpencode = !has("--no-opencode") && !has("--opencode-url") && !process.env.OPENCODE_URL;
+// aiman-claude reads Claude Code transcripts directly; there is no opencode to start.
+const startOpencode = false;
 
 if (!existsSync(SERVER_ENTRY)) {
   console.error(`Cannot find server entry: ${SERVER_ENTRY}`);

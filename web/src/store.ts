@@ -87,6 +87,7 @@ type State = {
   theme: string;
   onboarded: boolean | null;
   opencodeV2: boolean;
+  readOnly: boolean;
   thinkingOpen: boolean;
   shellOutputOpen: boolean;
   /** Do not prefetch file contents for the split code map. */
@@ -167,6 +168,7 @@ let state: State = {
     (typeof localStorage !== "undefined" && localStorage.getItem("oc_theme")) || DEFAULT_THEME,
   onboarded: null,
   opencodeV2: false,
+  readOnly: false,
   thinkingOpen: (typeof localStorage !== "undefined" ? localStorage.getItem("oc_thinking_open") : "1") !== "0",
   shellOutputOpen:
     (typeof localStorage !== "undefined" ? localStorage.getItem("oc_shell_output_open") : "1") !== "0",
@@ -608,7 +610,7 @@ export async function bootstrap() {
   await Promise.all([refreshSessions(), refreshMeta(), loadModelsAgents(), loadProfiles()]);
   try {
     const cfg = await api.config();
-    set({ onboarded: cfg.onboarded, opencodeV2: !!cfg.opencodeV2 });
+    set({ onboarded: cfg.onboarded, opencodeV2: !!cfg.opencodeV2, readOnly: !!cfg.readOnly });
     // opencode v2 removed `opencode attach` and its TUI does not attach through
     // the PTY bridge, so v2 sessions always use the structured web chat.
     if (cfg.opencodeV2 && !localStorage.getItem("oc_chat_mode")) {

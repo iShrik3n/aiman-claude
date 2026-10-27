@@ -1,5 +1,4 @@
 import { isV2, ocRO, ocRW, mgr } from "./db";
-import { ocData } from "./ocClient";
 
 export type SessionRow = {
   id: string;
@@ -249,20 +248,9 @@ export function setArchived(sessionId: string, archived: boolean): void {
 }
 
 export async function renameSession(sessionId: string, title: string): Promise<void> {
-  if (isV2()) {
-    // Prefer the API so opencode emits session.renamed and every client agrees.
-    try {
-      await ocData(`/api/session/${encodeURIComponent(sessionId)}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ title }),
-      });
-      return;
-    } catch {}
-    ocRW.query("UPDATE session_v2 SET title = ? WHERE id = ?").run(title, sessionId);
-    return;
-  }
-  ocRW.query("UPDATE session SET title = ? WHERE id = ?").run(title, sessionId);
+  // title_locked stops the indexer from overwriting a manual rename with the
+  // title Claude Code generated.
+  ocRW.query("UPDATE session SET title = ?, title_locked = 1 WHERE id = ?").run(title, sessionId);
 }
 
 export function getSessionsByIds(ids: string[]): Map<string, { title: string; directory: string }> {

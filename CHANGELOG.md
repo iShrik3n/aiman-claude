@@ -5,6 +5,24 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [aiman-claude 1.0.0] - 2026-10-27
+
+First release of the Claude Code fork (based on AiMAN 1.9.0). Read-only.
+
+### Added
+- Indexer for Claude Code transcripts (`~/.claude/projects/**/*.jsonl`) into a
+  derived SQLite index in opencode's v1 layout, so the existing session list,
+  folders, full-text search and token statistics work on Claude Code sessions.
+- Read-only transcript view with tool calls, outputs and Edit diffs.
+
+### Changed
+- Own data directory (`aiman-claude`), default port 4197, self-update disabled.
+- Live control (prompting, terminal, queue, /btw, auto-organize, extensions,
+  profiles, service install) answers 501 until implemented.
+
+### Known limitations
+- Cost is always 0: transcripts do not record prices.
+
 ## [1.9.0] - 2026-10-26
 
 ### Fixed
