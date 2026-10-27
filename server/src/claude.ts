@@ -335,7 +335,11 @@ const upsertPart = () =>
      WHERE part.data != excluded.data OR part.message_id != excluded.message_id`,
   );
 
-function writeSession(s: ParsedSession): void {
+export type Changed = { messages: Json[]; parts: Json[] };
+
+/** Upsert a parsed session; returns the message/part payloads that changed. */
+function writeSession(s: ParsedSession): Changed {
+  const changed: Changed = { messages: [], parts: [] };
   const now = Date.now();
   const sess = upsertSession();
   const msg = upsertMessage();
@@ -351,12 +355,12 @@ function writeSession(s: ParsedSession): void {
       const mid = `${s.id}:${m.id}`;
       keepMsg.add(mid);
       const data = { ...m.data, id: mid, sessionID: s.id };
-      msg.run(mid, s.id, m.time, JSON.stringify(data));
+      if (msg.run(mid, s.id, m.time, JSON.stringify(data)).changes) changed.messages.push(data);
       for (const p of m.parts) {
         const pid = `${s.id}:${p.id}`;
         keepPart.add(pid);
         const pd = { ...p.data, id: pid, sessionID: s.id, messageID: mid };
-        part.run(pid, mid, s.id, p.time, now, JSON.stringify(pd));
+        if (part.run(pid, mid, s.id, p.time, now, JSON.stringify(pd)).changes) changed.parts.push(pd);
       }
     }
     // Drop rows that vanished from the transcript (e.g. after a rewind).
@@ -378,6 +382,46 @@ function writeSession(s: ParsedSession): void {
     for (const r of staleMsgs) ocRW.query("DELETE FROM message WHERE id = ?").run(r.id);
   });
   tx();
+  return changed;
+}
+
+/** Path of the transcript file the index has for a session, if any. */
+export function transcriptPath(sessionId: string): string | null {
+  const r = ocRO.query("SELECT path FROM source_file WHERE session_id = ?").get(sessionId) as
+    | { path: string }
+    | undefined;
+  return r?.path ?? null;
+}
+
+/**
+ * Re-index one session right now (used while a run is streaming). Returns what
+ * changed so callers can push it to the browser, or null if nothing was read.
+ */
+export function syncSession(sessionId: string): Changed | null {
+  const path = transcriptPath(sessionId) ?? findTranscript(sessionId);
+  if (!path) return null;
+  const st = statSync(path);
+  const text = readFileSync(path, "utf8");
+  const parsed = parseTranscript(sessionId, text);
+  const changed = parsed ? writeSession(parsed) : null;
+  ocRW
+    .query(
+      `INSERT INTO source_file(path, session_id, size, mtime_ms) VALUES(?,?,?,?)
+       ON CONFLICT(path) DO UPDATE SET size = excluded.size, mtime_ms = excluded.mtime_ms`,
+    )
+    .run(path, sessionId, st.size, Math.floor(st.mtimeMs));
+  return changed;
+}
+
+/** Locate the transcript file of a session that is not indexed yet. */
+function findTranscript(sessionId: string): string | null {
+  if (!existsSync(CLAUDE_PROJECTS_DIR)) return null;
+  for (const dir of readdirSync(CLAUDE_PROJECTS_DIR, { withFileTypes: true })) {
+    if (!dir.isDirectory()) continue;
+    const p = join(CLAUDE_PROJECTS_DIR, dir.name, `${sessionId}.jsonl`);
+    if (existsSync(p)) return p;
+  }
+  return null;
 }
 
 /**

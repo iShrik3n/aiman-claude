@@ -531,20 +531,24 @@ export default function ChatView({
           <button className="btn ghost sm" onClick={() => setShowStats(true)} title="Session statistics">
             <Icon name="stats" /> stats
           </button>
-          <button
-            className="btn ghost sm"
-            onClick={openTerminal}
-            title="Open a shell terminal in this session's directory"
-          >
-            <Icon name="terminal" /> terminal
-          </button>
-          <button
-            className="btn ghost sm"
-            onClick={() => openBtw()}
-            title="BTW side questions and saved answers"
-          >
-            <Icon name="chat" /> btw
-          </button>
+          {s.hasTerminal && (
+            <button
+              className="btn ghost sm"
+              onClick={openTerminal}
+              title="Open a shell terminal in this session's directory"
+            >
+              <Icon name="terminal" /> terminal
+            </button>
+          )}
+          {s.hasBtw && (
+            <button
+              className="btn ghost sm"
+              onClick={() => openBtw()}
+              title="BTW side questions and saved answers"
+            >
+              <Icon name="chat" /> btw
+            </button>
+          )}
           <button className="btn ghost sm" onClick={loadDiff} title="Show changed files">
             <Icon name="code" /> diff
           </button>
@@ -696,20 +700,24 @@ export default function ChatView({
         >
           <Icon name="search" /> find
         </button>
-        <button
-          className="btn ghost sm"
-          onClick={openTerminal}
-          title="Open a shell terminal in this session's directory"
-        >
-          <Icon name="terminal" /> terminal
-        </button>
-        <button
-          className="btn ghost sm"
-          onClick={() => openBtw()}
-          title="BTW side questions and saved answers"
-        >
-          <Icon name="chat" /> btw
-        </button>
+        {s.hasTerminal && (
+          <button
+            className="btn ghost sm"
+            onClick={openTerminal}
+            title="Open a shell terminal in this session's directory"
+          >
+            <Icon name="terminal" /> terminal
+          </button>
+        )}
+        {s.hasBtw && (
+          <button
+            className="btn ghost sm"
+            onClick={() => openBtw()}
+            title="BTW side questions and saved answers"
+          >
+            <Icon name="chat" /> btw
+          </button>
+        )}
         <button className="btn ghost sm" onClick={loadDiff} title="Show changed files">
           <Icon name="code" /> diff
         </button>

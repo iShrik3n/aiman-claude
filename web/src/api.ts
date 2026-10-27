@@ -564,6 +564,8 @@ export const api = {
         opencodeV2?: boolean;
         /** True when the server cannot drive a live agent (no prompting). */
         readOnly?: boolean;
+        /** Optional features this backend implements. */
+        features?: { queue?: boolean; btw?: boolean; terminal?: boolean };
         terminal: boolean;
         platform: string;
         onboarded: boolean;

@@ -314,7 +314,7 @@ export default function Composer({
         const args = (m[2] ?? "").trim();
         setText("");
         if (name === "btw") {
-          if (onBtw) onBtw(args);
+          if (onBtw && s.hasBtw) onBtw(args);
           else toast("BTW side questions are unavailable here");
           return;
         }
@@ -654,6 +654,7 @@ export default function Composer({
             e.preventDefault();
             const queueOnEnter =
               s.queueEnabled &&
+              s.hasQueue &&
               s.opencodeV2 &&
               s.queueEnter &&
               (busy || pendingPermissions.length > 0 || pendingQuestions.length > 0);
@@ -754,7 +755,7 @@ export default function Composer({
             <Icon name="stop" /> Stop
           </button>
         )}
-        {s.queueEnabled && s.opencodeV2 && (
+        {s.queueEnabled && s.hasQueue && s.opencodeV2 && (
           <button
             type="button"
             className="btn"

@@ -185,6 +185,17 @@ if (has("--build") || !existsSync(DIST_INDEX)) {
   }
 }
 
+// The server needs the Claude Agent SDK (live control).
+if (!existsSync(join(ROOT, "server", "node_modules"))) {
+  try {
+    console.log(">> installing server dependencies…");
+    await run(bun, ["install"], { cwd: join(ROOT, "server") });
+  } catch (e) {
+    console.error(`Server dependency install failed: ${e.message}`);
+    process.exit(1);
+  }
+}
+
 // Don't start a second manager (and a second opencode) on top of a running one.
 if (await isUp(`http://${host}:${port}`)) {
   console.log(`>> aiman is already running at http://${host}:${port}`);

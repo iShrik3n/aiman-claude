@@ -88,6 +88,10 @@ type State = {
   onboarded: boolean | null;
   opencodeV2: boolean;
   readOnly: boolean;
+  /** Backend support for the deferred queue and /btw side questions. */
+  hasQueue: boolean;
+  hasBtw: boolean;
+  hasTerminal: boolean;
   thinkingOpen: boolean;
   shellOutputOpen: boolean;
   /** Do not prefetch file contents for the split code map. */
@@ -169,6 +173,9 @@ let state: State = {
   onboarded: null,
   opencodeV2: false,
   readOnly: false,
+  hasQueue: true,
+  hasBtw: true,
+  hasTerminal: true,
   thinkingOpen: (typeof localStorage !== "undefined" ? localStorage.getItem("oc_thinking_open") : "1") !== "0",
   shellOutputOpen:
     (typeof localStorage !== "undefined" ? localStorage.getItem("oc_shell_output_open") : "1") !== "0",
@@ -610,7 +617,11 @@ export async function bootstrap() {
   await Promise.all([refreshSessions(), refreshMeta(), loadModelsAgents(), loadProfiles()]);
   try {
     const cfg = await api.config();
-    set({ onboarded: cfg.onboarded, opencodeV2: !!cfg.opencodeV2, readOnly: !!cfg.readOnly });
+    set({ onboarded: cfg.onboarded, opencodeV2: !!cfg.opencodeV2, readOnly: !!cfg.readOnly,
+      hasQueue: cfg.features?.queue !== false,
+      hasBtw: cfg.features?.btw !== false,
+      hasTerminal: cfg.features?.terminal !== false,
+    });
     // opencode v2 removed `opencode attach` and its TUI does not attach through
     // the PTY bridge, so v2 sessions always use the structured web chat.
     if (cfg.opencodeV2 && !localStorage.getItem("oc_chat_mode")) {

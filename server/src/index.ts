@@ -12,7 +12,8 @@ import { readdir, stat } from "node:fs/promises";
 import { ensureFtsMode, syncFts, pruneFts, search } from "./fts";
 import { aggregateStats, sessionStats, usageBySession } from "./stats";
 import { isV2 } from "./db";
-import { handleOcReadonly } from "./ocReadonly";
+import { handleOc } from "./oc";
+import { guardRequest, LIVE_ENABLED } from "./security";
 import { syncTranscripts } from "./claude";
 import { handleExtensions } from "./extensions";
 import {
@@ -635,6 +636,8 @@ async function applyUpdate(): Promise<{ ok: boolean; latest: string; restartRequ
 }
 
 async function handle(req: Request): Promise<Response> {
+  const rejected = guardRequest(req);
+  if (rejected) return rejected;
   const url = new URL(req.url);
   const p = url.pathname;
   const method = req.method.toUpperCase();
@@ -853,7 +856,9 @@ async function handle(req: Request): Promise<Response> {
       opencodeBin: "",
       // The structured web chat is the only mode that works without opencode.
       opencodeV2: true,
-      readOnly: true,
+      readOnly: !LIVE_ENABLED,
+      // Queue and /btw need features that are not implemented for Claude Code.
+      features: { queue: false, btw: false, terminal: false },
       terminal: false,
       platform: process.platform,
       onboarded: getUserOnboarded(user!.id),
@@ -1212,7 +1217,7 @@ async function handle(req: Request): Promise<Response> {
   if (p === "/terminal" || p.startsWith("/terminal/")) return proxyTerminal(req, url);
 
   if (p === "/oc" || p.startsWith("/oc/")) {
-    return handleOcReadonly(req, url);
+    return handleOc(req, url);
   }
 
   return serveStatic(url);
@@ -1279,9 +1284,8 @@ Bun.serve({
     try {
       const url = new URL(req.url);
       if (url.pathname.startsWith("/ptyws/")) {
-        const res = ptyUpgrade(req, server, url);
-        if (res) return res;
-        return undefined;
+        // No PTY backend in the Claude Code fork (and this route bypasses handle()).
+        return new Response("terminal unavailable", { status: 501 });
       }
       return await handle(req);
     } catch (e) {
@@ -1299,4 +1303,4 @@ Bun.serve({
   },
 });
 
-console.log(`aiman-claude listening on http://${HOST}:${PORT}  (read-only; transcripts from ${CLAUDE_PROJECTS_DIR})`);
+console.log(`aiman-claude listening on http://${HOST}:${PORT}  (${LIVE_ENABLED ? "live control on" : "read-only"}; transcripts from ${CLAUDE_PROJECTS_DIR})`);

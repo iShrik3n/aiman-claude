@@ -5,6 +5,25 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [aiman-claude 1.1.0] - 2026-10-27
+
+Live control of Claude Code sessions (phase 2).
+
+### Added
+- Prompting from the web chat via the Claude Agent SDK, driving the installed
+  `claude` binary. New sessions, resume, abort, model and effort selection.
+- Permission prompts and `AskUserQuestion` answered in the browser; pending
+  prompts survive a page reload and are denied if the run ends.
+- Live updates: the transcript is re-indexed while a run streams and only the
+  changed messages/parts are pushed over `/oc/global/event`.
+- Host-header allow-list and same-origin checks on every request.
+
+### Changed
+- Live control is only enabled when the server is bound to loopback
+  (`AIMAN_ALLOW_REMOTE_CONTROL=1` overrides). Queue, /btw and terminal buttons
+  are hidden: those backends are not implemented.
+- The launcher installs `server/` dependencies on first run.
+
 ## [aiman-claude 1.0.0] - 2026-10-27
 
 First release of the Claude Code fork (based on AiMAN 1.9.0). Read-only.
