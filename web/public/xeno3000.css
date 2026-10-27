@@ -1013,3 +1013,40 @@ html[data-theme="xeno3000"] .xeno3000-popout-body .chat-head {
   html[data-theme="xeno3000"] .xeno3000-microbar .xeno3000-micro-left span:not(.xeno3000-ping),
   html[data-theme="xeno3000"] .xeno3000-microbar .xeno3000-micro-left b { display: none; }
 }
+/* The window silhouette itself is round, not just the inner hull. */
+html[data-theme="xeno3000"] .xeno3000-shell {
+  border-radius: 54px 42px 58px 46px / 44px 52px 48px 56px;
+  overflow: hidden;
+  background: transparent;
+}
+html[data-theme="xeno3000"] .xeno3000-shell > .xeno3000-microbar {
+  border-radius: 0;
+}
+html[data-theme="xeno3000"] .alien-hull-chassis {
+  border-radius: 0 0 54px 42px / 0 0 44px 52px;
+}
+html[data-theme="xeno3000"] .xeno3000-popout {
+  border-radius: 34px 26px 36px 40px / 28px 32px 30px 36px;
+  overflow: hidden;
+}
+html[data-theme="xeno3000"] .xeno3000-popout > .xeno3000-microbar { border-radius: 0; }
+html[data-theme="xeno3000"][data-desktop="1"] body,
+html[data-theme="xeno3000"][data-desktop="1"] #root {
+  background: transparent !important;
+  border: 0;
+  box-shadow: none;
+}
+@media (max-width: 760px) {
+  html[data-theme="xeno3000"] .xeno3000-shell { border-radius: 24px; }
+  html[data-theme="xeno3000"] .xeno3000-popout { border-radius: 20px; }
+}
+/* Detached session: no transparent gutter around the chat surface. */
+html[data-theme="xeno3000"] .xeno3000-popout-body {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+html[data-theme="xeno3000"] .xeno3000-popout > .xeno3000-microbar {
+  border-radius: 0;
+}
