@@ -1,13 +1,11 @@
-import { homedir } from "node:os";
 import { getSetting, isV2, ocRO, setSetting } from "./db";
-import { locationParams, ocData } from "./ocClient";
+import { oneShot } from "./oneshot";
 import {
   createFolder,
   getAllSessions,
   getMetaMap,
   listFolders,
   markSessionAutoOrganized,
-  setArchived,
   setSessionFolder,
   type Folder,
   type SessionRow,
@@ -16,12 +14,13 @@ import {
 /**
  * AI-assisted session filing.
  *
- * The organizer asks opencode for a JSON folder plan, applies it to aiman's
+ * The organizer asks Claude (oneshot.ts) for a JSON folder plan, applies it to aiman's
  * session_meta table, and stores directory rules so a session that reaches its
  * 10th user message can be filed without another model round-trip.
  *
- * The opencode session used for the model call is internal: it is archived
- * afterwards, never deleted.
+ * Sends session titles, directories and short snippets of the first prompt and
+ * last answer to Claude on the user's own account, so it only runs when asked
+ * (the button) or when AIMAN_AUTO_FILE=1 is set.
  */
 
 const AUTO_RULES_KEY = "auto_folder_rules";
@@ -86,51 +85,36 @@ function folderPaths(folders: Folder[]): Map<string, string[]> {
   return out;
 }
 
-function messageText(message: any): string {
-  const content = message?.content;
-  if (Array.isArray(content)) {
-    return content
-      .filter((item) => item?.type === "text" && typeof item.text === "string")
-      .map((item) => item.text)
-      .join("\n")
-      .trim();
-  }
-  return typeof message?.text === "string" ? message.text : "";
-}
-
-function v2Snippet(sessionId: string, type: "user" | "assistant", newest: boolean): string {
+function textSnippet(sessionId: string, role: "user" | "assistant", newest: boolean): string {
   try {
     const row = ocRO
       .query(
-        `SELECT data FROM session_message
-          WHERE session_id = ? AND type = ?
-          ORDER BY seq ${newest ? "DESC" : "ASC"} LIMIT 1`,
+        `SELECT p.data FROM part p JOIN message m ON m.id = p.message_id
+          WHERE m.session_id = ? AND json_extract(m.data, '$.role') = ?
+            AND json_extract(p.data, '$.type') = 'text'
+          ORDER BY m.time_created ${newest ? "DESC" : "ASC"} LIMIT 1`,
       )
-      .get(sessionId, type) as { data: string } | undefined;
-    const data = jsonParse(row?.data);
-    if (!data) return "";
-    if (type === "user") return String(data.text ?? "").trim();
-    return messageText(data);
+      .get(sessionId, role) as { data: string } | undefined;
+    return String(jsonParse(row?.data)?.text ?? "").trim();
   } catch {
     return "";
   }
 }
 
 function sessionSnippet(session: SessionRow): { firstUser: string; lastAssistant: string } {
-  if (!isV2()) return { firstUser: "", lastAssistant: "" };
   return {
-    firstUser: v2Snippet(session.id, "user", false).slice(0, 260),
-    lastAssistant: v2Snippet(session.id, "assistant", true).slice(0, 260),
+    firstUser: textSnippet(session.id, "user", false).slice(0, 260),
+    lastAssistant: textSnippet(session.id, "assistant", true).slice(0, 260),
   };
 }
 
-function sessionsForOrganizing(): SessionRow[] {
+export function sessionsForOrganizing(): SessionRow[] {
   return getAllSessions()
     .filter((session) => session.time_archived == null && !session.parent_id)
     .slice(0, 500);
 }
 
-function promptFor(sessions: SessionRow[], only?: string): string {
+export function promptFor(sessions: SessionRow[], only?: string): string {
   const folders = listFolders();
   const paths = folderPaths(folders);
   const meta = getMetaMap();
@@ -171,7 +155,7 @@ function promptFor(sessions: SessionRow[], only?: string): string {
     })
     .join("\n");
 
-  return `You are the automatic folder organizer for aiman, a manager for opencode sessions.
+  return `You are the automatic folder organizer for aiman, a manager for Claude Code sessions.
 Analyze the session titles, working directories, and short conversation snippets.
 Filesystem directories are strong signals: sessions in the same project or nearby folders usually belong together.
 
@@ -201,24 +185,7 @@ Rules:
 ${only ? "- Organize only the single listed session; you may create a folder for it." : "- Cover all listed sessions."}`;
 }
 
-async function waitForAnswer(sessionId: string, query: URLSearchParams): Promise<string> {
-  const deadline = Date.now() + PLAN_TIMEOUT_MS;
-  while (Date.now() < deadline) {
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    const data = await ocData<any>(`/api/session/${sessionId}/message`, {}, query).catch(() => null);
-    const list = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
-    for (let i = list.length - 1; i >= 0; i--) {
-      const message = list[i];
-      const type = message?.type ?? message?.role;
-      if (type !== "assistant") continue;
-      const text = messageText(message);
-      if (text && message?.time?.completed != null) return text;
-    }
-  }
-  throw new Error("The organizer model did not finish within three minutes.");
-}
-
-function extractPlan(text: string): Plan {
+export function extractPlan(text: string): Plan {
   const withoutFences = text.replace(/```(?:json)?/gi, "").replace(/```/g, "");
   const start = withoutFences.indexOf("{");
   const end = withoutFences.lastIndexOf("}");
@@ -228,75 +195,15 @@ function extractPlan(text: string): Plan {
   return parsed as Plan;
 }
 
-async function runOrganizer(prompt: string, options: OrganizerOptions = {}): Promise<{ sessionId: string; text: string }> {
-  const directory = homedir();
-  const query = locationParams(directory);
-  let sessionId: string | undefined;
-  try {
-    const created = await ocData<any>(
-      "/api/session",
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          title: "Aiman auto-organizer (internal)",
-          location: { directory },
-        }),
-      },
-      query,
-    );
-    sessionId = created?.id;
-    if (!sessionId) throw new Error("opencode did not return an internal organizer session id.");
+/** Planning across hundreds of sessions needs more than the cheapest model. */
+const ORGANIZER_MODEL = "claude-sonnet-5-5";
 
-    if (options.model?.providerID && options.model?.modelID) {
-      await ocData(
-        `/api/session/${sessionId}/model`,
-        {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            model: {
-              providerID: options.model.providerID,
-              id: options.model.modelID,
-              ...(options.model.variant ? { variant: options.model.variant } : {}),
-            },
-          }),
-        },
-        query,
-      ).catch(() => {});
-    }
-    if (options.agent) {
-      await ocData(
-        `/api/session/${sessionId}/agent`,
-        {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ agent: options.agent }),
-        },
-        query,
-      ).catch(() => {});
-    }
-
-    await ocData(
-      `/api/session/${sessionId}/prompt`,
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ text: prompt }),
-      },
-      query,
-    );
-    const text = await waitForAnswer(sessionId, query);
-    return { sessionId, text };
-  } finally {
-    // Internal plan sessions are archived, not deleted. Users can still find
-    // them under Archived if they want to inspect the model's reasoning.
-    if (sessionId) {
-      try {
-        setArchived(sessionId, true);
-      } catch {}
-    }
-  }
+async function runOrganizer(prompt: string, options: OrganizerOptions = {}): Promise<{ sessionId: null; text: string }> {
+  const text = await oneShot(prompt, {
+    model: options.model?.modelID ?? ORGANIZER_MODEL,
+    timeoutMs: PLAN_TIMEOUT_MS,
+  });
+  return { sessionId: null, text };
 }
 
 type OrganizerOptions = {
@@ -306,7 +213,7 @@ type OrganizerOptions = {
 
 type ApplyStats = { assigned: number; foldersCreated: number; rules: number };
 
-function applyPlan(plan: Plan, options: { onlySessionId?: string; markAll: boolean }): ApplyStats {
+export function applyPlan(plan: Plan, options: { onlySessionId?: string; markAll: boolean }): ApplyStats {
   const folders = listFolders();
   const paths = folderPaths(folders);
   const byKey = new Map<string, string>();

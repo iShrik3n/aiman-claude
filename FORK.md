@@ -22,9 +22,11 @@ Works:
   on Bun's built-in PTY. Needs live control; the server picks the command, the
   browser only names a known project directory
 
+- **Deferred queue**, **/btw** side questions and **auto-organize** (all need
+  live control; /btw and auto-organize are one-shot Claude calls, see below)
+
 Not implemented yet (endpoints answer 501 or the buttons are hidden):
-attachments, fork, undo, deferred queue, `/btw`, auto-organize,
-extensions, profiles, self-update.
+attachments, fork, undo, extensions, profiles, self-update.
 
 ## Security
 
@@ -50,6 +52,9 @@ A POST to this server can make Claude Code run tools on your machine.
 - After 5 failed logins for a username it is locked for 30 s, doubling up to
   15 min (in memory, per username). Someone who knows your username can
   therefore lock you out for that long.
+- /btw and auto-organize send conversation snippets to Claude on your own
+  account. They use no tools and read no settings. Auto-organize runs from its
+  button only (`AIMAN_AUTO_FILE=1` also files sessions at their 10th message).
 - Runs use permission mode `default` and never `bypassPermissions`; your normal
   Claude Code settings (allow rules, `defaultMode`, CLAUDE.md) are loaded, so
   tools you already auto-allow are not asked about here either.

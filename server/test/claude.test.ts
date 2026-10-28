@@ -1,10 +1,5 @@
 import { expect, test } from "bun:test";
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
-// claude.ts opens the index DB on import; keep it away from the real one.
-process.env.AIMAN_HOME = mkdtempSync(join(tmpdir(), "aiman-test-"));
+// The preload (setup.ts) points the index DB at a throwaway dir.
 const { parseTranscript } = await import("../src/claude");
 
 const L = (o: unknown) => JSON.stringify(o);

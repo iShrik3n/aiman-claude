@@ -5,6 +5,27 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [aiman-claude 1.7.0] - 2026-10-28
+
+Queue, /btw and auto-organize come back, all on top of live control (loopback).
+
+### Added
+- **Deferred queue.** A queued prompt is stored in aiman's database and sent to
+  Claude Code once the session has no active run, its transcript has been still
+  for 4 s (someone may be using it from a terminal) and the quiet window has
+  passed. Survives restarts; retried up to 5 times. Attachments are refused.
+- **/btw side questions.** A one-shot, tool-free call (no user settings, hooks
+  or CLAUDE.md, nothing written to `~/.claude`) with a snapshot of the recent
+  conversation. Defaults to Haiku 5.5; uses the model picked in the composer.
+- **Auto-organize.** The folder plan comes from a one-shot Sonnet 5.5 call.
+  Runs from the button only; filing sessions as they reach 10 messages is off
+  unless `AIMAN_AUTO_FILE=1` (it would spend tokens unprompted).
+- Tests for the organizer and a shared throwaway environment for all tests.
+
+### Notes
+- /btw and auto-organize send conversation snippets (titles, directories, the
+  first prompt and last answer for organize) to Claude on your own account.
+
 ## [aiman-claude 1.4.0] - 2026-10-28
 
 ### Added
