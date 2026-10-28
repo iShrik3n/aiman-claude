@@ -323,7 +323,10 @@ export default function Sidebar() {
   return (
     <div className="sidebar">
       <div className="sidebar-head">
-        <button className="btn primary full" onClick={() => store.set({ activeSessionId: "__new__", view: "chat" })}>
+        <button
+          className="btn primary full ignition-capsule-btn"
+          onClick={() => store.set({ activeSessionId: "__new__", view: "chat" })}
+        >
           <Icon name="plus" /> New session
         </button>
       </div>
@@ -394,6 +397,12 @@ export default function Sidebar() {
           </div>
         </div>
 
+        <div
+          className={
+            "sidebar-directory-block" +
+            (directoriesOpen ? " lcd kjofol-lcd-screen xeno3000-paper-lcd" : "")
+          }
+        >
         <div className="section-title dir-section-title">
           <button
             type="button"
@@ -423,7 +432,7 @@ export default function Sidebar() {
           directoryRows.slice(0, 40).map((dir) => (
             <div
               key={dir.path}
-              className={"nav-item" + (s.filters.directory === dir.path ? " active" : "")}
+              className={"nav-item dir-row" + (s.filters.directory === dir.path ? " active" : "")}
               title={dir.path}
               onClick={() => apply({ archived: "0", directory: dir.path, folder: null })}
             >
@@ -454,6 +463,7 @@ export default function Sidebar() {
             </div>
           </>
         )}
+        </div>
       </div>
     </div>
   );

@@ -7,14 +7,17 @@ import SearchView from "./SearchView";
 import TerminalView from "./TerminalView";
 import Users from "./Users";
 import StatsView from "./StatsView";
-import Profiles from "./Profiles";
 import SettingsView from "./SettingsView";
 import ExtensionsView from "./ExtensionsView";
+import Workspace from "./Workspace";
 import DesktopTitlebar from "./DesktopTitlebar";
 import { AppTopbar, CompactTitlebarNav } from "./AppChrome";
+import { XenoFooter, XenoMicrobar, XenoPodBottom, XenoPodTop } from "./XenoChrome";
+import Xeno3000, { Xeno3000Popout } from "./Xeno3000";
 import Overlays from "./Overlays";
 import Login from "./Login";
 import Onboarding from "./Onboarding";
+import DeepLinkHandler from "./DeepLinkHandler";
 
 export default function App() {
   const s = useStore();
@@ -22,6 +25,10 @@ export default function App() {
   useEffect(() => {
     bootstrapAuth().catch((e) => console.error(e));
   }, []);
+
+  useEffect(() => {
+    if (typeof document !== "undefined") document.documentElement.lang = s.language;
+  }, [s.language]);
 
   // Keep the browser URL in sync with the active view / session (handles).
   useEffect(() => {
@@ -69,11 +76,17 @@ export default function App() {
       {s.view === "stats" && <StatsView />}
       {s.view === "terminal" && <TerminalView />}
       {s.view === "users" && isAdmin && <Users />}
-      {s.view === "extensions" && isAdmin && <ExtensionsView />}
+      {s.view === "extensions" && isAdmin && s.hasWorkspace && <ExtensionsView />}
       {s.view === "extensions" && !isAdmin && (
-        <div className="empty">Extensions are only available to administrators.</div>
+        <div className="empty">Integrations are only available to administrators.</div>
       )}
-      {s.view === "profiles" && <Profiles />}
+      {s.view === "workspace" && isAdmin && s.hasWorkspace && <Workspace />}
+      {(s.view === "workspace" || s.view === "extensions") && !s.hasWorkspace && (
+        <div className="empty">This section configures opencode and is not available in aiman-claude.</div>
+      )}
+      {s.view === "workspace" && !isAdmin && (
+        <div className="empty">OpenCode configuration is only available to administrators.</div>
+      )}
       {s.view === "settings" && <SettingsView />}
     </div>
   );
@@ -86,6 +99,25 @@ export default function App() {
   const compact = s.compactToolbar && isDesktop;
   const windowClass = retroWindow ? " window" : "";
 
+  if (popout && s.theme === "xeno3000") {
+    return (
+      <Xeno3000Popout
+        main={
+          <div className="main">
+            {s.activeSessionId ? <ChatView popout compact={compact} /> : <SessionList />}
+          </div>
+        }
+        overlays={
+          <>
+            {s.toast && <div className="toast">{s.toast}</div>}
+            <Overlays />
+            <DeepLinkHandler />
+          </>
+        }
+      />
+    );
+  }
+
   // A pop-out is a single session: no sidebar, no view switcher, no app toolbar.
   if (popout) {
     const popoutSession = s.sessions.find((x) => x.id === s.activeSessionId);
@@ -97,6 +129,47 @@ export default function App() {
         </div>
         {s.toast && <div className="toast">{s.toast}</div>}
         <Overlays />
+      </div>
+    );
+  }
+
+  if (s.theme === "xeno3000" && !compact) {
+    return (
+      <Xeno3000
+        sidebar={<Sidebar />}
+        main={mainContent}
+        overlays={
+          <>
+            {s.toast && <div className="toast">{s.toast}</div>}
+            <Overlays />
+            <DeepLinkHandler />
+          </>
+        }
+      />
+    );
+  }
+
+  if (s.theme === "xeno4" && !compact) {
+    return (
+      <div className={"app xeno-shell" + windowClass}>
+        <DesktopTitlebar />
+        <XenoMicrobar />
+        <div className="alien-hull-chassis">
+          <AppTopbar microbar={false} />
+          <div className="plasma-conduit" />
+          <div className="xeno-workspace-grid">
+            <aside className="left-biopod xeno-left-pod">
+              <XenoPodTop />
+              <Sidebar />
+              <XenoPodBottom />
+            </aside>
+            <main className="main-command-cavity">{mainContent}</main>
+          </div>
+          <XenoFooter />
+        </div>
+        {s.toast && <div className="toast">{s.toast}</div>}
+        <Overlays />
+        <DeepLinkHandler />
       </div>
     );
   }
@@ -117,6 +190,7 @@ export default function App() {
 
       {s.toast && <div className="toast">{s.toast}</div>}
       <Overlays />
+      <DeepLinkHandler />
     </div>
   );
 }

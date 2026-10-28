@@ -53,9 +53,18 @@ transcript Claude Code later pruned, so do not delete it casually.
 Run it: `bun install --cwd web && bun install --cwd server && bun run build && bun run start`
 (default port 4197, data in `~/.local/share/aiman-claude`).
 
-Upstream is tracked as the `upstream` git remote.
+Upstream is tracked as the `upstream` git remote. Current base: AiMAN 1.11.0
+(merged in 1.2.0). To update: `git fetch upstream && git merge upstream/main`,
+then resolve conflicts in `package.json`, `CHANGELOG.md` and `server/src/config.ts`
+(keep our side), and switch off any new opencode-only route or screen the same way
+the workspace and server profiles are (501 on the server, `features.workspace` in
+the UI). A successful `bun build` does not catch missing identifiers, so start the
+server and call a few endpoints after a merge.
 
 ## Not adapted yet
+
+The OpenCode workspace, Integrations and server profiles from upstream 1.10+ are
+present but disabled: they configure opencode, which this fork does not use.
 
 `scripts/install.*`, the Dockerfile, `deploy/` and the desktop app are still
 upstream's and target the opencode version (the installers download upstream

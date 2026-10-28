@@ -15,6 +15,7 @@ const path = require("node:path");
 
 const IS_WIN = process.platform === "win32";
 const IS_MAC = process.platform === "darwin";
+const PROTOCOL = "aiman";
 const HOST = process.env.AIMAN_HOST || process.env.HOST || "127.0.0.1";
 const PORT = process.env.AIMAN_PORT || process.env.PORT || "4097";
 const AIMAN_URL = (process.env.AIMAN_URL || `http://${HOST}:${PORT}`).replace(/\/+$/, "");
@@ -35,6 +36,33 @@ let serverChild = null;
 let quitting = false;
 let stateFile = "";
 let logFile = "";
+let pendingDeepLink = null;
+
+function handleDeepLink(url) {
+  if (typeof url !== "string" || !url.startsWith(`${PROTOCOL}://`)) return;
+  pendingDeepLink = url;
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+    try {
+      mainWindow.webContents.send("aiman:deep-link", url);
+    } catch {}
+  }
+}
+
+function deepLinkFromArgs(args) {
+  for (const arg of args || []) {
+    if (typeof arg === "string" && arg.startsWith(`${PROTOCOL}://`)) return arg;
+  }
+  return null;
+}
+
+if (process.defaultApp && process.argv[1]) {
+  app.setAsDefaultProtocolClient(PROTOCOL, process.execPath, [path.resolve(process.argv[1])]);
+} else {
+  app.setAsDefaultProtocolClient(PROTOCOL);
+}
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -266,7 +294,8 @@ function createWindow() {
     minHeight: 620,
     frame: false,
     show: false,
-    backgroundColor: "#0e1013",
+    transparent: true,
+    backgroundColor: "#00000000",
     title: "AiMAN",
     autoHideMenuBar: true,
     webPreferences: {
@@ -308,7 +337,8 @@ function createWindow() {
         minHeight: 480,
         title: "AiMAN session",
         frame: false,
-        backgroundColor: "#0e1013",
+        transparent: true,
+        backgroundColor: "#00000000",
         autoHideMenuBar: true,
         webPreferences: {
           preload: path.join(__dirname, "preload.cjs"),
@@ -333,6 +363,14 @@ function createWindow() {
     if (!url.startsWith(AIMAN_URL)) {
       event.preventDefault();
       if (/^https?:/i.test(url)) shell.openExternal(url);
+    }
+  });
+
+  mainWindow.webContents.on("did-finish-load", () => {
+    if (pendingDeepLink) {
+      try {
+        mainWindow.webContents.send("aiman:deep-link", pendingDeepLink);
+      } catch {}
     }
   });
 
@@ -361,6 +399,8 @@ async function boot() {
   }
 }
 
+ipcMain.handle("aiman:deep-link-pending", () => pendingDeepLink);
+
 ipcMain.handle("aiman:window", (event, action) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) return;
@@ -374,6 +414,12 @@ ipcMain.handle("aiman:window", (event, action) => {
 ipcMain.on("aiman:theme", (event, theme) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win || !theme || typeof theme.bg !== "string") return;
+  if (theme.id === "xeno3000") {
+    try {
+      win.setBackgroundColor("#00000000");
+    } catch {}
+    return;
+  }
   if (/^#[0-9a-f]{3,8}$/i.test(theme.bg)) {
     try {
       win.setBackgroundColor(theme.bg);
@@ -385,11 +431,21 @@ const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   app.quit();
 } else {
-  app.on("second-instance", () => {
+  app.on("second-instance", (_event, argv) => {
+    const link = deepLinkFromArgs(argv);
+    if (link) handleDeepLink(link);
     if (!mainWindow) return;
     if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.focus();
   });
+
+  app.on("open-url", (event, url) => {
+    event.preventDefault();
+    handleDeepLink(url);
+  });
+
+  const initialLink = deepLinkFromArgs(process.argv);
+  if (initialLink) pendingDeepLink = initialLink;
 
   app.whenReady().then(() => {
     if (!IS_MAC) Menu.setApplicationMenu(null);

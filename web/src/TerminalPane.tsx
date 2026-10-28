@@ -49,15 +49,21 @@ const psQuote = (s: string) => `'${s.replace(/'/g, "''")}'`;
 export default function TerminalPane({
   sessionId,
   directory,
+  command,
+  args,
+  title,
 }: {
   sessionId?: string;
   directory?: string;
+  command?: string;
+  args?: string[];
+  title?: string;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const paneRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
-  const theme = useStore().theme;
+  const { theme, monoFontFamily, fontSize } = useStore();
   const [status, setStatus] = useState("connecting…");
 
   // Upload dropped/pasted files (images, PDF, anything readable) and type the
@@ -112,8 +118,10 @@ export default function TerminalPane({
 
     const term = new Terminal({
       fontFamily:
+        monoFontFamily ||
+        cssVar("--mono") ||
         'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
-      fontSize: 13,
+      fontSize: fontSize ?? 13,
       cursorBlink: true,
       scrollback: 10000,
       theme: termTheme(),
@@ -190,10 +198,13 @@ export default function TerminalPane({
         args?: string[];
         cwd?: string;
         title?: string;
-      } = { title: sessionId ? `opencode ${sessionId}` : "terminal" };
+      } = { title: title ?? (sessionId ? `opencode ${sessionId}` : "terminal") };
       if (directory) body.cwd = directory;
 
-      if (sessionId) {
+      if (command) {
+        body.command = command;
+        if (args?.length) body.args = args;
+      } else if (sessionId) {
         // Launch the opencode TUI attached to this session. Start it through a
         // shell with the binary's absolute path (spawning it directly as the
         // PTY leader aborts, and bare "opencode" may not be on the PTY's PATH).
@@ -286,7 +297,7 @@ export default function TerminalPane({
         term.dispose();
       } catch {}
     };
-  }, [sessionId, directory]);
+  }, [sessionId, directory, command, args, title, monoFontFamily, fontSize]);
 
   return (
     <div ref={paneRef} className="terminal-pane">

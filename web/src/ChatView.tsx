@@ -282,12 +282,32 @@ export default function ChatView({
     const start = Math.max(0, Math.min(index - Math.floor(VISIBLE / 3), maxStart));
     stickToBottom.current = false;
     setWindowStart(start);
+    const scrollToHit = () => {
+      const body = bodyRef.current;
+      const message = body?.querySelector(
+        `[data-entry-index="${index}"]`,
+      ) as HTMLElement | null;
+      if (!body || !message) return;
+      // Scroll the transcript container itself to the highlighted occurrence,
+      // not merely the message card and not the outer page. Markdown
+      // highlighting runs after paint, so retry once until the <mark> exists.
+      const mark = message.querySelector("mark.find-mark") as HTMLElement | null;
+      const target = mark ?? message;
+      const targetRect = target.getBoundingClientRect();
+      const bodyRect = body.getBoundingClientRect();
+      const top =
+        body.scrollTop +
+        (targetRect.top - bodyRect.top) -
+        body.clientHeight / 2 +
+        targetRect.height / 2;
+      body.scrollTop = Math.max(0, Math.min(top, body.scrollHeight - body.clientHeight));
+    };
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        const el = bodyRef.current?.querySelector(
-          `[data-entry-index="${index}"]`,
-        ) as HTMLElement | null;
-        el?.scrollIntoView({ block: "center", behavior: "smooth" });
+        scrollToHit();
+        // The markdown highlighter runs after paint; one short retry makes the
+        // jump land on the actual match even in long rendered messages.
+        setTimeout(scrollToHit, 45);
       });
     });
   }
@@ -503,7 +523,7 @@ export default function ChatView({
   if (s.chatMode === "terminal" && !s.opencodeV2) {
     return (
       <div className="chat">
-        <div className={"chat-head" + (popout && compact ? " popout-header" : "")}>
+        <div className={"chat-head transport-ribbon" + (popout && compact ? " popout-header" : "")}>
           {!popout && (
             <button
               className="btn ghost sm"
@@ -623,7 +643,7 @@ export default function ChatView({
 
   return (
     <div className="chat">
-      <div className={"chat-head" + (popout && compact ? " popout-header" : "")}>
+      <div className={"chat-head transport-ribbon" + (popout && compact ? " popout-header" : "")}>
         {!popout && (
           <button className="btn ghost sm" onClick={() => store.set({ activeSessionId: null })} title="Back to list">
             <Icon name="back" />
@@ -739,7 +759,7 @@ export default function ChatView({
       </div>
 
       {runningTools.length > 0 && (
-        <div className="running-bar">
+        <div className="running-bar sub-transport-bar">
           <span className="running-dot" />
           <span className="small">
             <b>{runningTools.length}</b> running
@@ -1469,7 +1489,7 @@ const MessageRow = memo(function MessageRow({
       : undefined;
   return (
     <div
-      className={"msg " + role + (hit ? " find-hit" : "") + (active ? " find-active" : "")}
+      className={"msg stream-biopod " + role + (hit ? " find-hit" : "") + (active ? " find-active" : "")}
       data-entry-index={index}
       style={accentStyle}
     >

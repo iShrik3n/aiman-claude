@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 /**
  * Central, cross-platform path/port configuration (Claude Code fork).
@@ -110,5 +110,19 @@ export const AUTH_BACKUP =
 
 export const PORT = Number(ensureEnv("PORT") ?? 4197);
 export const HOST = ensureEnv("HOST") ?? "127.0.0.1";
-export const OPENCODE_URL = ensureEnv("OPENCODE_URL") ?? "http://127.0.0.1:4096";
+export const OPENCODE_URL =
+  ensureEnv("OPENCODE_URL") ?? "http://127.0.0.1:4096";
 export const TERMINAL_URL = ensureEnv("TERMINAL_URL") ?? "http://127.0.0.1:4098";
+
+// Upstream's opencode server profiles. Disabled in this fork (the routes answer
+// 501), but servers.ts still imports these, which keeps upstream merges clean.
+export type OpenCodeServerProfile = {
+  id: string;
+  name: string;
+  url: string;
+  password?: string;
+  db?: string;
+  auth?: string;
+};
+export type OpenCodeServersFile = { activeId: string | null; servers: OpenCodeServerProfile[] };
+export const SERVERS_FILE = join(AIMAN_HOME, "opencode-servers.json");

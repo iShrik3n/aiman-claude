@@ -340,6 +340,60 @@ export const THEMES: Theme[] = [
     }),
   },
   {
+    id: "xeno",
+    name: "Alien Grotesque",
+    description: "Liquid-chrome xenotech, cyan LCD glass and orbital controls.",
+    vars: base({
+      "--bg": "#050a10",
+      "--bg-2": "#0a141d",
+      "--bg-3": "#142431",
+      "--border": "#7d9aaa",
+      "--text": "#e9f8ff",
+      "--muted": "#9eb8c7",
+      "--accent": "#79e7ff",
+      "--accent-2": "#c9f8ff",
+      "--green": "#79e7ff",
+      "--amber": "#b9e8ff",
+      "--red": "#ff6b6b",
+      "--purple": "#a9a8ff",
+      "--radius": "28px",
+      "--tab-radius": "54% 46% 58% 42% / 52% 58% 42% 48%",
+      "--pill-radius": "54% 46% 58% 42% / 52% 58% 42% 48%",
+      "--btn-border": "1px solid rgba(196, 226, 240, 0.62)",
+      "--input-border": "1px solid rgba(137, 190, 210, 0.48)",
+      "--btn-hover": "#b7dce8",
+      "--accent-fg": "#031018",
+      "--accent-soft": "rgba(121, 231, 255, 0.12)",
+      "--text-2": "#c6e4ef",
+      "--font": '"Share Tech Mono", "Cascadia Mono", "Commissioner", monospace',
+      "--mono": '"Share Tech Mono", "Cascadia Code", "Consolas", monospace',
+      "--font-size": "13px",
+      "--code-bg": "#030b12",
+      "--term-bg": "#02070c",
+      "--term-fg": "#79e7ff",
+      "--term-cursor": "#eafcff",
+      "--cm-map-bg": "#030b12",
+      "--cm-dir-bg": "rgba(72, 124, 145, 0.46)",
+      "--cm-dir-hover": "rgba(121, 231, 255, 0.22)",
+      "--cm-dir-border": "#6e96a8",
+      "--cm-file-bg": "#071620",
+      "--cm-label-fg": "#e9f8ff",
+      "--cm-code-fg": "#96bac7",
+      "--scroll-thumb": "#3f6272",
+      "--overlay-bg": "rgba(2, 6, 10, 0.76)",
+      "--panel-shadow":
+        "0 28px 80px rgba(0,0,0,0.76), 0 0 0 1px rgba(174, 217, 235, 0.22), inset 0 1px 0 rgba(238, 252, 255, 0.16)",
+      "--question-bg": "#071a24",
+      "--question-border": "#4f8ea3",
+      "--permission-bg": "#201c10",
+      "--permission-border": "#8b7c45",
+      "--mark-bg": "#79e7ff",
+      "--mark-fg": "#031018",
+      "--diff-bg": "#030b12",
+      "--diff-ctx": "#c6e4ef",
+    }),
+  },
+  {
     id: "aqua",
     name: "macOS Aqua",
     description: "Glossy light blue with soft rounded panels.",
@@ -469,6 +523,25 @@ export const THEMES: Theme[] = [
     }),
   },
 ];
+
+// K-Jöfol Xeno4 is the source-matched cockpit variant. It shares the same
+// palette object as Alien Grotesque so palette fixes stay in sync.
+const xenoSourceTheme = THEMES.find((theme) => theme.id === "xeno");
+if (xenoSourceTheme) {
+  THEMES.splice(THEMES.indexOf(xenoSourceTheme) + 1, 0, {
+    ...xenoSourceTheme,
+    id: "xeno4",
+    name: "K-Jöfol Xeno4",
+    description: "Source-matched alien cockpit: chrome, cyan dot-matrix and microbar.",
+  });
+  THEMES.splice(THEMES.indexOf(xenoSourceTheme) + 2, 0, {
+    ...xenoSourceTheme,
+    id: "xeno3000",
+    name: "Xeno 3000",
+    description: "Exact Xeno3 HTML cockpit with bundled skins and paper LCD.",
+    css: "/xeno3000.css",
+  });
+}
 
 export const DEFAULT_THEME = "dark";
 
