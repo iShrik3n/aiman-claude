@@ -1,0 +1,18 @@
+{
+  "name": "AiMAN",
+  "short_name": "AiMAN",
+  "description": "Self-hosted web UI and session manager for opencode.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0e1013",
+  "theme_color": "#0e1013",
+  "icons": [
+    {
+      "src": "/aiman.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

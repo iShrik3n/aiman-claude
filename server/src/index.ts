@@ -16,6 +16,16 @@ import { handleOc } from "./oc";
 import { guardRequest, LIVE_ENABLED } from "./security";
 import { syncTranscripts } from "./claude";
 import { handleExtensions } from "./extensions";
+import { handleWorkspace } from "./workspace";
+import { installLogCapture, logStream, recentLogs, startOpencodeLogWatcher } from "./logs";
+import {
+  activateServer,
+  createServer,
+  deleteServer,
+  listServers,
+  testServer,
+  updateServer,
+} from "./servers";
 import {
   autoOrganizeAll,
   ensureAutoOrganizeBaseline,
@@ -31,6 +41,7 @@ import { askBtw, deleteBtw, listBtw, startBtwWorker } from "./btw";
 import { locationParams, ocData, ocFetch } from "./ocClient";
 import {
   activateProfileForUser,
+  captureProfileAuth,
   createProfile,
   deleteProfile,
   ensureDefaultProfile,
@@ -97,6 +108,7 @@ import {
   UPDATE_REPO,
   CLAUDE_PROJECTS_DIR,
   AIMAN_HOME,
+  OPENCODE_DATA_DIR,
 } from "./config";
 import {
   copyFileSync,
@@ -120,6 +132,13 @@ const json = (data: unknown, status = 200, headers: Record<string, string> = {})
     status,
     headers: { "content-type": "application/json; charset=utf-8", ...headers },
   });
+
+// Capture manager diagnostics for the live log viewer. Do this before the
+// background indexer and HTTP server start emitting lines.
+installLogCapture();
+try {
+  startOpencodeLogWatcher(join(OPENCODE_DATA_DIR, "log"));
+} catch {}
 
 const parseCookieToken = (req: Request): string | null =>
   parseCookies(req)[COOKIE_NAME] ?? null;
@@ -787,10 +806,25 @@ async function handle(req: Request): Promise<Response> {
 
   pm = p.match(/^\/api\/profiles\/([^/]+)\/activate$/);
   if (pm && method === "POST") {
+    // Activating a credential set changes the single server-wide auth store.
+    // That is an administrative action, even though the active-set marker is
+    // stored per user for historical/stats context.
+    if (!user!.is_admin) return json({ error: "forbidden" }, 403);
     const id = pm[1]!;
     if (!getProfile(id)) return json({ error: "not found" }, 404);
     const res = await activateProfileForUser(user!.id, id);
     return json({ ok: true, ...res });
+  }
+
+  pm = p.match(/^\/api\/profiles\/([^/]+)\/capture$/);
+  if (pm && method === "POST") {
+    return json({ error: "Credential capture is not available in the Claude Code fork" }, 501);
+  }
+  if (false as boolean) {
+    if (!user!.is_admin) return json({ error: "forbidden" }, 403);
+    const id = pm[1]!;
+    if (!getProfile(id)) return json({ error: "not found" }, 404);
+    return json({ ok: true, ...captureProfileAuth(id) });
   }
 
   pm = p.match(/^\/api\/profiles\/([^/]+)\/auth$/);
@@ -834,6 +868,81 @@ async function handle(req: Request): Promise<Response> {
     return handleExtensions(req, url);
   }
 
+  // ---------- workspace (config, resources, backup, logs) ----------
+  if (p === "/api/logs" && method === "GET") {
+    if (!user!.is_admin) return json({ error: "forbidden" }, 403);
+    return json({ entries: recentLogs(Number(url.searchParams.get("after") ?? "0")) });
+  }
+  if (p === "/api/logs/stream" && method === "GET") {
+    if (!user!.is_admin) return json({ error: "forbidden" }, 403);
+    return logStream(req);
+  }
+
+  if (p === "/api/workspace" || p.startsWith("/api/workspace/")) {
+    // Upstream edits opencode's config files; never touch them from the Claude fork.
+    return json({ error: "The OpenCode workspace is not available in the Claude Code fork" }, 501);
+  }
+  if (false) {
+    if (!user!.is_admin) return json({ error: "forbidden" }, 403);
+    return handleWorkspace(req, url);
+  }
+
+  // ---------- switchable opencode server profiles ----------
+  if (p === "/api/servers" || p.startsWith("/api/servers/")) {
+    return json({ error: "opencode server profiles are not available in the Claude Code fork" }, 501);
+  }
+  if (p === "/api/servers" && method === "GET") {
+    if (!user!.is_admin) return json({ error: "forbidden" }, 403);
+    return json(listServers());
+  }
+  if (p === "/api/servers" && method === "POST") {
+    if (!user!.is_admin) return json({ error: "forbidden" }, 403);
+    try {
+      return json({ ok: true, server: createServer(await readBody(req)) }, 201);
+    } catch (e) {
+      return json({ error: String((e as any)?.message ?? e) }, 400);
+    }
+  }
+  if (p === "/api/servers/test" && method === "POST") {
+    if (!user!.is_admin) return json({ error: "forbidden" }, 403);
+    try {
+      return json(await testServer(await readBody(req)));
+    } catch (e) {
+      return json({ ok: false, error: String((e as any)?.message ?? e) }, 400);
+    }
+  }
+  let serverMatch = p.match(/^\/api\/servers\/([^/]+)$/);
+  if (serverMatch) {
+    if (!user!.is_admin) return json({ error: "forbidden" }, 403);
+    const id = decodeURIComponent(serverMatch[1]!);
+    if (method === "PUT") {
+      try {
+        return json({ ok: true, server: updateServer(id, await readBody(req)) });
+      } catch (e) {
+        return json({ error: String((e as any)?.message ?? e) }, 400);
+      }
+    }
+    if (method === "DELETE") {
+      try {
+        deleteServer(id);
+        return json({ ok: true });
+      } catch (e) {
+        return json({ error: String((e as any)?.message ?? e) }, 400);
+      }
+    }
+  }
+  serverMatch = p.match(/^\/api\/servers\/([^/]+)\/activate$/);
+  if (serverMatch && method === "POST") {
+    if (!user!.is_admin) return json({ error: "forbidden" }, 403);
+    try {
+      const server = activateServer(decodeURIComponent(serverMatch[1]!));
+      setTimeout(restartSelf, 900);
+      return json({ ok: true, server, restarting: true });
+    } catch (e) {
+      return json({ error: String((e as any)?.message ?? e) }, 400);
+    }
+  }
+
   if (p === "/api/health") {
     let terminal = false;
     try {
@@ -858,7 +967,7 @@ async function handle(req: Request): Promise<Response> {
       opencodeV2: true,
       readOnly: !LIVE_ENABLED,
       // Queue and /btw need features that are not implemented for Claude Code.
-      features: { queue: false, btw: false, terminal: false },
+      features: { queue: false, btw: false, terminal: false, workspace: false },
       terminal: false,
       platform: process.platform,
       onboarded: getUserOnboarded(user!.id),
@@ -919,16 +1028,35 @@ async function handle(req: Request): Promise<Response> {
   if (p === "/api/stats" && method === "GET") {
     const userId = url.searchParams.get("user") || undefined;
     const profileId = url.searchParams.get("profile") || undefined;
-    if (userId || profileId) {
-      return json(aggregateStats(sessionIdsByMeta({ userId, profileId })));
+    const project = url.searchParams.get("project") || undefined;
+    const fromRaw = url.searchParams.get("from");
+    const toRaw = url.searchParams.get("to");
+    const from = fromRaw ? Date.parse(fromRaw) : undefined;
+    const to = toRaw ? Date.parse(toRaw) : undefined;
+    let ids = userId || profileId ? sessionIdsByMeta({ userId, profileId }) : undefined;
+    if (project) {
+      const projectIds = new Set(
+        getAllSessions()
+          .filter((session) => session.directory === project)
+          .map((session) => session.id),
+      );
+      ids = ids ? ids.filter((id) => projectIds.has(id)) : [...projectIds];
     }
-    return json(aggregateStats());
+    return json(
+      aggregateStats(
+        ids,
+        Number.isFinite(from) || Number.isFinite(to)
+          ? { from: Number.isFinite(from) ? from : undefined, to: Number.isFinite(to) ? to : undefined }
+          : undefined,
+      ),
+    );
   }
 
   if (p === "/api/stats/filters" && method === "GET") {
     return json({
       users: listUsers(),
       profiles: listProfiles().map((x) => ({ id: x.id, name: x.name })),
+      projects: distinctDirectories(),
     });
   }
 

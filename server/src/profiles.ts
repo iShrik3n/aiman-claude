@@ -94,6 +94,20 @@ export function removeProfileAuth(profileId: string, providerID: string): void {
     .run(profileId, providerID);
 }
 
+/** Replace a saved set with the live API-key entries from opencode's auth store. */
+export function captureProfileAuth(profileId: string): { captured: string[] } {
+  const current = readCurrentAuth();
+  const captured: string[] = [];
+  mgr.query("DELETE FROM profile_auth WHERE profile_id = ?").run(profileId);
+  for (const [providerID, auth] of Object.entries(current)) {
+    if (auth?.type === "api" && auth.key) {
+      setProfileAuth(profileId, providerID, auth);
+      captured.push(providerID);
+    }
+  }
+  return { captured };
+}
+
 export function getProfileAuthMap(profileId: string): Map<string, any> {
   const rows = mgr
     .query("SELECT provider_id, auth_json FROM profile_auth WHERE profile_id = ?")

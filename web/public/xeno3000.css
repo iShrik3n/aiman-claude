@@ -1,0 +1,1052 @@
+﻿
+    :root {
+      /* Default: Cryo-Cyan / K-JÃ¶fol Hybrid (can switch between AMBER, CYAN, XENO, CRIMSON) */
+      --plasma-primary: #38e8ff;
+      --plasma-secondary: #0088cc;
+      --plasma-glow: rgba(56, 232, 255, 0.65);
+      --plasma-dim: rgba(56, 232, 255, 0.16);
+      --orb-core: #b8ffff;
+      --orb-mid: #00c8ff;
+      --orb-deep: #003a5c;
+      --lcd-bg: #081820;
+      --lcd-bg-alt: #0b222d;
+      --lcd-text: #7ef4ff;
+      --lcd-muted: #3b8996;
+      --lcd-border: #1d4e5f;
+      --metal-light: #a8bcc7;
+      --metal-mid: #4a5d68;
+      --metal-dark: #1b252c;
+      --metal-abyss: #0c1217;
+      --accent-hot: #ff5522;
+    }
+
+    body[data-skin="amber"] {
+      --plasma-primary: #ff9d00;
+      --plasma-secondary: #d44200;
+      --plasma-glow: rgba(255, 145, 0, 0.7);
+      --plasma-dim: rgba(255, 145, 0, 0.18);
+      --orb-core: #fff3b0;
+      --orb-mid: #ff7b00;
+      --orb-deep: #5e1900;
+      --lcd-bg: #1e1206;
+      --lcd-bg-alt: #2b1908;
+      --lcd-text: #ffb642;
+      --lcd-muted: #996520;
+      --lcd-border: #593812;
+      --metal-light: #b8b0a8;
+      --metal-mid: #57504d;
+      --metal-dark: #241f1e;
+      --metal-abyss: #120f0e;
+      --accent-hot: #ff3300;
+    }
+
+    body[data-skin="xeno"] {
+      --plasma-primary: #39ff14;
+      --plasma-secondary: #008f11;
+      --plasma-glow: rgba(57, 255, 20, 0.68);
+      --plasma-dim: rgba(57, 255, 20, 0.16);
+      --orb-core: #e2ffdb;
+      --orb-mid: #26e600;
+      --orb-deep: #063b00;
+      --lcd-bg: #071707;
+      --lcd-bg-alt: #0d240d;
+      --lcd-text: #6aff4f;
+      --lcd-muted: #2f7d24;
+      --lcd-border: #1e5217;
+      --metal-light: #9eb59e;
+      --metal-mid: #3f5242;
+      --metal-dark: #162118;
+      --metal-abyss: #0a110b;
+      --accent-hot: #ffae00;
+    }
+
+    body[data-skin="crimson"] {
+      --plasma-primary: #ff2a4b;
+      --plasma-secondary: #99001c;
+      --plasma-glow: rgba(255, 42, 75, 0.7);
+      --plasma-dim: rgba(255, 42, 75, 0.18);
+      --orb-core: #ffd6dc;
+      --orb-mid: #ff173a;
+      --orb-deep: #4a000b;
+      --lcd-bg: #1a0508;
+      --lcd-bg-alt: #26070d;
+      --lcd-text: #ff5c77;
+      --lcd-muted: #8f2436;
+      --lcd-border: #54111d;
+      --metal-light: #baa6aa;
+      --metal-mid: #543f44;
+      --metal-dark: #211518;
+      --metal-abyss: #11090b;
+      --accent-hot: #ff0055;
+    }
+
+    /* Classic K-JÃ¶fol / Paper-LCD High-Contrast Dot Matrix Override option */
+    body[data-lcd="paper"] {
+      --lcd-bg: #9fa99c;
+      --lcd-bg-alt: #8e998b;
+      --lcd-text: #111811;
+      --lcd-muted: #3b463a;
+      --lcd-border: #4a5448;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    .selectable-text {
+      user-select: text;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background-color: #05070a;
+      font-family: 'Share Tech Mono', monospace;
+      color: #d7eef7;
+      overflow-x: hidden;
+      /* Nostalgic Y2K DigitalBlasphemy / Enlightenment DR16 Alien Sunset + Deep Space Grid Backdrop */
+      background-image:
+        radial-gradient(circle at 82% 76%, rgba(255, 110, 20, 0.24) 0%, rgba(140, 35, 5, 0.12) 32%, transparent 65%),
+        radial-gradient(circle at 16% 20%, var(--plasma-dim) 0%, transparent 50%),
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 32px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 32px),
+        linear-gradient(165deg, #04070b 0%, #0b141e 45%, #1d120c 82%, #080b10 100%);
+    }
+
+    /* Perspective background wireframe grid */
+    .cyber-wireframe-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse at 50% 50%, transparent 45%, rgba(0, 0, 0, 0.85) 100%),
+        repeating-radial-gradient(circle at 50% 120%, transparent 0, transparent 38px, rgba(56, 232, 255, 0.04) 39px, transparent 40px);
+    }
+
+    /* Heavy 3D Brushed Titanium / Alien Exoskeleton Hull */
+    .alien-hull-chassis {
+      position: relative;
+      z-index: 10;
+      background:
+        radial-gradient(ellipse at 18% 4%, rgba(255,255,255,0.35) 0%, transparent 38%),
+        radial-gradient(ellipse at 85% 92%, var(--plasma-dim) 0%, transparent 45%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 3px),
+        linear-gradient(160deg, var(--metal-light) 0%, var(--metal-mid) 16%, var(--metal-dark) 48%, var(--metal-abyss) 85%, var(--metal-mid) 100%);
+      border-radius: 54px 42px 58px 46px / 44px 52px 48px 56px;
+      padding: 14px;
+      box-shadow:
+        0 28px 70px rgba(0, 0, 0, 0.95),
+        0 0 42px var(--plasma-dim),
+        inset 0 3px 5px rgba(255, 255, 255, 0.65),
+        inset 0 -5px 10px rgba(0, 0, 0, 0.9),
+        inset 4px 0 8px rgba(255, 255, 255, 0.25),
+        inset -4px 0 8px rgba(0, 0, 0, 0.85);
+      border: 2px solid #6b7f8c;
+    }
+
+    /* Outer organic biomech ribs & glowing conduits */
+    .alien-hull-chassis::before {
+      content: "";
+      position: absolute;
+      inset: 5px;
+      border-radius: 48px 38px 52px 40px / 38px 46px 42px 50px;
+      border: 1.5px solid rgba(255, 255, 255, 0.22);
+      box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.95);
+      pointer-events: none;
+    }
+
+    /* Sculpted Top Bridge Deck (Brushed Chrome + Alien Ribs) */
+    .top-bridge-hull {
+      position: relative;
+      background:
+        radial-gradient(ellipse at 35% 0%, rgba(255,255,255,0.55) 0%, transparent 55%),
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0px, rgba(0,0,0,0.08) 2px, transparent 3px),
+        linear-gradient(180deg, #b8c9d4 0%, #6f8491 22%, #313f49 52%, #192229 82%, #3d4f5c 100%);
+      border-radius: 42px 34px 26px 36px;
+      border: 2px solid #202a30;
+      box-shadow:
+        0 10px 22px rgba(0,0,0,0.85),
+        inset 0 2px 3px rgba(255,255,255,0.8),
+        inset 0 -3px 6px rgba(0,0,0,0.85);
+    }
+
+    /* Heat-sink cooling ribs pattern */
+    .heatsink-ribs {
+      background: repeating-linear-gradient(
+        90deg,
+        #11171c 0px,
+        #11171c 4px,
+        #5e717d 5px,
+        #2b3740 7px,
+        #0c1014 9px
+      );
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.9), 0 1px 0 rgba(255,255,255,0.3);
+    }
+
+    /* Perforated speaker grille pattern */
+    .speaker-grille {
+      background-image: radial-gradient(#070a0d 38%, transparent 42%), radial-gradient(#070a0d 38%, transparent 42%);
+      background-color: #36444f;
+      background-position: 0 0, 4px 4px;
+      background-size: 8px 8px;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.95), 0 1px 1px rgba(255,255,255,0.35);
+    }
+
+    /* Exposed Hex Rivet Screw */
+    .hex-rivet {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #d8e4ec, #51616b 55%, #171f24 95%);
+      border: 1px solid #0e1317;
+      box-shadow: 0 1px 1px rgba(255,255,255,0.45), inset 0 1px 2px rgba(0,0,0,0.8);
+      position: relative;
+      flex-shrink: 0;
+    }
+    .hex-rivet::after {
+      content: "";
+      position: absolute;
+      top: 4px;
+      left: 2px;
+      right: 2px;
+      height: 1.5px;
+      background: #182026;
+      transform: rotate(35deg);
+    }
+
+    /* Iconic K-JÃ¶fol / Winamp 3D Glowing Plasma Orb */
+    .plasma-orb-housing {
+      position: relative;
+      border-radius: 9999px;
+      padding: 6px;
+      background: conic-gradient(from 45deg, #27323a, #9cb0bd, #232d36, #7c8f9c, #182026, #a4b7c4, #27323a);
+      box-shadow:
+        0 6px 18px rgba(0,0,0,0.9),
+        inset 0 2px 4px rgba(255,255,255,0.7),
+        inset 0 -3px 6px rgba(0,0,0,0.9);
+      border: 2px solid #141c22;
+    }
+
+    .plasma-orb {
+      position: relative;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 32% 26%, #ffffff 0%, var(--orb-core) 16%, var(--orb-mid) 48%, var(--orb-deep) 82%, #020508 100%);
+      box-shadow:
+        0 0 22px var(--plasma-glow),
+        inset 0 -6px 12px rgba(0,0,0,0.75),
+        inset 0 3px 8px rgba(255,255,255,0.9);
+      cursor: pointer;
+      transition: transform 0.15s ease, filter 0.2s ease, box-shadow 0.2s ease;
+      overflow: hidden;
+    }
+    .plasma-orb:hover {
+      filter: brightness(1.18) saturate(1.2);
+      box-shadow:
+        0 0 34px var(--plasma-primary),
+        inset 0 -4px 10px rgba(0,0,0,0.6),
+        inset 0 3px 10px #ffffff;
+    }
+    .plasma-orb:active {
+      transform: scale(0.94);
+    }
+    /* Specular glass reflection arc */
+    .plasma-orb::after {
+      content: "";
+      position: absolute;
+      top: 7%;
+      left: 14%;
+      width: 58%;
+      height: 34%;
+      border-radius: 50%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.05) 100%);
+      transform: rotate(-14deg);
+      pointer-events: none;
+    }
+
+    /* Sculpted Oval Winamp Navigation Pill Button */
+    .winamp-pill-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 15px;
+      border-radius: 999px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #d8e8f0;
+      background:
+        radial-gradient(ellipse at 50% 15%, rgba(255,255,255,0.45) 0%, transparent 55%),
+        linear-gradient(180deg, #8397a3 0%, #445560 45%, #232d34 85%, #4a5b66 100%);
+      border: 1.5px solid #12181d;
+      box-shadow:
+        0 3px 6px rgba(0,0,0,0.85),
+        0 1px 0 rgba(255,255,255,0.35),
+        inset 0 1px 2px rgba(255,255,255,0.65),
+        inset 0 -2px 3px rgba(0,0,0,0.75);
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+    .winamp-pill-btn:hover {
+      color: #ffffff;
+      border-color: var(--plasma-primary);
+      box-shadow:
+        0 0 12px var(--plasma-glow),
+        inset 0 1px 3px rgba(255,255,255,0.85);
+    }
+    .winamp-pill-btn:active,
+    .winamp-pill-btn.active {
+      color: #041218;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+      background:
+        radial-gradient(ellipse at 50% 20%, #ffffff 0%, var(--orb-core) 32%, var(--plasma-primary) 72%, var(--plasma-secondary) 100%);
+      border-color: #ffffff;
+      box-shadow:
+        0 0 18px var(--plasma-glow),
+        inset 0 2px 5px rgba(255,255,255,0.9),
+        inset 0 -2px 4px rgba(0,0,0,0.5);
+    }
+    /* Small LED indicator pip inside button */
+    .led-pip {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #293840;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.9);
+      transition: all 0.15s ease;
+    }
+    .winamp-pill-btn:hover .led-pip,
+    .winamp-pill-btn.active .led-pip {
+      background: #ffffff;
+      box-shadow: 0 0 8px #ffffff, 0 0 14px var(--plasma-primary);
+    }
+
+    /* Tactile Micro Deck Button (Transport Bar) */
+    .micro-deck-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-family: 'Share Tech Mono', monospace;
+      color: #bfd7e3;
+      background: linear-gradient(180deg, #4b5d69 0%, #26323a 52%, #182026 100%);
+      border: 1px solid #0e1418;
+      box-shadow:
+        0 2px 4px rgba(0,0,0,0.8),
+        inset 0 1px 1px rgba(255,255,255,0.45);
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+    .micro-deck-btn:hover {
+      color: #fff;
+      border-color: var(--plasma-primary);
+      box-shadow: 0 0 9px var(--plasma-glow), inset 0 1px 2px rgba(255,255,255,0.6);
+    }
+    .micro-deck-btn:active {
+      transform: translateY(1px);
+    }
+
+    /* Emergency Red Kill Switch Button */
+    .kill-switch-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 12px;
+      border-radius: 999px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #ffe5e5;
+      background: radial-gradient(ellipse at 50% 20%, #ff8a8a 0%, #d91b1b 45%, #6e0606 90%, #3d0202 100%);
+      border: 1px solid #ff4d4d;
+      box-shadow:
+        0 0 12px rgba(255, 30, 30, 0.6),
+        inset 0 1px 2px rgba(255, 255, 255, 0.75),
+        inset 0 -2px 3px rgba(0, 0, 0, 0.8);
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+    .kill-switch-btn:hover {
+      filter: brightness(1.2);
+      box-shadow: 0 0 18px rgba(255, 50, 50, 0.95), inset 0 1px 3px #fff;
+    }
+    .kill-switch-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* Recessed K-JÃ¶fol / Winamp Dot-Matrix LCD Screen */
+    .kjofol-lcd-screen {
+      position: relative;
+      background-color: var(--lcd-bg);
+      background-image:
+        repeating-linear-gradient(0deg, rgba(0,0,0,0.22) 0px, rgba(0,0,0,0.22) 1px, transparent 1px, transparent 3px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px),
+        radial-gradient(ellipse at 50% 30%, var(--lcd-bg-alt) 0%, var(--lcd-bg) 90%);
+      color: var(--lcd-text);
+      border: 2px solid var(--lcd-border);
+      border-radius: 18px;
+      box-shadow:
+        inset 0 4px 12px rgba(0, 0, 0, 0.92),
+        inset 0 0 22px rgba(0, 0, 0, 0.75),
+        0 1px 0 rgba(255, 255, 255, 0.28);
+    }
+
+    /* Left Bio-Pod Metallic Frame */
+    .left-biopod {
+      position: relative;
+      background:
+        radial-gradient(circle at 50% 8%, var(--plasma-dim) 0%, transparent 45%),
+        linear-gradient(175deg, #27343d 0%, #11181f 35%, #090e13 80%, #1d2830 100%);
+      border-radius: 36px 26px 36px 40px;
+      border: 2px solid #495d6b;
+      box-shadow:
+        inset 0 2px 5px rgba(255,255,255,0.35),
+        inset 0 -6px 14px rgba(0,0,0,0.95),
+        6px 0 20px rgba(0,0,0,0.75);
+    }
+
+    /* Glowing + New Session Alien Ignition Capsule */
+    .ignition-capsule-btn {
+      position: relative;
+      width: 100%;
+      padding: 11px 16px;
+      border-radius: 999px;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 0.06em;
+      color: #03151c;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.65);
+      background:
+        radial-gradient(ellipse at 50% 22%, #ffffff 0%, var(--orb-core) 38%, var(--plasma-primary) 78%, var(--plasma-secondary) 100%);
+      border: 2px solid #e2fbff;
+      box-shadow:
+        0 0 24px var(--plasma-glow),
+        0 5px 12px rgba(0,0,0,0.85),
+        inset 0 3px 6px #ffffff,
+        inset 0 -3px 6px rgba(0,0,0,0.45);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .ignition-capsule-btn:hover {
+      filter: brightness(1.12);
+      transform: translateY(-1px);
+      box-shadow:
+        0 0 32px var(--plasma-primary),
+        0 6px 14px rgba(0,0,0,0.9),
+        inset 0 3px 8px #ffffff;
+    }
+    .ignition-capsule-btn:active {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    /* Main Command Bay Dark Chrome Recessed Cavity */
+    .main-command-cavity {
+      position: relative;
+      background:
+        radial-gradient(ellipse at 70% 15%, var(--plasma-dim) 0%, transparent 55%),
+        repeating-radial-gradient(circle at 85% 65%, transparent 0, transparent 28px, rgba(255,255,255,0.012) 29px, transparent 30px),
+        linear-gradient(180deg, #162028 0%, #0a1015 24%, #070b0f 78%, #101920 100%);
+      border-radius: 30px 38px 42px 28px;
+      border: 2px solid #4d6270;
+      box-shadow:
+        inset 0 4px 16px rgba(0,0,0,0.95),
+        0 2px 0 rgba(255,255,255,0.25);
+    }
+
+    /* Metallic Transport Header Ribbon */
+    .transport-ribbon {
+      background: linear-gradient(180deg, #5d7280 0%, #2a3740 42%, #151e24 85%, #2e3d47 100%);
+      border-bottom: 2px solid #0b1014;
+      box-shadow:
+        0 6px 16px rgba(0,0,0,0.75),
+        inset 0 2px 3px rgba(255,255,255,0.5);
+    }
+
+    /* Secondary Sub-Transport Chrome Bar */
+    .sub-transport-bar {
+      background: linear-gradient(180deg, #9bb0bd 0%, #445663 32%, #1b252c 76%, #2f3e47 100%);
+      border-top: 1px solid rgba(255,255,255,0.5);
+      border-bottom: 2px solid #090d11;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+    }
+
+    /* Bio-Pod Message Card inside OPENCODE Stream */
+    .stream-biopod {
+      position: relative;
+      background: linear-gradient(180deg, rgba(20, 32, 42, 0.92) 0%, rgba(9, 15, 21, 0.96) 100%);
+      border: 1.5px solid #2b4252;
+      border-left: 3px solid var(--plasma-primary);
+      border-radius: 14px 20px 16px 14px;
+      box-shadow:
+        0 6px 18px rgba(0,0,0,0.75),
+        inset 0 1px 1px rgba(255,255,255,0.18),
+        0 0 12px rgba(0,0,0,0.5);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .stream-biopod:hover {
+      border-color: var(--plasma-primary);
+      box-shadow:
+        0 6px 20px rgba(0,0,0,0.85),
+        0 0 14px var(--plasma-dim),
+        inset 0 1px 2px rgba(255,255,255,0.25);
+    }
+
+    /* Custom Y2K Metallic Thumb Scrollbar */
+    ::-webkit-scrollbar {
+      width: 9px;
+      height: 9px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #070c10;
+      border-left: 1px solid #1c2b36;
+      border-radius: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(90deg, #8aa0ad 0%, #3d4f5c 50%, #1d2830 100%);
+      border: 1px solid var(--plasma-primary);
+      border-radius: 8px;
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.6);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--plasma-primary);
+    }
+
+    /* Glowing Plasma Conduit Tube */
+    .plasma-conduit {
+      height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, transparent 0%, var(--plasma-secondary) 20%, var(--orb-core) 50%, var(--plasma-secondary) 80%, transparent 100%);
+      box-shadow: 0 0 12px var(--plasma-primary);
+      background-size: 200% 100%;
+      animation: plasmaFlow 3.2s linear infinite;
+    }
+
+    @keyframes plasmaFlow {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    @keyframes slowSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .spin-reticle {
+      animation: slowSpin 14s linear infinite;
+    }
+
+    /* Directory Playlist Row Styling */
+    .dir-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 8px;
+      border-radius: 5px;
+      font-family: 'VT323', monospace;
+      font-size: 16px;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.1s ease;
+    }
+    .dir-row:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--lcd-muted);
+    }
+    .dir-row.selected {
+      background: var(--plasma-primary);
+      color: #041014;
+      font-weight: 700;
+      box-shadow: 0 0 10px var(--plasma-glow);
+    }
+  
+
+/* =========================================================================
+   AiMAN integration layer for the Xeno3 source skin.
+   ========================================================================= */
+
+html[data-theme="xeno3000"][data-desktop="1"] body,
+html[data-theme="xeno3000"][data-desktop="1"] #root {
+  background: transparent !important;
+}
+html[data-theme="xeno3000"] .xeno3000-shell {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+html[data-theme="xeno3000"] .xeno3000-shell * { user-select: none; }
+html[data-theme="xeno3000"] .xeno3000-shell .markdown,
+html[data-theme="xeno3000"] .xeno3000-shell .markdown *,
+html[data-theme="xeno3000"] .xeno3000-shell textarea,
+html[data-theme="xeno3000"] .xeno3000-shell input,
+html[data-theme="xeno3000"] .xeno3000-shell .selectable-text { user-select: text; }
+
+/* Outside Enlightenment skin strip */
+.xeno3000-microbar {
+  flex: none;
+  align-self: center;
+  width: calc(100% - 56px);
+  max-width: 1640px;
+  height: 22px;
+  margin: 8px 28px 5px;
+  padding: 0 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 1px solid rgba(151, 221, 238, .28);
+  border-radius: 999px;
+  background: radial-gradient(ellipse at 10% 50%, rgba(56, 232, 255, .10), transparent 62%),
+    linear-gradient(180deg, rgba(7, 18, 24, .94), rgba(2, 7, 11, .97));
+  box-shadow: inset 0 1px 0 rgba(229, 252, 255, .10), 0 5px 14px rgba(0, 0, 0, .34);
+  color: #a9edfa;
+  font: 10px/1 "Share Tech Mono", monospace;
+  letter-spacing: .035em;
+}
+.xeno3000-micro-left, .xeno3000-micro-right { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.xeno3000-micro-left b { color: #d7fbff; }
+.xeno3000-dim { color: #4e7d8d; }
+.xeno3000-ping { width: 7px; height: 7px; border-radius: 50%; background: #ffb45f; box-shadow: 0 0 9px #ff9d2e; flex: none; }
+.xeno3000-skin-pill {
+  padding: 2px 8px;
+  border: 1px solid rgba(123, 183, 202, .38);
+  border-radius: 999px;
+  background: rgba(4, 15, 22, .76);
+  color: #8cc8d8;
+  font: 9px/1.5 "Share Tech Mono", monospace;
+  cursor: pointer;
+}
+.xeno3000-skin-pill:hover { color: #e7fcff; border-color: rgba(155, 239, 255, .75); }
+.xeno3000-skin-pill.active {
+  color: #041018;
+  border-color: #c9f8ff;
+  background: radial-gradient(circle at 30% 20%, #fff, #9beeff 45%, #2998b8 100%);
+  box-shadow: 0 0 10px var(--plasma-glow);
+}
+
+/* Hull and bridge layout */
+html[data-theme="xeno3000"] .alien-hull-chassis {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: calc(100% - 28px);
+  max-width: 1640px;
+  margin: 0 auto 14px;
+  padding: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+html[data-theme="xeno3000"] .top-bridge-hull.xeno3000-bridge {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  margin: 0;
+}
+html[data-theme="xeno3000"] .xeno3000-brand-pod {
+  flex: none;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 62px;
+  padding: 0 11px 0 18px;
+  border-radius: 999px;
+  border: 2px solid #0d151a;
+  background: linear-gradient(90deg, #121a20, #5f7480 45%, #121a20);
+  box-shadow: inset 0 2px 4px rgba(255,255,255,.45), 0 4px 12px rgba(0,0,0,.85);
+}
+html[data-theme="xeno3000"] .xeno3000-brand-copy { display: flex; flex-direction: column; gap: 2px; color: #fff; }
+html[data-theme="xeno3000"] .xeno3000-brand-copy span { color: #c6d5dd; font: 8px/1 "Orbitron", monospace; letter-spacing: .22em; }
+html[data-theme="xeno3000"] .xeno3000-brand-copy b { font: 900 20px/1 "Orbitron", monospace; letter-spacing: .13em; text-shadow: 0 2px 3px #000; }
+html[data-theme="xeno3000"] .xeno3000-brand-pod .plasma-orb-housing { padding: 5px; }
+html[data-theme="xeno3000"] .xeno3000-brand-orb { width: 48px; height: 48px; }
+html[data-theme="xeno3000"] .xeno3000-visualizer {
+  flex: none;
+  width: 156px;
+  height: 52px;
+  padding: 4px 7px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 12px;
+}
+html[data-theme="xeno3000"] .xeno3000-visualizer-copy { display: flex; flex-direction: column; gap: 2px; font: 9px/1 "Share Tech Mono", monospace; }
+html[data-theme="xeno3000"] .xeno3000-visualizer-copy b { font: 700 12px/1 "Orbitron", monospace; }
+html[data-theme="xeno3000"] .xeno3000-visualizer-copy span { font-size: 8px; opacity: .85; }
+html[data-theme="xeno3000"] .xeno3000-visualizer-copy i { font-style: normal; font-size: 7px; letter-spacing: .06em; opacity: .8; }
+html[data-theme="xeno3000"] .xeno3000-visualizer canvas { width: 86px; height: 28px; display: block; }
+html[data-theme="xeno3000"] .xeno3000-nav { flex: 1 1 auto; min-width: 0; display: flex; justify-content: center; }
+html[data-theme="xeno3000"] .xeno3000-nav .tabs { display: flex; align-items: center; gap: 4px; margin: 0; flex-wrap: nowrap; }
+html[data-theme="xeno3000"] .xeno3000-nav .tab { white-space: nowrap; }
+html[data-theme="xeno3000"] .xeno3000-nav .winamp-pill-btn { font-size: 10px; padding: 5px 12px; }
+html[data-theme="xeno3000"] .xeno3000-nav .tab .tab-label { font-family: "Orbitron", monospace; }
+html[data-theme="xeno3000"] .xeno3000-status-pod {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid #3e4e58;
+  background: rgba(4, 10, 14, .82);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, .92);
+  color: #e7faff;
+}
+html[data-theme="xeno3000"] .xeno3000-status-pod .btn { color: #dff8ff; }
+html[data-theme="xeno3000"] .xeno3000-status-pod .dot.up { background: #79e7ff; box-shadow: 0 0 8px #79e7ff; }
+
+/* Workspace */
+html[data-theme="xeno3000"] .plasma-conduit { flex: none; margin: 0 28px; }
+html[data-theme="xeno3000"] .xeno3000-workspace {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 10px;
+}
+html[data-theme="xeno3000"] .xeno3000-workspace > .left-biopod {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+}
+html[data-theme="xeno3000"] .left-biopod > .sidebar {
+  flex: 1 1 auto;
+  min-height: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 18px;
+  box-shadow: none;
+}
+html[data-theme="xeno3000"] .xeno3000-workspace > .main-command-cavity {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+}
+html[data-theme="xeno3000"] .main-command-cavity > .main {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+html[data-theme="xeno3000"] .xeno3000-pod-top,
+html[data-theme="xeno3000"] .xeno3000-pod-bottom {
+  flex: none;
+  height: 17px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #9fb0ba;
+  font: 8px/1 "Orbitron", monospace;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+html[data-theme="xeno3000"] .xeno3000-pod-top > span:nth-child(3),
+html[data-theme="xeno3000"] .xeno3000-pod-bottom > span:nth-child(3) { white-space: nowrap; }
+html[data-theme="xeno3000"] .xeno3000-pod-top .heatsink-ribs,
+html[data-theme="xeno3000"] .xeno3000-pod-bottom .speaker-grille { flex: 1 1 auto; height: 6px; }
+html[data-theme="xeno3000"] .xeno3000-pod-top .heatsink-ribs.short { flex: 0 0 34px; }
+html[data-theme="xeno3000"] .xeno3000-footer {
+  flex: none;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 1px solid rgba(139,187,203,.30);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(8,19,25,.92), rgba(2,7,11,.96));
+  color: #8fe6f4;
+  font: 9px/1 "Share Tech Mono", monospace;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: inset 0 1px 0 rgba(225,251,255,.10), 0 0 14px rgba(56,232,255,.08);
+}
+html[data-theme="xeno3000"] .xeno3000-footer b { color: #d6f8ff; }
+html[data-theme="xeno3000"] .xeno3000-footer .heatsink-ribs { flex: 0 0 90px; height: 6px; }
+html[data-theme="xeno3000"] .xeno3000-spacer { flex: 1; }
+
+/* App component mapping */
+html[data-theme="xeno3000"] .sidebar-directory-block.lcd {
+  max-height: 46vh;
+  margin: 7px -1px 0;
+  padding: 6px;
+  overflow-y: auto;
+  border-radius: 8px;
+}
+html[data-theme="xeno3000"] .xeno3000-paper-lcd {
+  --lcd-bg: #9fa99c;
+  --lcd-bg-alt: #8e998b;
+  --lcd-text: #111811;
+  --lcd-muted: #3b463a;
+  --lcd-border: #4a5448;
+}
+html[data-theme="xeno3000"] .sidebar-directory-block.lcd .nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #111811;
+  font-family: "VT323", monospace;
+  font-size: 16px;
+  line-height: 1.15;
+  letter-spacing: .02em;
+}
+html[data-theme="xeno3000"] .sidebar-directory-block.lcd .nav-item:hover {
+  background: rgba(10, 32, 38, .12);
+  border-color: rgba(9, 42, 52, .30);
+}
+html[data-theme="xeno3000"] .sidebar-directory-block.lcd .nav-item.active {
+  background: #0d3a48;
+  color: #dffcff;
+  box-shadow: 0 0 10px rgba(0,0,0,.30);
+}
+html[data-theme="xeno3000"] .sidebar-directory-block.lcd .nav-item > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+html[data-theme="xeno3000"] .chat-head.transport-ribbon { flex-wrap: wrap; row-gap: 4px; padding: 8px 12px; }
+html[data-theme="xeno3000"] .chat-head .btn,
+html[data-theme="xeno3000"] .composer-row .btn:not(.primary) {
+  border-radius: 999px;
+  border: 1px solid #182026;
+  background: linear-gradient(180deg, #4b5d69 0%, #26323a 52%, #182026 100%);
+  color: #d8f4ff;
+  box-shadow: 0 2px 4px rgba(0,0,0,.8), inset 0 1px 1px rgba(255,255,255,.45);
+  font-family: "Share Tech Mono", monospace;
+  font-size: 10.5px;
+}
+html[data-theme="xeno3000"] .chat-head .btn.ghost { color: #cfedf7; }
+html[data-theme="xeno3000"] .chat-head .btn.danger,
+html[data-theme="xeno3000"] .composer .btn.danger {
+  color: #ffe5e5;
+  border-color: #ff4d4d;
+  background: radial-gradient(ellipse at 50% 20%, #ff8a8a 0%, #d91b1b 45%, #6e0606 90%, #3d0202 100%);
+  box-shadow: 0 0 12px rgba(255,30,30,.6), inset 0 1px 2px rgba(255,255,255,.75);
+}
+html[data-theme="xeno3000"] .chat-body { background: #03080d; }
+html[data-theme="xeno3000"] .msg.stream-biopod { max-width: none; }
+html[data-theme="xeno3000"] .msg.user.stream-biopod { max-width: min(860px, 76%); }
+html[data-theme="xeno3000"] .composer {
+  margin: 8px 14px 12px;
+  padding: 12px;
+  border: 2px solid #849ba8;
+  border-radius: 22px;
+  background:
+    radial-gradient(ellipse 250px 60px at 12% 0%, rgba(255,255,255,.22), transparent 70%),
+    linear-gradient(180deg, #7f95a1 0%, #40515b 9%, #202c34 26%, #0b141a 68%, #060c11 100%);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.52), inset 0 -10px 24px rgba(0,0,0,.52), 0 16px 38px rgba(0,0,0,.38);
+}
+html[data-theme="xeno3000"] .composer textarea.kjofol-lcd-screen {
+  --lcd-bg: #081820;
+  --lcd-bg-alt: #0b222d;
+  --lcd-text: #7ef4ff;
+  --lcd-muted: #3b8996;
+  --lcd-border: #1d4e5f;
+  border-radius: 14px;
+  padding: 10px 13px;
+  color: var(--lcd-text);
+}
+html[data-theme="xeno3000"] .composer .btn.primary.xeno3000-send {
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border-radius: 50%;
+  font-family: "Orbitron", monospace;
+  font-size: 9px;
+  background:
+    radial-gradient(circle at 33% 26%, #ffffff 0 5%, #dffcff 13%, #79e7ff 38%, #167f9f 66%, #031018 90%, #010507 100%);
+  box-shadow: 0 0 0 4px rgba(17,37,47,.9), 0 0 28px var(--plasma-glow), inset 0 0 12px rgba(255,255,255,.82);
+  color: #041018;
+}
+html[data-theme="xeno3000"] .composer-row .context-usage,
+html[data-theme="xeno3000"] .composer-row .muted { color: #c1dce5; }
+
+@media (max-width: 1500px) {
+  .xeno3000-microbar { width: calc(100% - 24px); margin-left: 12px; margin-right: 12px; }
+  .xeno3000-micro-right .xeno3000-skin-pill:nth-of-type(3),
+  .xeno3000-micro-right .xeno3000-skin-pill:nth-of-type(4) { display: none; }
+  html[data-theme="xeno3000"] .xeno3000-workspace { grid-template-columns: 300px minmax(0,1fr); }
+  html[data-theme="xeno3000"] .xeno3000-visualizer { display: none; }
+}
+@media (max-width: 1100px) {
+  html[data-theme="xeno3000"] .xeno3000-workspace { grid-template-columns: 260px minmax(0,1fr); }
+  html[data-theme="xeno3000"] .xeno3000-status-pod .user-name { display: none; }
+}
+@media (max-width: 760px) {
+  .xeno3000-microbar { display: none; }
+  html[data-theme="xeno3000"] .alien-hull-chassis { width: calc(100% - 8px); padding: 7px; border-radius: 26px; }
+  html[data-theme="xeno3000"] .xeno3000-workspace { grid-template-columns: 1fr; }
+  html[data-theme="xeno3000"] .xeno3000-workspace > .left-biopod { display: none; }
+  html[data-theme="xeno3000"] .xeno3000-footer { display: none; }
+}
+/* Edge-to-edge skin: the microbar is the caption bar; the hull owns the resize
+   edge. No transparent gutter around the main window. */
+html[data-theme="xeno3000"] .xeno3000-shell {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+html[data-theme="xeno3000"] .xeno3000-shell > .xeno3000-microbar {
+  flex: none;
+  width: 100%;
+  max-width: none;
+  height: 30px;
+  margin: 0;
+  padding: 0 7px 0 13px;
+  border: 0;
+  border-bottom: 1px solid rgba(140, 190, 207, .38);
+  border-radius: 24px 24px 0 0;
+  background:
+    radial-gradient(ellipse at 12% 50%, rgba(56, 232, 255, .12), transparent 62%),
+    linear-gradient(180deg, #08151d, #02070b);
+  -webkit-app-region: drag;
+}
+html[data-theme="xeno3000"] .xeno3000-microbar button,
+html[data-theme="xeno3000"] .xeno3000-window-controls {
+  -webkit-app-region: no-drag;
+}
+html[data-theme="xeno3000"] .xeno3000-window-controls {
+  height: 22px;
+  display: flex;
+  align-items: stretch;
+  align-self: center;
+  flex: none;
+  margin-left: 5px;
+  border: 1px solid #17242c;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #0a1319;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
+}
+html[data-theme="xeno3000"] .xeno3000-window-controls button {
+  width: 31px;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid rgba(116, 159, 174, .22);
+  border-radius: 0;
+  background: linear-gradient(180deg, #8fa4af 0%, #455761 42%, #1a252c 100%);
+  color: #f0fcff;
+  font: 700 13px/1 "Share Tech Mono", monospace;
+  cursor: pointer;
+}
+html[data-theme="xeno3000"] .xeno3000-window-controls button:first-child { border-left: 0; }
+html[data-theme="xeno3000"] .xeno3000-window-controls button:hover { background: linear-gradient(180deg, #c8f8ff, #5e8fa0 45%, #1e5566); color: #031018; }
+html[data-theme="xeno3000"] .xeno3000-window-controls button.close:hover { background: linear-gradient(180deg, #ff9a9a, #c21d1d 48%, #5b0505); color: #fff; }
+html[data-theme="xeno3000"] .alien-hull-chassis {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 8px 10px 10px;
+  border-top: 0;
+  border-radius: 0 0 24% 14% / 0 0 16% 10%;
+}
+html[data-theme="xeno3000"] .xeno3000-popout {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+html[data-theme="xeno3000"] .xeno3000-popout > .xeno3000-microbar {
+  border-radius: 20px 20px 0 0;
+}
+html[data-theme="xeno3000"] .xeno3000-popout-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0 8px 8px;
+  overflow: hidden;
+  border: 2px solid #526976;
+  border-top: 0;
+  border-radius: 0 0 26px 26px;
+  background: #03080d;
+  box-shadow: inset 0 4px 16px rgba(0,0,0,.85), 0 12px 30px rgba(0,0,0,.55);
+}
+html[data-theme="xeno3000"] .xeno3000-popout-body > .main {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: transparent;
+}
+html[data-theme="xeno3000"] .xeno3000-popout-body .composer {
+  margin: 6px 10px 10px;
+}
+html[data-theme="xeno3000"] .xeno3000-popout-body .chat-head {
+  border-radius: 0;
+}
+@media (max-width: 760px) {
+  html[data-theme="xeno3000"] .alien-hull-chassis { border-radius: 0 0 18px 18px; padding: 5px; }
+  html[data-theme="xeno3000"] .xeno3000-shell > .xeno3000-microbar { border-radius: 0; }
+  html[data-theme="xeno3000"] .xeno3000-microbar .xeno3000-micro-left span:not(.xeno3000-ping),
+  html[data-theme="xeno3000"] .xeno3000-microbar .xeno3000-micro-left b { display: none; }
+}
+/* The window silhouette itself is round, not just the inner hull. */
+html[data-theme="xeno3000"] .xeno3000-shell {
+  border-radius: 54px 42px 58px 46px / 44px 52px 48px 56px;
+  overflow: hidden;
+  background: transparent;
+}
+html[data-theme="xeno3000"] .xeno3000-shell > .xeno3000-microbar {
+  border-radius: 0;
+}
+html[data-theme="xeno3000"] .alien-hull-chassis {
+  border-radius: 0 0 54px 42px / 0 0 44px 52px;
+}
+html[data-theme="xeno3000"] .xeno3000-popout {
+  border-radius: 34px 26px 36px 40px / 28px 32px 30px 36px;
+  overflow: hidden;
+}
+html[data-theme="xeno3000"] .xeno3000-popout > .xeno3000-microbar { border-radius: 0; }
+html[data-theme="xeno3000"][data-desktop="1"] body,
+html[data-theme="xeno3000"][data-desktop="1"] #root {
+  background: transparent !important;
+  border: 0;
+  box-shadow: none;
+}
+@media (max-width: 760px) {
+  html[data-theme="xeno3000"] .xeno3000-shell { border-radius: 24px; }
+  html[data-theme="xeno3000"] .xeno3000-popout { border-radius: 20px; }
+}
+/* Detached session: no transparent gutter around the chat surface. */
+html[data-theme="xeno3000"] .xeno3000-popout-body {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+html[data-theme="xeno3000"] .xeno3000-popout > .xeno3000-microbar {
+  border-radius: 0;
+}

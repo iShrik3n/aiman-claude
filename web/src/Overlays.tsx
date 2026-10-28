@@ -155,7 +155,7 @@ export function LeaderMenu() {
       ? [
           {
             key: "e",
-            label: "Extensions (MCP & plugins)",
+            label: "Integrations (MCP & plugins)",
             run: () => {
               store.set({ view: "extensions" });
               closeMenu();

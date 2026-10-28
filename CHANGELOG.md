@@ -5,6 +5,23 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [aiman-claude 1.2.0] - 2026-10-28
+
+Sync with upstream AiMAN 1.11.0 (merged from `spacewalkingninja/aiman`).
+
+### Added (from upstream)
+- Three themes: Alien Grotesque, K-Jöfol Xeno4 and Xeno 3000, with bundled fonts.
+- Usage dashboard filters (date range, project), CSV export and PNG snapshot.
+- Live log viewer, installable web app (manifest + service worker), typography
+  controls and European translations.
+
+### Changed
+- The opencode-only parts of upstream 1.10/1.11 are switched off: the OpenCode
+  workspace, Integrations, server profiles and credential capture answer 501
+  and their navigation entries and the Servers settings tab are hidden
+  (`features.workspace: false`). The code stays in the tree so later upstream
+  merges remain small.
+
 ## [aiman-claude 1.1.0] - 2026-10-27
 
 Live control of Claude Code sessions (phase 2).
@@ -41,6 +58,123 @@ First release of the Claude Code fork (based on AiMAN 1.9.0). Read-only.
 
 ### Known limitations
 - Cost is always 0: transcripts do not record prices.
+
+## [1.11.0] - 2026-10-27
+
+### Added
+- **Xeno 3000 theme** — a new, isolated implementation of the supplied Xeno3
+  HTML skin. It loads the source stylesheet as its own theme asset, renders the
+  exact cockpit class structure (microbar, bridge, plasma orb, spectrum pod,
+  biomech left pod, command cavity, transport ribbon, composer and hull
+  footer), and maps AiMAN's real Sidebar/Chat/Composer components into those
+  surfaces.
+- Four functional reactor palettes (Cryo-Cyan, K-Jöfol Amber, Xeno Bio-Green,
+  Crimson Pod), paper/K-Jöfol LCD toggle, SFX toggle, and animated spectrum.
+- Bundle Orbitron, Share Tech Mono and VT323 locally.
+- Desktop windows are now transparent so the rounded Xeno 3000 hull has no
+  black square corners behind it. The Enlightenment microbar is the caption
+  bar and owns the minimize, maximize and close controls; the hull fills the
+  resize edge instead of leaving a transparent gutter.
+- Detached Xeno 3000 sessions use the same microbar caption controls and a
+  dark floating chat body, removing the white sender area.
+
+## [1.10.3] - 2026-10-27
+
+### Added
+- **K-Jöfol Xeno4 theme** — a separate source-matched cockpit skin alongside
+  Alien Grotesque. It uses the full outside microbar, chrome bridge, animated
+  spectrum pod, plasma conduit, biomech left pod, paper-LCD directory matrix,
+  command cavity and hull footer, with bundled Orbitron / Share Tech Mono /
+  VT323 typography and the four reactor palettes (Cryo-Cyan, K-Jöfol Amber,
+  Xeno Bio-Green, Crimson Pod).
+
+## [1.10.2] - 2026-10-27
+
+### Added
+- **Alien Grotesque theme** — a second alien skin built as a chrome/cyan
+  spaceship console: a floating asymmetric hull, liquid-metal panels, a cyan
+  glass LCD, reactor rings, hull seams, rivet-like textures, starfield
+  lighting, HUD corner brackets and side vents. Navigation sits on a coherent
+  console rail, while sidebar/workspace controls keep staggered organic
+  positions and Fibonacci-ish radii. Textures are applied to buttons, tabs and
+  chrome surfaces without reducing text contrast.
+- The cockpit structure now follows the supplied K-Jöfol mock: outside microbar
+  with four reactor palettes, chrome bridge with animated spectrum pod, plasma
+  conduit, biomech left pod, command cavity, riveted/ribbed pod decor, speaker
+  grille and hull-integrity footer.
+- The sidebar directory matrix becomes an olive **paper LCD** screen, the
+  bridge uses dark brushed metal with a red ignition capsule for new sessions,
+  and the live spectrum pod uses the bundled Orbitron / Share Tech Mono fonts.
+- Theme preview cards and all admin panels use the same no-hard-edge language,
+  including inputs, toolbar strips, notices, diffs and modal shells.
+- Chat surfaces use a readable blue-glass HUD grid rather than clipping
+  message text behind oversized lobes; the composer and Send/Queue controls
+  stay fully visible.
+
+## [1.10.1] - 2026-10-27
+
+### Changed
+- **Consolidated provider credentials.** Live provider auth and saved API-key
+  sets now live together under **OpenCode → Providers → Credentials**. The
+  top-level Profiles page and the unprotected top-bar credential switcher were
+  removed. Saved sets can detect drift from the live auth store and capture the
+  current live API keys.
+- **Clearer snapshot model.** Workspace config profiles were renamed to
+  **Snapshots** and merged with file/GitHub backup into **Snapshots & backups**.
+  Snapshots exclude sessions, chat history and credentials.
+- **One plugin surface.** Local plugin files moved from OpenCode into
+  **Integrations → Plugins**, alongside package plugins.
+- **Settings tabs.** Appearance, Chat, Servers, System and About are now
+  separate tabs instead of one long scroll. Live logs moved to
+  **Settings → System**.
+- **OpenCode navigation.** The admin configuration area is now **OpenCode** with
+  a grouped sidebar instead of a long tab strip. Extensions is now
+  **Integrations**.
+- **Credential and server safety.** Credential-set activation now requires
+  admin, shows the providers being applied/removed, and warns that OAuth is
+  unchanged. Server profiles have a connection test and database-path check.
+- Provider ID fields now offer a known-provider dropdown.
+- Workspace forms show an **unsaved** badge and confirm before switching
+  sections or configuration scope.
+
+### Fixed
+- Old `/profiles` bookmarks redirect to the OpenCode credentials area.
+- `/integrations` is the canonical Integrations URL; `/extensions` remains an
+  alias.
+
+## [1.10.0] - 2026-10-26
+
+### Added
+- **Workspace** — an admin configuration cockpit for opencode: raw JSONC
+  editing, providers/models, permissions, system prompt, project rules,
+  LSP/formatter and v2 `cli.json`, skills, commands, agents, local plugin files,
+  presets, config profiles, backup/restore, GitHub sync, provider auth and live
+  logs.
+- **Usage dashboard filters** — date ranges, project filtering, CSV export and
+  PNG dashboard snapshots. The dashboard keeps the existing per-user,
+  per-profile, per-session, cache and reasoning views.
+- **Live log viewer** — captured manager logs plus the newest opencode log file,
+  with level/search filters, pause and auto-scroll.
+- **Deep links** — `aiman://` protocol registration in the Electron shell for
+  launch/open, MCP install and skill/plugin import, guarded by a confirmation
+  dialog.
+- **Installable web app** — manifest, service worker, theme metadata and a skip
+  link.
+- **Typography controls** — choose UI and code/terminal font families, set a
+  base font size, or reset to the active theme's defaults.
+- **Switchable opencode server profiles** — keep multiple URLs with their own
+  password, database and `auth.json`, then activate a profile and restart.
+- **European translations** — navigation and workspace shell translations for
+  Spanish, French, German, Italian, Portuguese, Dutch, Polish, Russian,
+  Ukrainian, Romanian, Czech, Swedish, Norwegian, Danish, Finnish, Greek,
+  Hungarian, Bulgarian, Croatian, Serbian, Slovak, Slovenian, Lithuanian,
+  Latvian, Estonian and Turkish.
+
+### Fixed
+- MCP lists now support search/filter and a one-click enable/disable action.
+- Backup files no longer recreate `cli.json` when the source file did not exist.
+- Ctrl/Cmd+F in a session now scrolls to the highlighted occurrence instead of
+  merely centering the containing message.
 
 ## [1.9.0] - 2026-10-26
 

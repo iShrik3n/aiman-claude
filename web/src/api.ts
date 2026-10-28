@@ -183,6 +183,125 @@ export type ExtensionsData = {
   error?: string;
 };
 
+export type WorkspaceConfigDoc = {
+  path: string;
+  label: string;
+  scope: "global" | "project" | "other";
+  exists: boolean;
+  revision: string;
+  error?: string;
+};
+
+export type WorkspaceConfig = {
+  docs: WorkspaceConfigDoc[];
+  selected: WorkspaceConfigDoc & {
+    text: string;
+    data: any;
+  };
+};
+
+export type WorkspaceResource = {
+  kind: "skills" | "commands" | "agents" | "plugins";
+  name: string;
+  scope: "global" | "project" | "config";
+  path: string;
+  enabled: boolean;
+  editable: boolean;
+  description: string;
+  content: string;
+  source: string;
+};
+
+export type WorkspacePreset = {
+  id: string;
+  name: string;
+  skills: string[];
+  commands: string[];
+  agents: string[];
+  plugins: string[];
+  mcp: string[];
+  updatedAt: number;
+};
+
+export type WorkspaceBackup = {
+  version: 1;
+  createdAt: number;
+  configs: { path: string; text: string }[];
+  cli: { path: string; exists: boolean; content: string };
+  prompt: { path: string; exists: boolean; content: string };
+  rules: { path: string; source: string; exists?: boolean; content: string } | null;
+  resources: {
+    kind: WorkspaceResource["kind"];
+    name: string;
+    scope: "global" | "project";
+    enabled: boolean;
+    content: string;
+  }[];
+  presets: WorkspacePreset[];
+};
+
+export type WorkspaceSummary = {
+  v2: boolean;
+  paths: {
+    globalConfig: string;
+    configDir: string;
+    cli: string;
+    prompt: string;
+    auth: string;
+    home: string;
+  };
+  configs: WorkspaceConfigDoc[];
+  counts: Record<string, number>;
+  github: GithubStatus;
+};
+
+export type GithubStatus = {
+  installed: boolean;
+  authenticated: boolean;
+  user: string | null;
+  detail: string;
+  error?: string;
+  config: {
+    owner: string;
+    repo: string;
+    branch: string;
+    path: string;
+    autoSync: boolean;
+  };
+};
+
+export type OpenCodeServer = {
+  id: string;
+  name: string;
+  url: string;
+  db: string;
+  auth: string;
+  hasPassword: boolean;
+  active: boolean;
+};
+
+export type OpenCodeServers = {
+  activeId: string;
+  servers: OpenCodeServer[];
+  envOverrides: string[];
+  file: string;
+};
+
+export type WorkspaceAuthProvider = {
+  id: string;
+  name: string;
+  type: string;
+  hasAuth: boolean;
+  hint: string;
+};
+
+export type LogEntry = {
+  id: number;
+  at: number;
+  level: "info" | "warn" | "error" | "debug";
+  line: string;
+};
+
 export type Stats = {
   totals: Usage & { sessions: number; archived: number; userMessages: number };
   models: ModelUsage[];
@@ -353,6 +472,10 @@ export const api = {
     }).then(j),
   removeProfileAuth: (id: string, providerID: string) =>
     fetch(`/api/profiles/${id}/auth/${encodeURIComponent(providerID)}`, { method: "DELETE" }).then(j),
+  captureProfileAuth: (id: string) =>
+    fetch(`/api/profiles/${id}/capture`, { method: "POST" }).then(
+      j<{ ok: boolean; captured: string[] }>,
+    ),
   activateProfile: (id: string) =>
     fetch(`/api/profiles/${id}/activate`, { method: "POST" }).then(
       j<{ ok: boolean; applied: string[]; removed: string[] }>,
@@ -547,10 +670,19 @@ export const api = {
       `/oc/session/${sessionId}/diff` +
         (directory ? "?directory=" + encodeURIComponent(directory) : ""),
     ).then(j<unknown>),
-  stats: (params: { user?: string; profile?: string } = {}) => {
+  stats: (params: {
+    user?: string;
+    profile?: string;
+    project?: string;
+    from?: string;
+    to?: string;
+  } = {}) => {
     const clean: Record<string, string> = {};
     if (params.user) clean.user = params.user;
     if (params.profile) clean.profile = params.profile;
+    if (params.project) clean.project = params.project;
+    if (params.from) clean.from = params.from;
+    if (params.to) clean.to = params.to;
     return fetch("/api/stats?" + new URLSearchParams(clean).toString()).then(j<Stats>);
   },
   sessionStats: (sessionId: string) =>
@@ -565,7 +697,7 @@ export const api = {
         /** True when the server cannot drive a live agent (no prompting). */
         readOnly?: boolean;
         /** Optional features this backend implements. */
-        features?: { queue?: boolean; btw?: boolean; terminal?: boolean };
+        features?: { queue?: boolean; btw?: boolean; terminal?: boolean; workspace?: boolean };
         terminal: boolean;
         platform: string;
         onboarded: boolean;
@@ -652,7 +784,11 @@ export const api = {
     }).then(j<{ id: string; title: string }>),
   statsFilters: () =>
     fetch("/api/stats/filters").then(
-      j<{ users: { id: string; username: string }[]; profiles: { id: string; name: string }[] }>,
+      j<{
+        users: { id: string; username: string }[];
+        profiles: { id: string; name: string }[];
+        projects: string[];
+      }>,
     ),
 
   // ---- opencode native PTY (terminal) ----
@@ -740,4 +876,259 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ targets, directory }),
     }).then(j<{ ok: boolean }>),
+
+  // ---- workspace (config, resources, backup, auth) ----
+  servers: () => fetch("/api/servers").then(j<OpenCodeServers>),
+  createServer: (body: {
+    name: string;
+    url: string;
+    password?: string;
+    db?: string;
+    auth?: string;
+  }) =>
+    fetch("/api/servers", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(j<{ ok: boolean; server: OpenCodeServer }>),
+  updateServer: (
+    id: string,
+    body: { name?: string; url?: string; password?: string; db?: string; auth?: string },
+  ) =>
+    fetch(`/api/servers/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(j<{ ok: boolean; server: OpenCodeServer }>),
+  deleteServer: (id: string) =>
+    fetch(`/api/servers/${encodeURIComponent(id)}`, { method: "DELETE" }).then(j),
+  testServer: (body: { id?: string; url?: string; password?: string; db?: string }) =>
+    fetch("/api/servers/test", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(
+      j<{ ok: boolean; url: string; status: number; db: string | null; dbExists: boolean | null }>,
+    ),
+  activateServer: (id: string) =>
+    fetch(`/api/servers/${encodeURIComponent(id)}/activate`, { method: "POST" }).then(
+      j<{ ok: boolean; server: OpenCodeServer; restarting: boolean }>,
+    ),
+
+  workspace: (directory?: string | null) => {
+    const q = new URLSearchParams();
+    if (directory) q.set("directory", directory);
+    return fetch("/api/workspace?" + q.toString()).then(j<WorkspaceSummary>);
+  },
+  workspaceConfig: (directory?: string | null, path?: string | null) => {
+    const q = new URLSearchParams();
+    if (directory) q.set("directory", directory);
+    if (path) q.set("path", path);
+    return fetch("/api/workspace/config?" + q.toString()).then(j<WorkspaceConfig>);
+  },
+  saveWorkspaceConfig: (body: {
+    path: string;
+    content: string;
+    revision?: string;
+    directory?: string | null;
+  }) =>
+    fetch("/api/workspace/config", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(j<{ ok: boolean; revision: string; path: string }>),
+  saveWorkspaceSections: (body: {
+    path: string;
+    sections: Record<string, unknown>;
+    revision?: string;
+    directory?: string | null;
+  }) =>
+    fetch("/api/workspace/config/sections", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(j<{ ok: boolean; revision: string; path: string; config: any }>),
+  workspaceCli: () =>
+    fetch("/api/workspace/cli").then(
+      j<{ path: string; exists: boolean; content: string; revision: string }>,
+    ),
+  saveWorkspaceCli: (content: string, revision?: string) =>
+    fetch("/api/workspace/cli", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ content, revision }),
+    }).then(j<{ ok: boolean; revision: string }>),
+  workspacePrompt: () =>
+    fetch("/api/workspace/prompt").then(
+      j<{ path: string; exists: boolean; content: string }>,
+    ),
+  saveWorkspacePrompt: (content: string) =>
+    fetch("/api/workspace/prompt", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ content }),
+    }).then(j<{ ok: boolean; path: string }>),
+  workspaceRules: (directory: string) =>
+    fetch("/api/workspace/rules?" + new URLSearchParams({ directory }).toString()).then(
+      j<{ path: string; source: string; exists: boolean; content: string }>,
+    ),
+  saveWorkspaceRules: (directory: string, content: string, source?: string) =>
+    fetch("/api/workspace/rules", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ directory, content, source }),
+    }).then(j<{ ok: boolean; path: string }>),
+  workspaceResources: (directory?: string | null, kind?: string) => {
+    const q = new URLSearchParams();
+    if (directory) q.set("directory", directory);
+    if (kind) q.set("kind", kind);
+    return fetch("/api/workspace/resources?" + q.toString()).then(
+      j<{ resources: Record<string, WorkspaceResource[]> }>,
+    );
+  },
+  saveWorkspaceResource: (body: {
+    kind: WorkspaceResource["kind"];
+    name: string;
+    content: string;
+    scope?: "global" | "project" | "config";
+    path?: string | null;
+    directory?: string | null;
+  }) =>
+    fetch("/api/workspace/resource", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(j<{ ok: boolean; item: WorkspaceResource }>),
+  deleteWorkspaceResource: (body: {
+    kind: string;
+    name: string;
+    scope?: string;
+    path?: string;
+    directory?: string | null;
+  }) =>
+    fetch("/api/workspace/resource", {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(j<{ ok: boolean; path: string }>),
+  toggleWorkspaceResource: (body: {
+    kind: string;
+    name: string;
+    scope?: string;
+    path?: string;
+    enabled?: boolean;
+    directory?: string | null;
+  }) =>
+    fetch("/api/workspace/resource/toggle", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(j<{ ok: boolean; enabled: boolean; path: string }>),
+  importWorkspaceResources: (body: {
+    kind: "skills" | "plugins";
+    urls: string[];
+    scope?: "global" | "project";
+    directory?: string | null;
+  }) =>
+    fetch("/api/workspace/resources/import", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(j<{ ok: boolean; imported: WorkspaceResource[]; errors: string[] }>),
+  workspacePresets: () =>
+    fetch("/api/workspace/presets").then(j<{ presets: WorkspacePreset[] }>),
+  createWorkspacePreset: (body: Partial<WorkspacePreset> & { name: string }) =>
+    fetch("/api/workspace/presets", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(j<{ ok: boolean; preset: WorkspacePreset }>),
+  updateWorkspacePreset: (id: string, body: Partial<WorkspacePreset>) =>
+    fetch(`/api/workspace/presets/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(j<{ ok: boolean; preset: WorkspacePreset }>),
+  deleteWorkspacePreset: (id: string) =>
+    fetch(`/api/workspace/presets/${encodeURIComponent(id)}`, { method: "DELETE" }).then(j),
+  applyWorkspacePreset: (id: string, mode: "additive" | "exclusive", directory?: string | null) =>
+    fetch(`/api/workspace/presets/${encodeURIComponent(id)}/apply`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ mode, directory }),
+    }).then(j<{ ok: boolean; changed: number; errors: string[] }>),
+  workspaceProfiles: () =>
+    fetch("/api/workspace/profiles").then(
+      j<{
+        profiles: {
+          id: string;
+          name: string;
+          createdAt: number;
+          counts: { configs: number; resources: number };
+        }[];
+      }>,
+    ),
+  createWorkspaceProfile: (name: string, directory?: string | null) =>
+    fetch("/api/workspace/profiles", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name, directory }),
+    }).then(j<{ ok: boolean; profile: { id: string; name: string; createdAt: number } }>),
+  applyWorkspaceProfile: (id: string, directory?: string | null) =>
+    fetch(`/api/workspace/profiles/${encodeURIComponent(id)}/apply`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ directory }),
+    }).then(j<{ ok: boolean; restored: number; skipped: string[] }>),
+  deleteWorkspaceProfile: (id: string) =>
+    fetch(`/api/workspace/profiles/${encodeURIComponent(id)}`, { method: "DELETE" }).then(j),
+  workspaceBackup: (directory?: string | null) => {
+    const q = new URLSearchParams();
+    if (directory) q.set("directory", directory);
+    return fetch("/api/workspace/backup?" + q.toString()).then(j<WorkspaceBackup>);
+  },
+  restoreWorkspace: (backup: WorkspaceBackup, directory?: string | null) =>
+    fetch("/api/workspace/restore", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ backup, directory }),
+    }).then(j<{ ok: boolean; restored: number; skipped: string[] }>),
+  githubStatus: () => fetch("/api/workspace/github").then(j<GithubStatus>),
+  setGithubConfig: (patch: Partial<GithubStatus["config"]>) =>
+    fetch("/api/workspace/github", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(patch),
+    }).then(j<{ ok: boolean; config: GithubStatus["config"] }>),
+  githubPush: (directory?: string | null) =>
+    fetch("/api/workspace/github/push", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ directory }),
+    }).then(j<{ ok: boolean; url?: string | null }>),
+  githubPull: (directory?: string | null) =>
+    fetch("/api/workspace/github/pull", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ directory }),
+    }).then(j<{ ok: boolean; restored: number; skipped: string[] }>),
+  workspaceAuth: () =>
+    fetch("/api/workspace/auth").then(
+      j<{ providers: WorkspaceAuthProvider[]; authPath: string }>,
+    ),
+  saveWorkspaceAuth: (body: {
+    provider: string;
+    key?: string;
+    type?: "api" | "oauth";
+    auth?: Record<string, unknown>;
+  }) =>
+    fetch("/api/workspace/auth", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(j<{ ok: boolean; providers: WorkspaceAuthProvider[] }>),
+  deleteWorkspaceAuth: (provider: string) =>
+    fetch("/api/workspace/auth?" + new URLSearchParams({ provider }).toString(), {
+      method: "DELETE",
+    }).then(j<{ ok: boolean; providers: WorkspaceAuthProvider[] }>),
 };

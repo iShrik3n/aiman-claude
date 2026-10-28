@@ -1,6 +1,6 @@
 {
   "name": "aiman-claude",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "aiman-claude — self-hosted web UI and session manager for Claude Code (fork of AiMAN).",
   "type": "module",
   "main": "desktop/main.cjs",
@@ -82,6 +82,14 @@
         "to": "aiman/package.json"
       }
     ],
+    "protocols": [
+      {
+        "name": "AiMAN deep links",
+        "schemes": [
+          "aiman"
+        ]
+      }
+    ],
     "win": {
       "target": [
         "nsis"
@@ -97,3 +105,4 @@
     "electron-builder": "^26.18.0"
   }
 }
+

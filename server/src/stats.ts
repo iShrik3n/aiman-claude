@@ -114,65 +114,86 @@ function usageFilter(sessionIds?: string[]): { sql: string; params: any[] } {
   return { sql: ` WHERE session_id IN (${sessionIds.map(() => "?").join(",")})`, params: sessionIds };
 }
 
-export function usageByModel(sessionIds?: string[]): any[] {
+export type UsageRange = { from?: number; to?: number };
+
+function usageRangeFilter(range?: UsageRange): { sql: string; params: any[] } {
+  if (!range) return { sql: "", params: [] };
+  const parts: string[] = [];
+  const params: any[] = [];
+  if (range.from != null) {
+    parts.push("time_created >= ?");
+    params.push(range.from);
+  }
+  if (range.to != null) {
+    parts.push("time_created <= ?");
+    params.push(range.to);
+  }
+  return { sql: parts.length ? ` AND ${parts.join(" AND ")}` : "", params };
+}
+
+export function usageByModel(sessionIds?: string[], range?: UsageRange): any[] {
   if (isV2()) {
     const f = usageFilter(sessionIds);
+    const r = usageRangeFilter(range);
     const rows = mgr
       .query(
         `SELECT provider_id AS providerID, model_id AS modelID, ${USAGE_AGG}
-           FROM msg_usage${f.sql}
+           FROM msg_usage${f.sql}${r.sql}
           GROUP BY provider_id, model_id ORDER BY cost DESC`,
       )
-      .all(...f.params) as any[];
-    return rows.map((r) => {
-      const u = add(empty(), r);
-      return { providerID: r.providerID ?? "unknown", modelID: r.modelID ?? "unknown", ...u };
+      .all(...f.params, ...r.params) as any[];
+    return rows.map((row) => {
+      const u = add(empty(), row);
+      return { providerID: row.providerID ?? "unknown", modelID: row.modelID ?? "unknown", ...u };
     });
   }
 
   const f = sessionFilter(sessionIds);
+  const r = usageRangeFilter(range);
   const rows = ocRO
     .query(
       `SELECT json_extract(data,'${MODEL_PROVIDER()}') AS providerID,
               json_extract(data,'${MODEL_ID()}') AS modelID, ${AGG}
-       FROM ${MESSAGE_TABLE()} WHERE ${WHERE_ASSISTANT()}${f.sql}
+       FROM ${MESSAGE_TABLE()} WHERE ${WHERE_ASSISTANT()}${f.sql}${r.sql}
        GROUP BY providerID, modelID ORDER BY cost DESC`,
     )
-    .all(...f.params) as any[];
-  return rows.map((r) => {
-    const u = add(empty(), r);
-    return { providerID: r.providerID ?? "unknown", modelID: r.modelID ?? "unknown", ...u };
+    .all(...f.params, ...r.params) as any[];
+  return rows.map((row) => {
+    const u = add(empty(), row);
+    return { providerID: row.providerID ?? "unknown", modelID: row.modelID ?? "unknown", ...u };
   });
 }
 
-export function usageByDay(sessionIds?: string[]): any[] {
+export function usageByDay(sessionIds?: string[], range?: UsageRange): any[] {
   if (isV2()) {
     const f = usageFilter(sessionIds);
+    const r = usageRangeFilter(range);
     const rows = mgr
       .query(
         `SELECT day, ${USAGE_AGG}
-           FROM msg_usage${f.sql} GROUP BY day ORDER BY day DESC LIMIT 60`,
+           FROM msg_usage${f.sql}${r.sql} GROUP BY day ORDER BY day DESC LIMIT 120`,
       )
-      .all(...f.params) as any[];
+      .all(...f.params, ...r.params) as any[];
     return rows
-      .map((r) => {
-        const u = add(empty(), r);
-        return { day: r.day, ...u };
+      .map((row) => {
+        const u = add(empty(), row);
+        return { day: row.day, ...u };
       })
       .reverse();
   }
 
   const f = sessionFilter(sessionIds);
+  const r = usageRangeFilter(range);
   const rows = ocRO
     .query(
       `SELECT date(time_created/1000,'unixepoch') AS day, ${AGG}
-       FROM ${MESSAGE_TABLE()} WHERE ${WHERE_ASSISTANT()}${f.sql} GROUP BY day ORDER BY day DESC LIMIT 60`,
+       FROM ${MESSAGE_TABLE()} WHERE ${WHERE_ASSISTANT()}${f.sql}${r.sql} GROUP BY day ORDER BY day DESC LIMIT 120`,
     )
-    .all(...f.params) as any[];
+    .all(...f.params, ...r.params) as any[];
   return rows
-    .map((r) => {
-      const u = add(empty(), r);
-      return { day: r.day, ...u };
+    .map((row) => {
+      const u = add(empty(), row);
+      return { day: row.day, ...u };
     })
     .reverse();
 }
@@ -200,15 +221,17 @@ export function sessionStats(sessionId: string) {
 
 const aggregateCache = new Map<string, { at: number; data: any }>();
 
-export function aggregateStats(sessionIds?: string[]) {
-  const key = sessionIds ? [...sessionIds].sort().join(",") : "*";
+export function aggregateStats(sessionIds?: string[], range?: UsageRange) {
+  const key =
+    (sessionIds ? [...sessionIds].sort().join(",") : "*") +
+    (range ? `|${range.from ?? ""}|${range.to ?? ""}` : "|all");
   const cached = aggregateCache.get(key);
   if (cached && Date.now() - cached.at < 10_000) return cached.data;
 
-  const models = usageByModel(sessionIds);
+  const models = usageByModel(sessionIds, range);
   const totals = empty();
   for (const m of models) add(totals, m);
-  const days = usageByDay(sessionIds);
+  const days = usageByDay(sessionIds, range);
 
   let counts: { sessions: number; archived: number; userMessages: number };
   if (sessionIds) {

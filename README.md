@@ -20,8 +20,8 @@ opencode is working.
 - **Full-text search** — FTS5 index over every message part (text, reasoning,
   tool calls, files).
 - **Usage statistics** — tokens, cost, cache and per-model breakdowns, daily
-  activity charts and top sessions. Filter by **user**, by **profile**, or any
-  combination, and drill into **per-session** statistics.
+  activity charts and top sessions. Filter by **user**, by **credential set**, by
+  project and date range, and drill into **per-session** statistics.
 - **Fork anywhere** — fork a new session from any message with *Fork here*.
 - **Onboarding** — first-run wizard for security (password) and preferences.
 - **Codebase explorer** — select a folder and a CodeCharta-style **treemap** of
@@ -69,16 +69,35 @@ opencode is working.
   xterm.js; no Python or external terminal server, works on Linux, macOS and
   Windows.
 - **Users** — first-run admin setup, add/promote/disable/delete users.
-- **Extensions (admin)** — manage opencode MCP servers (local or remote) and
-  plugins from the top bar: add, edit, remove, connect/disconnect, browse MCP
-  resources, and check/update/remove plugins. Changes are written to the active
-  opencode config document, which opencode hot-reloads.
-- **Profiles** — bundle provider API keys and switch them at runtime.
-- **Deep links** — every view has a URL (`/sessions`, `/search`, `/stats`, …) and
-  each session has its own handle (`/sessions/<id>`).
-- **Themes** — ten app-wide skins including Windows XP and Windows 98 (and dark
-  variants of both, via xp.css / 98.css), a skeuomorphic Winamp-style theme,
-  macOS Aqua, Nord and a CRT.
+- **Integrations (admin)** - manage opencode MCP servers (local or remote) and
+  all plugins in one place: add, edit, remove, connect/disconnect, browse MCP
+  resources, check/update/remove packages, and create/edit/import local plugin
+  files. Changes are written to the active opencode config document, which
+  opencode hot-reloads.
+- **OpenCode (admin)** - an OpenCode configuration cockpit with a sidebar:
+  raw JSONC config editing; providers; live credentials and saved credential
+  sets; permissions; system prompt and project rules; LSP/formatter and v2
+  `cli.json`; skills, commands and agents; presets; and local/portable/GitHub
+  snapshots. Live logs moved to **Settings → System**.
+- **Usage filters and export** - date ranges, project filtering, per-user and
+  per-credential-set views, CSV export and a PNG snapshot of the dashboard.
+- **Credential sets** - named bundles of provider API keys under **OpenCode →
+  Providers → Credentials**, with drift detection, capture-live-keys and an
+  admin-only apply action. There is no longer a separate top-bar profile switcher.
+- **Deep links** — every view has a URL (`/sessions`, `/search`, `/stats`,
+  `/integrations`, `/workspace`, …) and each session has its own handle
+  (`/sessions/<id>`).
+- **Themes & typography** - thirteen app-wide skins including Windows XP and
+  Windows 98 (and dark variants of both, via xp.css / 98.css), four alien skins
+  (Y2K Winamp chrome, **Alien Grotesque**, **K-Jöfol Xeno4**, and **Xeno 3000**
+  with the supplied cockpit stylesheet, reactor palettes, spectrum pod and
+  paper-LCD directory matrix), macOS Aqua, Nord and a CRT. Choose custom UI and
+  code/terminal font families, set a base font size, or reset to the theme.
+- **Switchable opencode servers** - keep multiple opencode URLs with their own
+  password, database and auth path, then activate one and restart. Environment
+  variables remain the highest-priority override.
+- **European languages** - navigation and OpenCode shell translations for most
+  European languages alongside English, Simplified Chinese and Korean.
 - **Folder tree** — organize sessions into nested folders, with inclusive
   subtree filtering, branch collapse, and subfolder creation.
 - **Auto-organize** — one admin click asks opencode to build a folder tree and
@@ -90,7 +109,7 @@ opencode is working.
 - **Pop-out windows** — open any session in its own themed window; it inherits
   the active skin and drops the redundant app toolbar.
 - **Compact toolbar** — optionally merge Sessions, Search, Stats, Terminal,
-  Settings, Users, Extensions, Profiles and the live indicator into the desktop
+  Settings, Users, Integrations, OpenCode and the live indicator into the desktop
   title bar. Pop-outs then keep only the window controls in their header.
 - **Cross-platform** — runs on Linux, macOS and Windows via [Bun](https://bun.sh).
 
@@ -185,12 +204,50 @@ GitHub release alongside the server/web archives.
   **Check for updates**, or `POST /api/update/apply` as an administrator. The
   updater downloads the latest GitHub release and overlays the runtime files.
   User data in `AIMAN_HOME` is left untouched.
+- **Any Linux / macOS server (even an old build)** — run the standalone updater;
+  it fetches the latest release and restarts the service:
+
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/spacewalkingninja/aiman/main/scripts/update.sh | bash
+  ```
+
+  Pin a version with `AIMAN_VERSION=1.9.0`, or target a non-default install with
+  `AIMAN_APP_DIR=/path/to/app`. Use `AIMAN_NO_RESTART=1` to skip the restart.
+  The same script is included in release archives as `scripts/update.sh`.
 - **Desktop app** — download and run the installer from the latest GitHub
   release. The in-app updater refreshes the bundled server and web UI, but it
   cannot replace the running Electron shell.
 - **Source checkouts** — `git pull`, then `bun run build` (and
   `bun run desktop:build` if you need a fresh installer). Restart the running
   process afterwards.
+
+## OpenCode
+
+Administrators get an **OpenCode** area that mirrors OpenCode Studio-style
+configuration management without leaving AiMAN. A grouped sidebar replaces the
+old long tab strip:
+
+- **Raw config** edits `opencode.json` / `opencode.jsonc` with validation,
+  comments and unknown-field preservation.
+- **Providers → Models** edits endpoints, model limits, costs,
+  reasoning/tool-call capabilities and default/small models.
+- **Providers → Credentials** is the single provider-auth surface: live API
+  keys, OAuth login, saved API-key sets, drift detection and
+  “capture live keys”. Applying a set is admin-only and warns about removed
+  keys and untouched OAuth credentials.
+- **Permissions**, **system prompt**, **project rules** (`AGENTS.md` /
+  `CLAUDE.md`), **LSP/formatters** and v2 **`cli.json`**.
+- **Skills**, **commands** and **agents** can be created, edited, imported in
+  bulk, enabled/disabled and deleted.
+- **Presets** save groups of skills, commands, agents, plugins and MCP servers.
+- **Snapshots & backups** contains local snapshots plus file/GitHub export and
+  restore. Snapshots do not include sessions, chat history or credentials.
+- **Integrations** (admin) manages MCP servers, package plugins and local plugin
+  files together.
+- **Settings → System** contains the live log viewer, updates and the background
+  service.
+- **OpenCode** forms show an **unsaved** badge and confirm before changing
+  section or configuration scope.
 
 ## Configuration
 

@@ -4,23 +4,6 @@ import { useStore } from "./store";
 
 type WindowState = { maximized: boolean; focused: boolean };
 
-type DesktopApi = {
-  isDesktop: true;
-  platform?: string;
-  electron?: string;
-  minimize: () => void;
-  toggleMaximize: () => void;
-  close: () => void;
-  setTheme: (theme: { id: string; bg: string }) => void;
-  onState: (cb: (state: WindowState) => void) => () => void;
-};
-
-declare global {
-  interface Window {
-    aimanDesktop?: DesktopApi;
-  }
-}
-
 function useDesktopWindow() {
   const api = typeof window !== "undefined" ? window.aimanDesktop : undefined;
   const { theme } = useStore();
