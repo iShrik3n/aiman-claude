@@ -282,7 +282,7 @@ export default function StatsView() {
           value={fmtTokens(t.total)}
           sub={`${fmtTokens(t.input)} in · ${fmtTokens(t.output)} out · ${fmtTokens(t.reasoning)} think`}
         />
-        <Card label="Total cost" value={fmtCost(t.cost)} sub="provider spend" />
+        <Card label="Total cost" value={fmtCost(t.cost)} sub="estimated at API list prices" />
         <Card
           label="Cache"
           value={fmtTokens(t.cacheRead + t.cacheWrite)}

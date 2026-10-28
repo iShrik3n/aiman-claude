@@ -10,7 +10,10 @@ Works:
 
 - Session list, rename (stored in the index only), pin, archive, folders
 - Full-text search across every message and tool call
-- Token statistics (tokens only; **cost is 0** because transcripts carry no price)
+- Token statistics with an **estimated cost**: transcripts carry no price, so cost
+  is computed from list prices (`server/src/pricing.ts`, 1-hour cache writes at
+  2x). It is what the tokens would cost on the API, not what a subscription
+  bills; models missing from the table count as 0
 - Transcript view (text, tool calls with output, Edit diffs)
 - **Prompting**: new sessions, continue existing ones, abort, model and effort
   selection, through the Claude Agent SDK

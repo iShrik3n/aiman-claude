@@ -1,7 +1,8 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
 import { CLAUDE_PROJECTS_DIR } from "./config";
-import { mgr, ocRO, ocRW } from "./db";
+import { getSetting, mgr, ocRO, ocRW, setSetting } from "./db";
+import { messageCost } from "./pricing";
 
 /**
  * Indexer for Claude Code transcripts (`~/.claude/projects/<dir>/<id>.jsonl`).
@@ -23,6 +24,9 @@ import { mgr, ocRO, ocRW } from "./db";
  */
 
 type Json = any;
+
+/** 2: message cost is estimated from list prices (pricing.ts). */
+const PARSER_VERSION = "2";
 
 const MAX_TEXT = 200_000;
 const MAX_OUTPUT = 60_000;
@@ -219,18 +223,38 @@ export function parseTranscript(sessionId: string, text: string): ParsedSession 
       // Streamed lines repeat usage (output_tokens may grow); keep the largest.
       const think = Number(u.output_tokens_details?.thinking_tokens ?? 0);
       const out = Math.max(Number(u.output_tokens ?? 0) - think, 0);
-      const prev = msg.data.tokens ?? { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } };
+      const prev = msg.data.tokens ?? {
+        input: 0,
+        output: 0,
+        reasoning: 0,
+        cache: { read: 0, write: 0, write1h: 0 },
+      };
+      const write = Number(u.cache_creation_input_tokens ?? 0);
+      // Claude Code writes 1-hour cache entries (billed at 2x, not 1.25x input).
+      const write1h = Math.min(Number(u.cache_creation?.ephemeral_1h_input_tokens ?? 0), write);
       msg.data.tokens = {
         input: Math.max(prev.input, Number(u.input_tokens ?? 0)),
         output: Math.max(prev.output, out),
         reasoning: Math.max(prev.reasoning, think),
         cache: {
           read: Math.max(prev.cache.read, Number(u.cache_read_input_tokens ?? 0)),
-          write: Math.max(prev.cache.write, Number(u.cache_creation_input_tokens ?? 0)),
+          write: Math.max(prev.cache.write, write),
+          write1h: Math.max(prev.cache.write1h ?? 0, write1h),
         },
       };
-      // No per-message price is stored in transcripts; cost is left at 0.
-      msg.data.cost = 0;
+      const tk = msg.data.tokens;
+      msg.data.cost = messageCost(
+        msg.data.modelID,
+        {
+          input: tk.input,
+          output: tk.output,
+          reasoning: tk.reasoning,
+          cacheRead: tk.cache.read,
+          cacheWrite5m: Math.max(tk.cache.write - tk.cache.write1h, 0),
+          cacheWrite1h: tk.cache.write1h,
+        },
+        u.speed === "fast",
+      );
     }
 
     const blocks: Json[] = Array.isArray(m.content) ? m.content : [];
@@ -433,6 +457,8 @@ function findTranscript(sessionId: string): string | null {
  * transcripts, and the index doubles as the archive.
  */
 export function syncTranscripts(): { files: number; changed: number } {
+  // Bump when parseTranscript's output changes, to re-parse unchanged files.
+  const reparse = getSetting("claude_parser") !== PARSER_VERSION;
   const known = new Map(
     (
       ocRO.query("SELECT path, size, mtime_ms FROM source_file").all() as {
@@ -446,7 +472,7 @@ export function syncTranscripts(): { files: number; changed: number } {
   let changed = 0;
   for (const f of files) {
     const k = known.get(f.path);
-    if (k && k.size === f.size && k.mtime_ms === f.mtime) continue;
+    if (!reparse && k && k.size === f.size && k.mtime_ms === f.mtime) continue;
     try {
       const sessionId = basename(f.path, ".jsonl");
       const parsed = parseTranscript(sessionId, readFileSync(f.path, "utf8"));
@@ -462,5 +488,6 @@ export function syncTranscripts(): { files: number; changed: number } {
       console.error("[claude] failed to index", f.path, e);
     }
   }
+  if (reparse) setSetting("claude_parser", PARSER_VERSION);
   return { files: files.length, changed };
 }
