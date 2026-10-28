@@ -76,7 +76,7 @@ export function eventStream(req: Request): Response {
 const EFFORTS = ["low", "medium", "high", "xhigh", "max"] as const;
 type Effort = (typeof EFFORTS)[number];
 
-const MODELS = [
+export const MODELS = [
   { id: "claude-fable-5-1", name: "Fable 5.1", effort: true },
   { id: "claude-opus-5-5", name: "Opus 5.5", effort: true },
   { id: "claude-sonnet-5-5", name: "Sonnet 5.5", effort: true },
@@ -176,7 +176,7 @@ function flush(sessionId: string): void {
   }
 }
 
-function findClaude(): string | undefined {
+export function findClaude(): string | undefined {
   return process.env.CLAUDE_BIN?.trim() || Bun.which("claude") || undefined;
 }
 
