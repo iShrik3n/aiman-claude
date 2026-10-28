@@ -13,7 +13,17 @@ import { ensureFtsMode, syncFts, pruneFts, search } from "./fts";
 import { aggregateStats, sessionStats, usageBySession } from "./stats";
 import { isV2 } from "./db";
 import { handleOc } from "./oc";
-import { guardRequest, LIVE_ENABLED } from "./security";
+import {
+  checkSetupToken,
+  guardRequest,
+  LIVE_ENABLED,
+  projectPath,
+  projectRoot,
+  SETUP_TOKEN,
+  setupTokenRequired,
+  throttle,
+  tooMany,
+} from "./security";
 import { syncTranscripts } from "./claude";
 import { handleExtensions } from "./extensions";
 import { handleWorkspace } from "./workspace";
@@ -477,15 +487,6 @@ const MIME: Record<string, string> = {
   ".otf": "font/otf",
 };
 
-/** Resolve `rel` inside `root`, refusing paths that escape it. */
-function safeResolve(root: string, rel: string): string | null {
-  const base = resolve(root);
-  const abs = resolve(base, rel || ".");
-  const r = relative(base, abs);
-  if (r.startsWith("..") || isAbsolute(r)) return null;
-  return abs;
-}
-
 type TreeNode = {
   name: string;
   path: string;
@@ -665,12 +666,23 @@ async function handle(req: Request): Promise<Response> {
   // ---------- auth ----------
   if (p === "/api/auth/me" && method === "GET") {
     const user = authenticate(req);
-    return json({ authenticated: !!user, needsSetup: userCount() === 0, user });
+    return json({
+      authenticated: !!user,
+      needsSetup: userCount() === 0,
+      needsSetupToken: userCount() === 0 && setupTokenRequired(),
+      user,
+    });
   }
 
   if (p === "/api/auth/setup" && method === "POST") {
     if (userCount() > 0) return json({ error: "already_configured" }, 403);
+    const wait = throttle.wait("setup");
+    if (wait) return tooMany(wait);
     const b = await readBody(req);
+    if (setupTokenRequired() && !checkSetupToken(b.setupToken)) {
+      throttle.fail("setup");
+      return json({ error: "setup token required (printed on the server console)" }, 403);
+    }
     const uErr = validateUsername(String(b.username ?? ""));
     if (uErr) return json({ error: uErr }, 400);
     const pErr = validatePassword(String(b.password ?? ""));
@@ -690,10 +702,15 @@ async function handle(req: Request): Promise<Response> {
 
   if (p === "/api/auth/login" && method === "POST") {
     const b = await readBody(req);
+    const loginKey = "login:" + String(b.username ?? "").toLowerCase().slice(0, 64);
+    const wait = throttle.wait(loginKey);
+    if (wait) return tooMany(wait);
     const u = findUsername(String(b.username ?? ""));
     if (!u || u.disabled || !(await verifyPassword(u, String(b.password ?? "")))) {
+      throttle.fail(loginKey);
       return json({ error: "invalid credentials" }, 401);
     }
+    throttle.ok(loginKey);
     const token = createSession(
       u.id,
       req.headers.get("user-agent") ?? "",
@@ -1133,14 +1150,15 @@ async function handle(req: Request): Promise<Response> {
   if (p === "/api/tree" && method === "GET") {
     const directory = url.searchParams.get("directory");
     if (!directory) return json({ error: "directory required" }, 400);
-    const root = resolve(directory);
-    const maxDepth = Number(url.searchParams.get("depth") ?? "6");
+    const root = projectRoot(directory);
+    if (!root) return json({ error: "forbidden" }, 403);
+    const maxDepth = Math.min(Math.max(Number(url.searchParams.get("depth") ?? "6") || 6, 1), 16);
     try {
       if (!(await stat(root)).isDirectory()) return json({ error: "not a directory" }, 400);
     } catch {
       return json({ error: "directory not found" }, 404);
     }
-    const budget = { left: Number(url.searchParams.get("max") ?? "6000") };
+    const budget = { left: Math.min(Math.max(Number(url.searchParams.get("max") ?? "6000") || 6000, 1), 20000) };
     const children = await buildTree(root, root, "", maxDepth, budget);
     const size = children.reduce((n, c) => n + c.size, 0);
     return json({ root, name: basename(root), type: "dir", path: "", size, children });
@@ -1150,7 +1168,7 @@ async function handle(req: Request): Promise<Response> {
     const directory = url.searchParams.get("directory");
     const relPath = url.searchParams.get("path");
     if (!directory || !relPath) return json({ error: "directory and path required" }, 400);
-    const abs = safeResolve(directory, relPath);
+    const abs = projectPath(directory, relPath);
     if (!abs) return json({ error: "forbidden" }, 403);
     const f = Bun.file(abs);
     if (!(await f.exists())) return json({ error: "not found" }, 404);
@@ -1172,8 +1190,9 @@ async function handle(req: Request): Promise<Response> {
     const directory = String(b.directory ?? "");
     const relPath = String(b.path ?? "");
     if (!directory || !relPath) return json({ error: "directory and path required" }, 400);
-    const abs = safeResolve(directory, relPath);
+    const abs = projectPath(directory, relPath);
     if (!abs) return json({ error: "forbidden" }, 403);
+    if (!LIVE_ENABLED) return json({ error: "read-only: editing files needs a loopback bind" }, 403);
     if (typeof b.content !== "string") return json({ error: "content required" }, 400);
     try {
       await Bun.write(abs, b.content);
@@ -1187,13 +1206,16 @@ async function handle(req: Request): Promise<Response> {
     const directory = url.searchParams.get("directory");
     const relPath = url.searchParams.get("path");
     if (!directory || !relPath) return new Response("bad request", { status: 400 });
-    const abs = safeResolve(directory, relPath);
+    const abs = projectPath(directory, relPath);
     if (!abs) return new Response("forbidden", { status: 403 });
     const f = Bun.file(abs);
     if (!(await f.exists())) return new Response("not found", { status: 404 });
     const headers = new Headers();
     headers.set("content-type", MIME[extname(abs).toLowerCase()] ?? "application/octet-stream");
     headers.set("cache-control", "private, max-age=60");
+    // Served from our origin: stop a project's SVG from running script with the session cookie.
+    headers.set("x-content-type-options", "nosniff");
+    if (extname(abs).toLowerCase() === ".svg") headers.set("content-security-policy", "sandbox");
     return new Response(f, { headers });
   }
 
@@ -1201,9 +1223,10 @@ async function handle(req: Request): Promise<Response> {
     const directory = url.searchParams.get("directory");
     const relPath = url.searchParams.get("path");
     if (!directory || !relPath) return json({ error: "directory and path required" }, 400);
-    const abs = safeResolve(directory, relPath);
+    const abs = projectPath(directory, relPath);
     if (!abs) return json({ error: "forbidden" }, 403);
-    if (abs === resolve(directory)) return json({ error: "refusing to delete root" }, 400);
+    if (!LIVE_ENABLED) return json({ error: "read-only: deleting files needs a loopback bind" }, 403);
+    if (abs === projectRoot(directory)) return json({ error: "refusing to delete root" }, 400);
     try {
       rmSync(abs, { recursive: true, force: true });
     } catch (e) {
@@ -1214,9 +1237,11 @@ async function handle(req: Request): Promise<Response> {
 
   // Upload a file (e.g. a pasted image) into a directory, or AIMAN_HOME/uploads.
   if (p === "/api/upload" && method === "POST") {
+    if (!LIVE_ENABLED) return json({ error: "read-only: uploads need a loopback bind" }, 403);
     const directory = url.searchParams.get("directory");
-    const base = directory ? safeResolve(directory, ".") : null;
-    const target = base && existsSync(base) ? join(base, ".aiman-uploads") : join(AIMAN_HOME, "uploads");
+    const base = directory ? projectRoot(directory) : null;
+    if (directory && !base) return json({ error: "forbidden" }, 403);
+    const target = base ? join(base, ".aiman-uploads") : join(AIMAN_HOME, "uploads");
     try {
       mkdirSync(target, { recursive: true });
     } catch {}
@@ -1431,4 +1456,7 @@ Bun.serve({
   },
 });
 
+if (userCount() === 0 && setupTokenRequired()) {
+  console.log(`First-run setup token (needed to create the admin account): ${SETUP_TOKEN}`);
+}
 console.log(`aiman-claude listening on http://${HOST}:${PORT}  (${LIVE_ENABLED ? "live control on" : "read-only"}; transcripts from ${CLAUDE_PROJECTS_DIR})`);

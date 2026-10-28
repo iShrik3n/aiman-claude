@@ -30,6 +30,20 @@ A POST to this server can make Claude Code run tools on your machine.
 - Requests need a login, a loopback `Host` header (add reverse-proxy names with
   `AIMAN_ALLOWED_HOSTS=a.example,b.example`) and, for POSTs, a same-origin
   `Origin`.
+- **Keep it on localhost.** For remote use, tunnel (`ssh -L 4197:127.0.0.1:4197`
+  or Tailscale) instead of exposing the port: transcripts contain everything
+  you and Claude have done.
+- The file explorer endpoints (`/api/tree`, `/api/file`, `/api/raw`,
+  `/api/upload`) only reach directories of sessions aiman knows about, with
+  `..` and symlinks resolved. Editing, deleting and uploading additionally need
+  live control to be on. If you ever ran `claude` from `~`, then `~` counts as a
+  project directory.
+- Creating the first admin needs a setup token (printed on the server console,
+  or `AIMAN_SETUP_TOKEN`) whenever the server is not bound to loopback or
+  `AIMAN_ALLOWED_HOSTS` is set. On plain loopback it is not needed.
+- After 5 failed logins for a username it is locked for 30 s, doubling up to
+  15 min (in memory, per username). Someone who knows your username can
+  therefore lock you out for that long.
 - Runs use permission mode `default` and never `bypassPermissions`; your normal
   Claude Code settings (allow rules, `defaultMode`, CLAUDE.md) are loaded, so
   tools you already auto-allow are not asked about here either.

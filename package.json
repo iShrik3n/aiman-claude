@@ -1,6 +1,6 @@
 {
   "name": "aiman-claude",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "aiman-claude — self-hosted web UI and session manager for Claude Code (fork of AiMAN).",
   "type": "module",
   "main": "desktop/main.cjs",

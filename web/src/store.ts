@@ -44,6 +44,7 @@ type Auth = {
   loading: boolean;
   authenticated: boolean;
   needsSetup: boolean;
+  needsSetupToken?: boolean;
   user: { id: string; username: string; is_admin: number } | null;
 };
 
@@ -650,6 +651,7 @@ export async function bootstrapAuth() {
         loading: false,
         authenticated: me.authenticated,
         needsSetup: me.needsSetup,
+        needsSetupToken: !!me.needsSetupToken,
         user: me.user,
       },
     });
@@ -666,8 +668,8 @@ export async function login(username: string, password: string) {
   await bootstrap();
 }
 
-export async function setupAdmin(username: string, password: string) {
-  await api.setup(username, password);
+export async function setupAdmin(username: string, password: string, setupToken?: string) {
+  await api.setup(username, password, setupToken);
   const me = await api.authMe();
   set({ auth: { loading: false, authenticated: true, needsSetup: false, user: me.user } });
   await bootstrap();

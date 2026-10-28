@@ -7,6 +7,7 @@ export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [setupToken, setSetupToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,7 +20,7 @@ export default function Login() {
     }
     setBusy(true);
     try {
-      if (needsSetup) await setupAdmin(username.trim(), password);
+      if (needsSetup) await setupAdmin(username.trim(), password, setupToken.trim());
       else await login(username.trim(), password);
     } catch (err: any) {
       setError(String(err.message ?? err));
@@ -71,6 +72,19 @@ export default function Login() {
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
             />
+            {s.auth.needsSetupToken && (
+              <>
+                <label className="small muted" style={{ marginTop: 10 }}>
+                  Setup token (printed on the server console)
+                </label>
+                <input
+                  className="input"
+                  autoComplete="off"
+                  value={setupToken}
+                  onChange={(e) => setSetupToken(e.target.value)}
+                />
+              </>
+            )}
           </>
         )}
 
