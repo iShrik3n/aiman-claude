@@ -1,14 +1,14 @@
-import { isV2, mgr, ocRO } from "./db";
-import { locationParams, ocData } from "./ocClient";
-import { getSession, sessionDirectory } from "./manager";
+import { mgr } from "./db";
+import { isBusy, startPrompt } from "./live";
+import { getSession } from "./manager";
 
 /**
  * Strict deferred-message queue.
  *
  * A queued prompt is kept in aiman's manager database until the target session
  * has been fully quiescent for the configured window. Only then is it handed to
- * opencode. This is intentionally stricter than opencode's native inbox, which
- * releases as soon as the agent loop is idle.
+ * Claude Code. A prompt is released only when no run is active for the session,
+ * its transcript has been still for a moment and the quiet window has passed.
  */
 
 export type QueueOptions = {
@@ -55,16 +55,6 @@ type QueueRow = {
   error: string | null;
   attempts: number;
   sent_at: number | null;
-};
-
-type SessionGateRow = {
-  id: string;
-  parent_id: string | null;
-  directory: string;
-  time_created: number;
-  time_updated: number;
-  time_idle: number | null;
-  time_archived: number | null;
 };
 
 type GateResult = { ok: true } | { ok: false; reason: string };
@@ -159,141 +149,21 @@ export function cancelQueuedPrompt(id: string): "ok" | "not_found" | "sending" {
 // ---------------------------------------------------------------------------
 // Quiescence checks
 
-function sessionRow(sessionId: string): SessionGateRow | null {
-  if (!isV2()) return null;
-  return (
-    (ocRO
-      .query(
-        `SELECT id, parent_id, directory, time_created, time_updated,
-                time_idle, time_archived
-           FROM session_v2 WHERE id = ?`,
-      )
-      .get(sessionId) as SessionGateRow | undefined) ?? null
-  );
-}
-
-function hasMessages(sessionId: string): boolean {
-  return !!ocRO.query("SELECT 1 AS x FROM session_message WHERE session_id = ? LIMIT 1").get(sessionId);
-}
-
-/** Is the session idle, allowing a brand-new session with no turns yet? */
-function rowIdle(row: SessionGateRow): boolean {
-  if (row.time_idle == null) return !hasMessages(row.id);
-  return row.time_idle >= row.time_updated;
-}
-
-function runningShell(sessionId: string): string | null {
-  try {
-    const runningShell = ocRO
-      .query(
-        `SELECT 1 AS x FROM session_message
-          WHERE session_id = ? AND type = 'shell'
-            AND json_extract(data, '$.status') = 'running'
-          LIMIT 1`,
-      )
-      .get(sessionId);
-    if (runningShell) return "Background shell is running";
-
-    const lastAssistant = ocRO
-      .query(
-        `SELECT data FROM session_message
-          WHERE session_id = ? AND type = 'assistant'
-          ORDER BY seq DESC LIMIT 1`,
-      )
-      .get(sessionId) as { data: string } | undefined;
-    const data = parseJson<any>(lastAssistant?.data, {});
-    const content: any[] = Array.isArray(data?.content) ? data.content : [];
-    for (const item of content) {
-      if (item?.type !== "tool") continue;
-      const status = item?.state?.status;
-      if (status !== "running" && status !== "pending") continue;
-      const tool = String(item.name ?? "").toLowerCase();
-      if (/bash|shell|terminal|exec|command/.test(tool)) return "Shell command is running";
-      return "Tool is still running";
-    }
-  } catch {
-    // If the activity query itself fails, do not release the message.
-    return "Could not verify activity";
-  }
-  return null;
-}
-
-async function pendingCounts(
-  sessionId: string,
-  directory: string,
-): Promise<{ forms: number; permissions: number; error?: string }> {
-  try {
-    const q = locationParams(directory);
-    const [forms, permissions] = await Promise.all([
-      ocData<any[]>(`/api/session/${encodeURIComponent(sessionId)}/form`, {}, q),
-      ocData<any[]>(`/api/session/${encodeURIComponent(sessionId)}/permission`, {}, q),
-    ]);
-    return {
-      forms: Array.isArray(forms) ? forms.length : 0,
-      permissions: Array.isArray(permissions) ? permissions.length : 0,
-    };
-  } catch (e) {
-    return { forms: 0, permissions: 0, error: String((e as any)?.message ?? e) };
-  }
-}
-
-function descendants(sessionId: string): SessionGateRow[] {
-  if (!isV2()) return [];
-  try {
-    return ocRO
-      .query(
-        `WITH RECURSIVE tree(id) AS (
-           SELECT id FROM session_v2 WHERE id = ?
-           UNION ALL
-           SELECT s.id FROM session_v2 s JOIN tree t ON s.parent_id = t.id
-         )
-         SELECT s.id, s.parent_id, s.directory, s.time_created, s.time_updated,
-                s.time_idle, s.time_archived
-           FROM session_v2 s JOIN tree t ON s.id = t.id
-          WHERE s.id <> ? AND s.time_archived IS NULL`,
-      )
-      .all(sessionId, sessionId) as SessionGateRow[];
-  } catch {
-    return [];
-  }
-}
-
-async function checkOne(sessionId: string, options: QueueOptions): Promise<GateResult> {
-  const row = sessionRow(sessionId);
-  if (!row) return { ok: false, reason: "Session not found" };
-  if (row.time_archived) return { ok: false, reason: "Session is archived" };
-  if (!rowIdle(row)) return { ok: false, reason: "Agent is still running" };
-
-  if (options.blockQuestions || options.blockPermissions) {
-    const pending = await pendingCounts(sessionId, row.directory);
-    if (pending.error) {
-      return { ok: false, reason: "Could not verify pending prompts" };
-    }
-    if (options.blockQuestions && pending.forms > 0) return { ok: false, reason: "Waiting for your answer" };
-    if (options.blockPermissions && pending.permissions > 0) {
-      return { ok: false, reason: "Permission request is pending" };
-    }
-  }
-
-  if (options.blockShells) {
-    const shell = runningShell(sessionId);
-    if (shell) return { ok: false, reason: shell };
-  }
-
-  return { ok: true };
-}
-
-async function gateForSession(sessionId: string, options: QueueOptions): Promise<GateResult> {
-  const self = await checkOne(sessionId, options);
-  if (!self.ok) return self;
-  if (!options.blockSubagents) return { ok: true };
-
-  for (const child of descendants(sessionId)) {
-    const childGate = await checkOne(child.id, options);
-    if (!childGate.ok) return { ok: false, reason: `Subagent: ${childGate.reason}` };
+async function gateForSession(sessionId: string, _options: QueueOptions): Promise<GateResult> {
+  const session = getSession(sessionId);
+  if (!session) return { ok: false, reason: "Session not found" };
+  if (session.time_archived) return { ok: false, reason: "Session is archived" };
+  // Permission and question prompts only exist while a run is active (they are
+  // denied when it ends), so "not busy" covers the block* options too.
+  if (isBusy(sessionId)) return { ok: false, reason: "Agent is still running" };
+  // Someone may be using the same session from a terminal: its transcript moves.
+  if (Date.now() - session.time_updated < EXTERNAL_ACTIVITY_MS) {
+    return { ok: false, reason: "Session was just active" };
   }
   return { ok: true };
 }
+
+const EXTERNAL_ACTIVITY_MS = 4_000;
 
 // ---------------------------------------------------------------------------
 // Worker
@@ -331,28 +201,10 @@ async function sendQueued(row: QueueRow): Promise<void> {
     .run(row.id);
 
   try {
-    const files = parseJson<any[]>(row.files_json, [])
-      .map((f) => ({
-        uri: String(f?.uri ?? f?.url ?? ""),
-        name: f?.name ?? f?.filename,
-      }))
-      .filter((f) => f.uri);
-    const directory = sessionDirectory(row.session_id) ?? session.directory;
-    await ocData(
-      `/api/session/${encodeURIComponent(row.session_id)}/prompt`,
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          text: row.text,
-          ...(files.length ? { files } : {}),
-          // If quiescence changed between the check and this request, queue
-          // rather than steering the running turn.
-          delivery: "queue",
-        }),
-      },
-      locationParams(directory),
-    );
+    if (parseJson<any[]>(row.files_json, []).length) {
+      throw new Error("attachments are not supported yet");
+    }
+    startPrompt(row.session_id, row.text);
     const now = Date.now();
     mgr
       .query(
@@ -440,7 +292,7 @@ async function processSession(sessionId: string): Promise<void> {
 }
 
 export async function processQueue(): Promise<void> {
-  if (processing || !isV2()) return;
+  if (processing) return;
   processing = true;
   try {
     const sessions = mgr
