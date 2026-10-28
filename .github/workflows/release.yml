@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    tags: ["v*"]
+    tags: ["claude-v*"]
 
 permissions:
   contents: write
@@ -24,45 +24,33 @@ jobs:
       - name: Package release artifacts
         run: |
           set -euo pipefail
-          NAME="${GITHUB_REF_NAME#v}"
-          STAGE="aiman-$NAME"
+          NAME="${GITHUB_REF_NAME#claude-v}"
+          STAGE="aiman-claude-$NAME"
           mkdir -p "$STAGE"
-          cp -r bin server dist scripts deploy desktop package.json README.md LICENSE CHANGELOG.md run-desktop.bat .env.example "$STAGE"/
-          tar -czf "aiman-$NAME.tar.gz" "$STAGE"
-          (cd "$STAGE" && zip -qr "../aiman-$NAME.zip" .)
-          sha256sum "aiman-$NAME.tar.gz" "aiman-$NAME.zip" > SHA256SUMS.txt
+          cp -r bin server dist package.json README.md FORK.md LICENSE CHANGELOG.md .env.example "$STAGE"/
+          tar -czf "aiman-claude-$NAME.tar.gz" "$STAGE"
+          (cd "$STAGE" && zip -qr "../aiman-claude-$NAME.zip" .)
+          sha256sum "aiman-claude-$NAME.tar.gz" "aiman-claude-$NAME.zip" > SHA256SUMS.txt
+
+      - name: Extract release notes from CHANGELOG.md
+        run: |
+          set -euo pipefail
+          NAME="${GITHUB_REF_NAME#claude-v}"
+          awk -v v="$NAME" '
+            /^## \[/ { if (on) exit; on = index($0, "[aiman-claude " v "]") > 0; next }
+            on { print }
+          ' CHANGELOG.md > RELEASE_NOTES.md
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "No CHANGELOG.md section for aiman-claude $NAME" >&2
+            exit 1
+          fi
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          name: aiman-claude ${{ github.ref_name }}
+          body_path: RELEASE_NOTES.md
           files: |
-            aiman-*.tar.gz
-            aiman-*.zip
+            aiman-claude-*.tar.gz
+            aiman-claude-*.zip
             SHA256SUMS.txt
-
-  desktop:
-    needs: package
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Build web UI
-        run: bun run build:web
-
-      - name: Build Windows desktop installer
-        run: bun run desktop:build
-
-      - name: Attach desktop installer to release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            desktop-dist/*.exe
-            desktop-dist/*.blockmap

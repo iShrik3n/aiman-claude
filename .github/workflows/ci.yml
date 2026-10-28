@@ -28,5 +28,9 @@ jobs:
         working-directory: web
         run: bun run build
 
+      - name: Install server dependencies
+        working-directory: server
+        run: bun install --frozen-lockfile
+
       - name: Verify server loads
         run: bun build server/src/index.ts --target bun --outfile /tmp/aiman-server.js
