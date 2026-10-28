@@ -15,9 +15,12 @@ Works:
 - **Prompting**: new sessions, continue existing ones, abort, model and effort
   selection, through the Claude Agent SDK
 - **Permission prompts** and `AskUserQuestion` answered in the browser
+- **Terminal**: a shell (or `claude --resume <id>` for a session) in the browser,
+  on Bun's built-in PTY. Needs live control; the server picks the command, the
+  browser only names a known project directory
 
 Not implemented yet (endpoints answer 501 or the buttons are hidden):
-attachments, fork, undo, terminal, deferred queue, `/btw`, auto-organize,
+attachments, fork, undo, deferred queue, `/btw`, auto-organize,
 extensions, profiles, self-update.
 
 ## Security

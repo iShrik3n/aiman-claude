@@ -16,6 +16,7 @@ import { handleOc } from "./oc";
 import {
   checkSetupToken,
   guardRequest,
+  guardUpgrade,
   LIVE_ENABLED,
   projectPath,
   projectRoot,
@@ -24,6 +25,7 @@ import {
   throttle,
   tooMany,
 } from "./security";
+import { attachPty, detachPty, writePty } from "./pty";
 import { syncTranscripts } from "./claude";
 import { handleExtensions } from "./extensions";
 import { handleWorkspace } from "./workspace";
@@ -319,129 +321,32 @@ async function serveStatic(url: URL): Promise<Response> {
   return new Response("frontend not built yet", { status: 404 });
 }
 
-// ---- WebSocket bridge to opencode's native PTY ----------------------------
-// The browser cannot reach opencode's port directly, so we upgrade a socket on
-// /ptyws/{ptyID} and relay frames to `opencode/pty/{ptyID}/connect`.
+// ---- terminal sockets (see pty.ts) ------------------------------------------
 
-const OC_WS = OPENCODE_URL.replace(/^http/, "ws");
-
-/** Absolute path to the opencode CLI (so terminals don't rely on PATH). */
-const OPENCODE_BIN = (() => {
-  try {
-    return Bun.which("opencode") ?? "opencode";
-  } catch {
-    return "opencode";
-  }
-})();
-
-type PtySocket = {
-  ptyID: string;
-  query: string;
-  upstream: WebSocket | null;
-  pending: unknown[];
-};
+type PtySocket = { ptyID: string };
 
 function ptyUpgrade(req: Request, server: any, url: URL): Response | undefined {
   if (!authenticate(req)) return new Response("unauthorized", { status: 401 });
+  if (!LIVE_ENABLED) return new Response("terminals need live control (loopback)", { status: 403 });
+  const bad = guardUpgrade(req);
+  if (bad) return bad;
   const ptyID = decodeURIComponent(url.pathname.slice("/ptyws/".length));
   if (!ptyID) return new Response("missing pty id", { status: 400 });
-  const data: PtySocket = { ptyID, query: url.search.slice(1), upstream: null, pending: [] };
+  const data: PtySocket = { ptyID };
   const ok = server.upgrade(req, { data });
   return ok ? undefined : new Response("websocket upgrade failed", { status: 400 });
 }
 
-async function wsOpen(ws: any) {
-  const data = ws.data as PtySocket;
-
-  // v2 keeps PTY sockets under /api/pty and accepts a short-lived ticket in the
-  // query string (the browser-facing socket cannot send an Authorization header).
-  // PTYs are location-scoped, so both the ticket and the socket need the cwd.
-  const params = new URLSearchParams(data.query);
-  const directory = params.get("directory");
-  const location = locationParams(directory);
-  let ticket = "";
-  if (isV2()) {
-    try {
-      const qs = location.toString();
-      const issued = await ocData<any>(
-        `/api/pty/${encodeURIComponent(data.ptyID)}/connect-token${qs ? `?${qs}` : ""}`,
-        {
-          method: "POST",
-          headers: { "x-opencode-ticket": "1" },
-        },
-      );
-      ticket = issued?.ticket ?? "";
-    } catch (e) {
-      try {
-        ws.close();
-      } catch {}
-      return;
-    }
-  }
-
-  let target: string;
-  if (isV2()) {
-    const q = new URLSearchParams(location);
-    if (ticket) q.set("ticket", ticket);
-    const qs = q.toString();
-    target = `${OC_WS}/api/pty/${encodeURIComponent(data.ptyID)}/connect${qs ? `?${qs}` : ""}`;
-  } else {
-    const v1Query = new URLSearchParams(data.query);
-    v1Query.delete("directory");
-    const qs = v1Query.toString();
-    target = `${OC_WS}/pty/${encodeURIComponent(data.ptyID)}/connect${qs ? `?${qs}` : ""}`;
-  }
-
-  let upstream: WebSocket;
-  try {
-    upstream = new WebSocket(target);
-  } catch {
-    ws.close();
-    return;
-  }
-  upstream.binaryType = "arraybuffer";
-  data.upstream = upstream;
-  upstream.addEventListener("open", () => {
-    for (const m of data.pending) {
-      try {
-        upstream.send(m as any);
-      } catch {}
-    }
-    data.pending = [];
-  });
-  upstream.addEventListener("message", (ev: any) => {
-    try {
-      ws.send(ev.data);
-    } catch {}
-  });
-  upstream.addEventListener("close", () => {
-    try {
-      ws.close();
-    } catch {}
-  });
-  upstream.addEventListener("error", () => {
-    try {
-      ws.close();
-    } catch {}
-  });
+function wsOpen(ws: any) {
+  if (!attachPty((ws.data as PtySocket).ptyID, ws)) ws.close();
 }
 
 function wsMessage(ws: any, msg: string | Uint8Array) {
-  const data = ws.data as PtySocket;
-  if (data.upstream && data.upstream.readyState === WebSocket.OPEN) {
-    try {
-      data.upstream.send(msg as any);
-    } catch {}
-  } else {
-    data.pending.push(msg);
-  }
+  writePty((ws.data as PtySocket).ptyID, msg);
 }
 
 function wsClose(ws: any) {
-  const data = ws.data as PtySocket;
-  try {
-    data.upstream?.close();
-  } catch {}
+  detachPty((ws.data as PtySocket).ptyID, ws);
 }
 
 // ---- codebase explorer (treemap data + file access) -----------------------
@@ -984,8 +889,8 @@ async function handle(req: Request): Promise<Response> {
       opencodeV2: true,
       readOnly: !LIVE_ENABLED,
       // Queue and /btw need features that are not implemented for Claude Code.
-      features: { queue: false, btw: false, terminal: false, workspace: false },
-      terminal: false,
+      features: { queue: false, btw: false, terminal: LIVE_ENABLED, workspace: false },
+      terminal: LIVE_ENABLED,
       platform: process.platform,
       onboarded: getUserOnboarded(user!.id),
       version: VERSION,
@@ -1436,10 +1341,7 @@ Bun.serve({
   async fetch(req, server) {
     try {
       const url = new URL(req.url);
-      if (url.pathname.startsWith("/ptyws/")) {
-        // No PTY backend in the Claude Code fork (and this route bypasses handle()).
-        return new Response("terminal unavailable", { status: 501 });
-      }
+      if (url.pathname.startsWith("/ptyws/")) return ptyUpgrade(req, server, url) ?? undefined;
       return await handle(req);
     } catch (e) {
       console.error("[http] request failed:", e);
