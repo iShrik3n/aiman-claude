@@ -181,51 +181,15 @@ export default function TerminalPane({
     pane?.addEventListener("drop", onDrop, true);
 
     (async () => {
-      let opencodeUrl = "http://127.0.0.1:4096";
-      let opencodeBin = "opencode";
-      let platform = /Windows/i.test(navigator.userAgent) ? "win32" : "linux";
-      let opencodeV2 = false;
-      try {
-        const cfg = await api.config();
-        opencodeUrl = cfg.opencodeUrl || opencodeUrl;
-        opencodeBin = cfg.opencodeBin || opencodeBin;
-        platform = cfg.platform || platform;
-        opencodeV2 = !!cfg.opencodeV2;
-      } catch {}
-
-      const body: {
-        command?: string;
-        args?: string[];
-        cwd?: string;
-        title?: string;
-      } = { title: title ?? (sessionId ? `opencode ${sessionId}` : "terminal") };
+      // The server decides what runs: a shell, or `claude --resume <id>` when a
+      // session is given. The client only names the directory.
+      const body: { cwd?: string; title?: string; resume?: string; rows: number; cols: number } = {
+        title: title ?? (sessionId ? `claude ${sessionId.slice(0, 8)}` : "terminal"),
+        rows: term.rows,
+        cols: term.cols,
+      };
       if (directory) body.cwd = directory;
-
-      if (command) {
-        body.command = command;
-        if (args?.length) body.args = args;
-      } else if (sessionId) {
-        // Launch the opencode TUI attached to this session. Start it through a
-        // shell with the binary's absolute path (spawning it directly as the
-        // PTY leader aborts, and bare "opencode" may not be on the PTY's PATH).
-        //
-        // v1 used `opencode attach <url> --session <id>`; v2 made the top-level
-        // CLI the TUI and replaced `--dir` with a positional directory.
-        const cli = opencodeV2
-          ? [opencodeBin]
-              .concat(directory ? [directory] : [])
-              .concat(["--server", opencodeUrl, "--session", sessionId])
-          : [opencodeBin, "attach", opencodeUrl, "--session", sessionId].concat(
-              directory ? ["--dir", directory] : [],
-            );
-        if (platform === "win32") {
-          body.command = "powershell.exe";
-          body.args = ["-NoProfile", "-Command", "& " + cli.map(psQuote).join(" ")];
-        } else {
-          body.command = "/bin/bash";
-          body.args = ["-lc", "exec " + cli.map(posixQuote).join(" ")];
-        }
-      }
+      if (sessionId) body.resume = sessionId;
 
       let pty: { id: string };
       try {
@@ -263,13 +227,6 @@ export default function TerminalPane({
       };
       ws.onclose = () => {
         if (disposed) return;
-        // The TUI dying within a couple of seconds means it could not start
-        // (e.g. opencode's CLI changed how it attaches). Fall back to the
-        // structured chat instead of leaving a dead terminal on screen.
-        if (openedAt && Date.now() - openedAt < 3000) {
-          setChatMode("web");
-          return;
-        }
         setStatus("session ended — reopen to reconnect");
       };
       ws.onerror = () => {

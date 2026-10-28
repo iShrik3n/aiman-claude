@@ -12,6 +12,7 @@ import {
   replyQuestion,
   startPrompt,
 } from "./live";
+import { createPty, deletePty, listPtys, PtyError, resizePty } from "./pty";
 import { LIVE_ENABLED } from "./security";
 
 /**
@@ -55,12 +56,35 @@ export async function handleOc(req: Request, url: URL): Promise<Response> {
       if (/^\/session\/[^/]+\/todo$/.test(p)) return json([]);
       if (p === "/permission") return json(listPermissions());
       if (p === "/question") return json(listQuestions());
-      if (p === "/pty" || p === "/command") return json([]);
+      if (p === "/pty") return json(listPtys());
+      if (p === "/command") return json([]);
       if (p === "/agent") return json(agents());
       if (p === "/config/providers") return json(providers());
     }
 
-    if (method === "POST" && LIVE_ENABLED) {
+    if (method !== "GET" && LIVE_ENABLED) {
+      if (p === "/pty" && method === "POST") {
+        const b = await body(req);
+        return json(
+          createPty({
+            cwd: typeof b.cwd === "string" ? b.cwd : undefined,
+            title: typeof b.title === "string" ? b.title : undefined,
+            resume: typeof b.resume === "string" ? b.resume : undefined,
+            rows: b.rows,
+            cols: b.cols,
+          }),
+        );
+      }
+      const pm = p.match(/^\/pty\/([^/]+)$/);
+      if (pm && method === "PUT") {
+        const b = await body(req);
+        return resizePty(pm[1]!, b.size?.rows, b.size?.cols, typeof b.title === "string" ? b.title : undefined)
+          ? json(true)
+          : json({ error: "not found" }, 404);
+      }
+      if (pm && method === "DELETE") return deletePty(pm[1]!) ? json(true) : json({ error: "not found" }, 404);
+      if (method !== "POST") return json({ error: "not_implemented" }, 501);
+
       if (p === "/session") {
         const b = await body(req);
         return json(createSession(url.searchParams.get("directory") ?? "", b.title));
@@ -104,7 +128,7 @@ export async function handleOc(req: Request, url: URL): Promise<Response> {
       return json({ error: "live_control_disabled", detail: "Live control is off: the server is not bound to loopback (set AIMAN_ALLOW_REMOTE_CONTROL=1 to enable it)." }, 403);
     }
   } catch (e) {
-    if (e instanceof LiveError) return json({ error: e.message }, e.status);
+    if (e instanceof LiveError || e instanceof PtyError) return json({ error: e.message }, e.status);
     console.error("[oc] request failed:", e);
     return json({ error: String((e as Error)?.message ?? e) }, 500);
   }

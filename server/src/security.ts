@@ -65,6 +65,24 @@ export function guardRequest(req: Request): Response | null {
   return null;
 }
 
+/**
+ * WebSocket upgrades are GETs, so guardRequest skips their Origin check. A
+ * terminal socket must come from our own pages.
+ */
+export function guardUpgrade(req: Request): Response | null {
+  const bad = guardRequest(req);
+  if (bad) return bad;
+  const origin = req.headers.get("origin");
+  if (!origin) return deny(403, "origin required");
+  let originHost = "";
+  try {
+    originHost = new URL(origin).host;
+  } catch {}
+  return originHost.toLowerCase() === (req.headers.get("host") ?? "").toLowerCase()
+    ? null
+    : deny(403, "cross-origin request refused");
+}
+
 // ---------- first-run setup token ----------
 
 /**
