@@ -5,6 +5,19 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [aiman-claude 1.2.1] - 2026-10-28
+
+Server hardening.
+
+### Security
+- File explorer endpoints only accept directories of known sessions; `..`,
+  absolute paths and symlinks that leave the project are refused. Editing,
+  deleting and uploading need live control (loopback). `depth`/`max` of the
+  tree are clamped. SVGs from `/api/raw` are sandboxed.
+- First-run admin creation requires a setup token when the server is not bound
+  to loopback or sits behind `AIMAN_ALLOWED_HOSTS`.
+- Failed logins are throttled per username (429 + `Retry-After`).
+
 ## [aiman-claude 1.2.0] - 2026-10-28
 
 Sync with upstream AiMAN 1.11.0 (merged from `spacewalkingninja/aiman`).

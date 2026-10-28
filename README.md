@@ -1,6 +1,6 @@
 > **aiman-claude** is a fork of [AiMAN](https://github.com/spacewalkingninja/aiman)
 > (MIT) that manages **Claude Code** sessions instead of opencode ones. It is
-> read-only for now — see [FORK.md](FORK.md). The rest of this README is
+> localhost-only by design — see [FORK.md](FORK.md). The rest of this README is
 > upstream's and still describes the opencode version.
 
 # AiMAN

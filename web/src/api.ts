@@ -403,13 +403,13 @@ export type Profile = {
 export const api = {
   authMe: () =>
     fetch("/api/auth/me").then(
-      j<{ authenticated: boolean; needsSetup: boolean; user: AuthUser | null }>,
+      j<{ authenticated: boolean; needsSetup: boolean; needsSetupToken?: boolean; user: AuthUser | null }>,
     ),
-  setup: (username: string, password: string) =>
+  setup: (username: string, password: string, setupToken?: string) =>
     fetch("/api/auth/setup", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, password, setupToken }),
     }).then(async (r) => {
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error ?? "setup failed");
       return r.json();
