@@ -5,6 +5,15 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [aiman-claude 1.4.0] - 2026-10-28
+
+### Added
+- Estimated cost: messages are priced from list prices per model (input,
+  output incl. thinking, cache reads, 5-minute and 1-hour cache writes, Haiku
+  5.5's long-prompt tier, Opus 5.5 fast mode). Existing sessions are
+  re-indexed once. Checked against an independent calculation over real
+  transcripts (same total to the cent).
+- `bun test` suite for the transcript parser and the price table.
 ## [aiman-claude 1.3.0] - 2026-10-28
 
 ### Added
