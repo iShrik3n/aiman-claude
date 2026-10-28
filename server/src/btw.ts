@@ -1,14 +1,15 @@
-import { isV2, mgr, ocRO } from "./db";
-import { locationParams, ocData } from "./ocClient";
-import { getSession, setArchived } from "./manager";
+import { mgr } from "./db";
+import { getSession } from "./manager";
+import { oneShot } from "./oneshot";
 import { getSessionEntries } from "./messages";
 
 /**
  * /btw side questions.
  *
- * A side question runs in its own short-lived child session with a snapshot of
- * the main session's recent context. The main transcript is never touched; the
- * answer is stored in btw_history and the child session is archived afterwards.
+ * A side question is a one-shot, tool-free call to Claude (oneshot.ts) with a
+ * snapshot of the main session's recent context. The main transcript is never
+ * touched and nothing is written to ~/.claude; the answer is stored in
+ * btw_history.
  */
 
 type BtwStatus = "pending" | "done" | "failed";
@@ -136,11 +137,6 @@ export function askBtw(
 export function deleteBtw(id: string): boolean {
   const current = row(id);
   if (!current) return false;
-  if (current.side_session_id) {
-    try {
-      setArchived(current.side_session_id, true);
-    } catch {}
-  }
   mgr.query("DELETE FROM btw_history WHERE id = ?").run(id);
   return true;
 }
@@ -189,75 +185,6 @@ function contextFor(sessionId: string): string {
     .slice(-24_000);
 }
 
-function parentModel(sessionId: string): BtwModel | null {
-  if (!isV2()) return null;
-  try {
-    const row = ocRO.query("SELECT model FROM session_v2 WHERE id = ?").get(sessionId) as
-      | { model: string | null }
-      | undefined;
-    return normalizeModel(parseJson<any>(row?.model, null));
-  } catch {
-    return null;
-  }
-}
-
-async function createSideSession(
-  mainSessionId: string,
-  question: string,
-  preferredModel?: BtwModel | null,
-): Promise<string> {
-  const session = getSession(mainSessionId);
-  if (!session) throw new Error("main session not found");
-  const base = {
-    parentID: mainSessionId,
-    title: `btw: ${question.slice(0, 60)}`,
-    location: { directory: session.directory },
-    permissions: [{ action: "*", resource: "*", effect: "deny" }],
-    metadata: { aiman: { btw: true, mainSessionID: mainSessionId } },
-  };
-  // The composer's selected model wins. The parent's persisted model is only a
-  // fallback for requests made by older clients or after a restart.
-  const model = normalizeModel(preferredModel) ?? parentModel(mainSessionId);
-  const attempts: any[] = [
-    { ...base, agent: "general", ...(model ? { model } : {}) },
-    { ...base, ...(model ? { model } : {}) },
-    { ...base, agent: "general", permissions: undefined, ...(model ? { model } : {}) },
-  ];
-  let lastError: unknown;
-  for (const body of attempts) {
-    try {
-      const created = await ocData<any>(
-        "/api/session",
-        {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(body),
-        },
-        locationParams(session.directory),
-      );
-      if (!created?.id) continue;
-      const sideSessionId = String(created.id);
-      // Creating a session with an agent can reset its model in opencode.
-      // Apply the explicit composer model last, exactly like prompt_async.
-      if (model) {
-        await ocData(
-          `/api/session/${encodeURIComponent(sideSessionId)}/model`,
-          {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ model }),
-          },
-          locationParams(session.directory),
-        );
-      }
-      return sideSessionId;
-    } catch (e) {
-      lastError = e;
-    }
-  }
-  throw new Error(errorText(lastError ?? "could not create side session"));
-}
-
 function promptText(context: string, question: string): string {
   return [
     'You are answering a quick "by the way" side question about a main coding session.',
@@ -269,51 +196,6 @@ function promptText(context: string, question: string): string {
     "Side question:",
     question,
   ].join("\n");
-}
-
-async function promptSide(
-  sideSessionId: string,
-  directory: string,
-  context: string,
-  question: string,
-): Promise<void> {
-  await ocData(
-    `/api/session/${encodeURIComponent(sideSessionId)}/prompt`,
-    {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ text: promptText(context, question) }),
-    },
-    locationParams(directory),
-  );
-}
-
-function sideIdle(sideSessionId: string): { idle: boolean; missing: boolean } {
-  if (!isV2()) return { idle: false, missing: false };
-  const row = ocRO
-    .query("SELECT time_idle, time_updated FROM session_v2 WHERE id = ?")
-    .get(sideSessionId) as { time_idle: number | null; time_updated: number } | undefined;
-  if (!row) return { idle: false, missing: true };
-  return {
-    idle: row.time_idle != null && row.time_idle >= row.time_updated,
-    missing: false,
-  };
-}
-
-function lastAnswer(sideSessionId: string): { text: string; error: string | null } {
-  const entries = getSessionEntries(sideSessionId);
-  for (let i = entries.length - 1; i >= 0; i--) {
-    const entry = entries[i]!;
-    if (entry.info?.role !== "assistant") continue;
-    const text = entry.parts
-      .filter((part) => part.type === "text" && part.text)
-      .map((part) => String(part.text).trim())
-      .filter(Boolean)
-      .join("\n");
-    if (text) return { text, error: null };
-    if (entry.info?.error) return { text: "", error: errorText(entry.info.error) };
-  }
-  return { text: "", error: null };
 }
 
 function finish(id: string, patch: { answer?: string; error?: string; status: BtwStatus }): void {
@@ -335,63 +217,18 @@ async function processOne(current: BtwRow): Promise<void> {
     });
     return;
   }
-
-  let sideSessionId = current.side_session_id;
   try {
-    if (!sideSessionId) {
-      const preferredModel = parseJson<BtwModel | null>(current.model_json, null);
-      sideSessionId = await createSideSession(
-        current.session_id,
-        current.question,
-        preferredModel,
-      );
-      mgr
-        .query("UPDATE btw_history SET side_session_id = ? WHERE id = ?")
-        .run(sideSessionId, current.id);
-    }
-
-    if (!current.prompted_at) {
-      const context = contextFor(current.session_id);
-      await promptSide(sideSessionId, main.directory, context, current.question);
-      mgr
-        .query("UPDATE btw_history SET prompted_at = ? WHERE id = ?")
-        .run(Date.now(), current.id);
-      return;
-    }
-
-    if (Date.now() - current.prompted_at > ANSWER_TIMEOUT_MS) {
-      finish(current.id, { status: "failed", error: "Side question timed out" });
-      setArchived(sideSessionId, true);
-      return;
-    }
-
-    const state = sideIdle(sideSessionId);
-    if (state.missing) {
-      finish(current.id, { status: "failed", error: "Side session was removed" });
-      return;
-    }
-    if (!state.idle) return;
-
-    const answer = lastAnswer(sideSessionId);
-    if (answer.text) {
-      finish(current.id, { status: "done", answer: answer.text });
-      setArchived(sideSessionId, true);
-    } else {
-      finish(current.id, {
-        status: "failed",
-        error: answer.error || "The side question returned no answer",
-      });
-      setArchived(sideSessionId, true);
-    }
+    mgr.query("UPDATE btw_history SET prompted_at = ? WHERE id = ?").run(Date.now(), current.id);
+    const model = parseJson<BtwModel | null>(current.model_json, null);
+    const answer = await oneShot(promptText(contextFor(current.session_id), current.question), {
+      model: model?.id,
+      timeoutMs: ANSWER_TIMEOUT_MS,
+    });
+    finish(current.id, { status: "done", answer });
   } catch (e) {
     const message = errorText(e);
     console.warn("[btw] side question failed:", message);
     finish(current.id, { status: "failed", error: message });
-    if (sideSessionId) {
-      try {
-        setArchived(sideSessionId, true);
-      } catch {}
-    }
   }
 }
 
@@ -399,7 +236,7 @@ let processing = false;
 let timer: ReturnType<typeof setInterval> | null = null;
 
 export async function processBtw(): Promise<void> {
-  if (processing || !isV2()) return;
+  if (processing) return;
   processing = true;
   try {
     const rows = mgr

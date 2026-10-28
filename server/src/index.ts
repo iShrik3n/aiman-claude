@@ -889,7 +889,7 @@ async function handle(req: Request): Promise<Response> {
       opencodeV2: true,
       readOnly: !LIVE_ENABLED,
       // Queue and /btw need features that are not implemented for Claude Code.
-      features: { queue: LIVE_ENABLED, btw: false, terminal: LIVE_ENABLED, workspace: false },
+      features: { queue: LIVE_ENABLED, btw: LIVE_ENABLED, terminal: LIVE_ENABLED, workspace: false },
       terminal: LIVE_ENABLED,
       platform: process.platform,
       onboarded: getUserOnboarded(user!.id),
@@ -1021,9 +1021,9 @@ async function handle(req: Request): Promise<Response> {
   if (bm) {
     const sessionId = bm[1]!;
     if (!getSession(sessionId)) return json({ error: "not found" }, 404);
-    if (!isV2()) return json({ error: "BTW requires opencode v2" }, 400);
     if (method === "GET") return json({ items: listBtw(sessionId) });
     if (method === "POST") {
+      if (!LIVE_ENABLED) return json({ error: "read-only: /btw needs live control (loopback)" }, 403);
       const b = await readBody(req);
       const question = String(b.question ?? "").trim();
       if (!question) return json({ error: "question required" }, 400);
@@ -1330,7 +1330,10 @@ setTimeout(() => {
   }
   runSync();
   // The queue starts prompts, so it only runs where live control is allowed.
-  if (LIVE_ENABLED) startQueueWorker();
+  if (LIVE_ENABLED) {
+    startQueueWorker();
+    startBtwWorker();
+  }
 }, 500);
 const syncTimer = setInterval(runSync, 3000);
 if (typeof syncTimer.unref === "function") syncTimer.unref();
