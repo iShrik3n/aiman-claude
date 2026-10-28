@@ -889,7 +889,7 @@ async function handle(req: Request): Promise<Response> {
       opencodeV2: true,
       readOnly: !LIVE_ENABLED,
       // Queue and /btw need features that are not implemented for Claude Code.
-      features: { queue: false, btw: false, terminal: LIVE_ENABLED, workspace: false },
+      features: { queue: LIVE_ENABLED, btw: false, terminal: LIVE_ENABLED, workspace: false },
       terminal: LIVE_ENABLED,
       platform: process.platform,
       onboarded: getUserOnboarded(user!.id),
@@ -990,7 +990,7 @@ async function handle(req: Request): Promise<Response> {
       return json({ items: listQueue(sessionId), serverNow: Date.now() });
     }
     if (method === "POST") {
-      if (!isV2()) return json({ error: "Deferred queue requires opencode v2" }, 400);
+      if (!LIVE_ENABLED) return json({ error: "read-only: the queue needs live control (loopback)" }, 403);
       const b = await readBody(req);
       const files = Array.isArray(b.files) ? b.files : [];
       const text = String(b.text ?? "");
@@ -1329,6 +1329,8 @@ setTimeout(() => {
     console.error("[boot] profiles failed:", e);
   }
   runSync();
+  // The queue starts prompts, so it only runs where live control is allowed.
+  if (LIVE_ENABLED) startQueueWorker();
 }, 500);
 const syncTimer = setInterval(runSync, 3000);
 if (typeof syncTimer.unref === "function") syncTimer.unref();
