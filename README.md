@@ -1,7 +1,49 @@
-> **aiman-claude** is a fork of [AiMAN](https://github.com/spacewalkingninja/aiman)
-> (MIT) that manages **Claude Code** sessions instead of opencode ones. It is
-> localhost-only by design — see [FORK.md](FORK.md). The rest of this README is
-> upstream's and still describes the opencode version.
+# aiman-claude
+
+A self-hosted web UI and session manager for **[Claude Code](https://claude.com/claude-code)**.
+It is a fork of [AiMAN](https://github.com/spacewalkingninja/aiman) by
+spacewalkingninja (MIT), which does the same for opencode. The web UI is
+upstream's; the backend is new and reads Claude Code's own transcripts.
+
+- **Browse and search** every Claude Code session on the machine
+  (`~/.claude/projects/**/*.jsonl`): full-text search over messages and tool
+  calls, folders, pins, archive, rename, token statistics.
+- **Chat from the browser**: continue or start sessions through the Claude Agent
+  SDK, with permission prompts and `AskUserQuestion` answered in the page.
+- Your sessions stay on your machine; nothing is uploaded anywhere but to Claude
+  when you prompt it.
+
+> **Keep it on localhost.** A request to this server can make Claude Code run
+> tools on your computer, and transcripts hold everything you and Claude did.
+> It binds to `127.0.0.1` by default and turns live control off if you bind
+> anywhere else. For remote access use an SSH tunnel or Tailscale. Details in
+> [FORK.md](FORK.md#security).
+
+## Quick start
+
+Needs [Bun](https://bun.sh) and the `claude` CLI, logged in.
+
+```bash
+git clone https://github.com/iShrik3n/aiman-claude
+cd aiman-claude
+bun install --cwd web && bun install --cwd server
+bun run build          # builds the web UI into dist/
+bun run start          # http://127.0.0.1:4197
+```
+
+The first visit asks you to create an admin account. Data (the session index,
+folders, users) lives in `~/.local/share/aiman-claude`; override with
+`AIMAN_HOME`. Tests: `cd server && bun test`.
+
+[FORK.md](FORK.md) lists what works, what does not yet, how it is built and how
+to pull in upstream changes. [CHANGELOG.md](CHANGELOG.md) has the history.
+
+---
+
+## Upstream README
+
+Everything below is the original AiMAN README and describes the **opencode**
+version. Where it disagrees with the text above or with FORK.md, the fork wins.
 
 # AiMAN
 
