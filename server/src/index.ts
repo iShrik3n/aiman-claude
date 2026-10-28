@@ -1197,7 +1197,7 @@ async function handle(req: Request): Promise<Response> {
 
   if (p === "/api/folders/auto-organize" && method === "POST") {
     if (!user!.is_admin) return json({ error: "forbidden" }, 403);
-    return json({ error: "Auto-organize is not available in the Claude Code fork yet" }, 501);
+    if (!LIVE_ENABLED) return json({ error: "read-only: auto-organize needs live control (loopback)" }, 403);
     const b = await readBody(req);
     const modelKey = typeof b.model === "string" ? b.model : "";
     const [providerID, ...rest] = modelKey.split("/");
@@ -1333,6 +1333,11 @@ setTimeout(() => {
   if (LIVE_ENABLED) {
     startQueueWorker();
     startBtwWorker();
+    // Filing sessions as they reach 10 messages spends tokens unprompted: opt in.
+    if (process.env.AIMAN_AUTO_FILE === "1") {
+      ensureAutoOrganizeBaseline();
+      setInterval(() => void scanForAutoOrganize(), 15_000).unref?.();
+    }
   }
 }, 500);
 const syncTimer = setInterval(runSync, 3000);

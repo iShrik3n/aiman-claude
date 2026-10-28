@@ -234,7 +234,7 @@ export default function Sidebar() {
   const organizeAll = async () => {
     if (organizing) return;
     setOrganizing(true);
-    toast("Auto-organizing sessions with opencode…");
+    toast("Auto-organizing sessions with Claude…");
     try {
       const result = await autoOrganizeSessions({
         model: s.model,
@@ -346,7 +346,7 @@ export default function Sidebar() {
 
         <div className="section-title folders-title">
           <span>Folders</span>
-          {isAdmin && (
+          {isAdmin && !s.readOnly && (
             <button
               type="button"
               className="btn ghost sm folder-organize"
